@@ -1,0 +1,12 @@
+[package]
+name = "udev-hid-bpf"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libbpf-rs = "0.17"
+
+[build-dependencies]
+libbpf-cargo = "0.11"
