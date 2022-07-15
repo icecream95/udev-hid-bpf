@@ -4,6 +4,7 @@ extern crate udev;
 use glob::glob_with;
 use glob::MatchOptions;
 use std::io;
+use std::path::PathBuf;
 
 mod poll {
     use std::io;
@@ -51,6 +52,51 @@ fn get_filename(device: &udev::Device) -> String {
         .replace("p0000", "p")
 }
 
+fn get_bpffs_path(device: &udev::Device) -> String {
+    format!(
+        "/sys/fs/bpf/{}",
+        device
+            .sysname()
+            .to_str()
+            .unwrap()
+            .replace(":", "_")
+            .replace(".", "_"),
+    )
+}
+
+fn load_bpf(device: &udev::Device, path: PathBuf) -> Result<(), libbpf_rs::Error> {
+    println!("found BPF object at {:?}", path.display());
+
+    let mut obj_builder = libbpf_rs::ObjectBuilder::default();
+
+    //obj_builder.debug(true);
+
+    let mut object = obj_builder.open_file(path)?.load()?;
+
+    for prog in object.progs_iter_mut() {
+        println!("found prog {} of type {}", prog.name(), prog.prog_type(),);
+
+        let path = format!("{}/{}", get_bpffs_path(device), prog.name(),);
+
+        println!("pin prog at {}", path);
+
+        prog.pin(path)?;
+    }
+
+    Ok(())
+}
+
+fn bump_memlock_rlimit() -> Result<(), io::Error> {
+    let rlimit = libc::rlimit {
+        rlim_cur: 128 << 20,
+        rlim_max: 128 << 20,
+    };
+    if unsafe { libc::setrlimit(libc::RLIMIT_MEMLOCK, &rlimit) } != 0 {
+        panic!("Failed to increase rlimit");
+    }
+    Ok(())
+}
+
 fn add_device(device: udev::Device) {
     let prefix = get_filename(&device);
 
@@ -70,7 +116,7 @@ fn add_device(device: udev::Device) {
 
     for entry in glob_with(&glob_path[..], options).unwrap() {
         if let Ok(path) = entry {
-            println!("found BPF object at {:?}", path.display())
+            load_bpf(&device, path).unwrap_or(());
         }
     }
 }
@@ -78,16 +124,9 @@ fn add_device(device: udev::Device) {
 fn remove_device(device: udev::Device) {
     println!("device removed");
 
-    println!("  properties:");
-    for property in device.properties() {
-        println!("    {:?} = {:?}", property.name(), property.value());
-    }
-    println!("  attributes:");
-    for attribute in device.attributes() {
-        println!("    {:?} = {:?}", attribute.name(), attribute.value());
-    }
+    let path = get_bpffs_path(&device);
 
-    println!("  filename: {}", get_filename(&device))
+    std::fs::remove_dir_all(path).unwrap_or(())
 }
 
 fn handle_event(event_type: udev::EventType, device: udev::Device) {
@@ -114,6 +153,8 @@ fn print_event(event: udev::Event) {
 }
 
 fn main() -> io::Result<()> {
+    bump_memlock_rlimit()?;
+
     let socket = udev::MonitorBuilder::new()?
         .match_subsystem("hid")?
         .listen()?;
@@ -123,16 +164,6 @@ fn main() -> io::Result<()> {
     enumerator.match_subsystem("hid").unwrap();
 
     for device in enumerator.scan_devices().unwrap() {
-        println!("found device: {:?}", device.syspath());
-        println!("  properties:");
-        for property in device.properties() {
-            println!("    {:?} = {:?}", property.name(), property.value());
-        }
-        println!("  attributes:");
-        for attribute in device.attributes() {
-            println!("    {:?} = {:?}", attribute.name(), attribute.value());
-        }
-
         handle_event(udev::EventType::Add, device);
     }
 
