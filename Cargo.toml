@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libbpf-rs = "0.17"
+libbpf-rs = "0.18"
 udev =  { version = "^0.6.3", features = ["mio08"] }
 mio = { version = "0.8", features = ["os-ext"] }
 glob = "0.3"
 libc = "0.2"
 
 [build-dependencies]
-libbpf-cargo = "0.11"
+libbpf-cargo = { git = "https://github.com/libbpf/libbpf-rs.git", rev = "bd03a1a" } # "0.12" + bd03a1a

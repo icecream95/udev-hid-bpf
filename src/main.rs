@@ -6,6 +6,10 @@ use glob::MatchOptions;
 use std::io;
 use std::path::PathBuf;
 
+mod attachbpf {
+    include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
+}
+
 mod poll {
     use std::io;
 

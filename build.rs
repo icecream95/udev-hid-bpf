@@ -1,8 +1,7 @@
-use std::fs;
-use std::path::Path;
-use std::process::Command;
-
 use libbpf_cargo::SkeletonBuilder;
+use std::fs;
+use std::process::Command;
+use std::{env, path::Path, path::PathBuf};
 
 const DIR: &str = "./src/bpf/";
 const SRC: &str = "./src/bpf/attach.bpf.c";
@@ -11,18 +10,13 @@ const TARGET_DIR: &str = "./target";
 fn main() {
     println!("cargo:rerun-if-changed={}", DIR);
 
-    // First build our always loaded HID-BPF program
-    //
-    // It's unfortunate we cannot use `OUT_DIR` to store the generated skeleton.
-    // Reasons are because the generated skeleton contains compiler attributes
-    // that cannot be `include!()`ed via macro. And we cannot use the `#[path = "..."]`
-    // trick either because you cannot yet `concat!(env!("OUT_DIR"), "/skel.rs")` inside
-    // the path attribute either (see https://github.com/rust-lang/rust/pull/83366).
-    //
-    // However, there is hope! When the above feature stabilizes we can clean this
-    // all up.
-    let skel = Path::new("./src/bpf/mod.rs");
-    SkeletonBuilder::new(SRC).generate(&skel).unwrap();
+    let mut out =
+        PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script"));
+    out.push("attach.skel.rs");
+    SkeletonBuilder::new()
+        .source(SRC)
+        .build_and_generate(&out)
+        .unwrap();
 
     // Then compile all other .bpf.c in a .bpf.o file
     Command::new("cargo")
