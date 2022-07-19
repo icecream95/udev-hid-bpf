@@ -1,3 +1,4 @@
+use std::fs;
 use std::process::Command;
 use std::path::Path;
 
@@ -5,6 +6,7 @@ use libbpf_cargo::SkeletonBuilder;
 
 const DIR: &str = "./src/bpf/";
 const SRC: &str = "./src/bpf/attach.bpf.c";
+const TARGET_DIR: &str = "./target";
 
 fn main() {
     println!("cargo:rerun-if-changed={}", DIR);
@@ -25,4 +27,9 @@ fn main() {
     // Then compile all other .bpf.c in a .bpf.o file
     Command::new("cargo").args(&["libbpf", "build"])
                        .status().unwrap();
+
+    // remove unused bpf object
+    let dest_path = Path::new(TARGET_DIR).join("bpf").join("attach.bpf.o");
+
+    fs::remove_file(dest_path).unwrap();
 }
