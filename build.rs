@@ -1,6 +1,6 @@
 use std::fs;
-use std::process::Command;
 use std::path::Path;
+use std::process::Command;
 
 use libbpf_cargo::SkeletonBuilder;
 
@@ -25,8 +25,10 @@ fn main() {
     SkeletonBuilder::new(SRC).generate(&skel).unwrap();
 
     // Then compile all other .bpf.c in a .bpf.o file
-    Command::new("cargo").args(&["libbpf", "build"])
-                       .status().unwrap();
+    Command::new("cargo")
+        .args(&["libbpf", "build"])
+        .status()
+        .unwrap();
 
     // remove unused bpf object
     let dest_path = Path::new(TARGET_DIR).join("bpf").join("attach.bpf.o");
