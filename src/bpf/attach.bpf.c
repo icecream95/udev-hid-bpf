@@ -5,7 +5,6 @@
 #include "vmlinux.h"
 #include "attach.h"
 #include <bpf/bpf_helpers.h>
-#include <bpf/bpf_tracing.h>
 
 /* following are kfuncs exported by HID for HID-BPF */
 extern int hid_bpf_attach_prog(unsigned int hid_id, int prog_fd, u32 flags) __ksym;
