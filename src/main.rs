@@ -111,10 +111,9 @@ mod bpf {
 mod poll {
     use std::io;
 
-    use crate::bpf;
     use mio::{Events, Interest, Poll, Token};
 
-    pub fn poll(mut socket: udev::MonitorSocket, skel: &bpf::HidBPF) -> io::Result<()> {
+    pub fn poll<F>(mut socket: udev::MonitorSocket, mut f: F) -> io::Result<()> where  F: FnMut(udev::Event,), {
         let mut poll = Poll::new()?;
         let mut events = Events::with_capacity(1024);
 
@@ -129,7 +128,7 @@ mod poll {
 
             for event in &events {
                 if event.token() == Token(0) && event.is_writable() {
-                    socket.clone().for_each(|x| super::print_event(x, skel));
+                    socket.clone().for_each(&mut f);
                 }
             }
         }
@@ -238,5 +237,5 @@ fn main() -> Result<(), io::Error> {
         handle_event(udev::EventType::Add, device, &skel);
     }
 
-    poll::poll(socket, &skel)
+    poll::poll(socket, |x| print_event(x, &skel))
 }
