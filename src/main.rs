@@ -1,7 +1,3 @@
-extern crate libbpf_sys;
-extern crate mio;
-extern crate udev;
-
 use glob::glob_with;
 use glob::MatchOptions;
 use std::io;
