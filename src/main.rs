@@ -130,9 +130,11 @@ mod poll {
 mod hidudev {
     use crate::bpf;
     use crate::poll;
-    use glob::glob_with;
-    use glob::MatchOptions;
+    use glob::glob;
+    use globset::GlobBuilder;
     use std::io;
+
+    const BPF_O: &str = "target/bpf/*.bpf.o";
 
     pub struct HidUdev {
         inner: udev::Device,
@@ -174,19 +176,34 @@ mod hidudev {
         pub fn add(&self, skel: &bpf::HidBPF) {
             let prefix = self.modalias();
 
-            println!("device added {}, filename: {}", self.sysname(), prefix,);
+            if prefix.len() != 20 {
+                println!("invalid modalias {} for device {}", prefix, self.sysname(),);
+                return;
+            }
 
-            let options = MatchOptions {
-                case_sensitive: false,
-                require_literal_separator: true,
-                require_literal_leading_dot: false,
-            };
+            let name = format!(
+                "b{{{},\\*}}g{{{},\\*}}v{{{},\\*}}p{{{},\\*}}*",
+                &prefix[1..5],
+                &prefix[6..10],
+                &prefix[11..15],
+                &prefix[16..20],
+            );
+            let gpath = BPF_O.replace("*", &name[..]);
 
-            let glob_path = format!("target/bpf/{}*.bpf.o", prefix);
+            println!("device added {}, filename: {}", self.sysname(), gpath);
 
-            for entry in glob_with(&glob_path[..], options).unwrap() {
+            let globset = GlobBuilder::new(&gpath)
+                .literal_separator(true)
+                .case_insensitive(true)
+                .build()
+                .unwrap()
+                .compile_matcher();
+
+            for entry in glob(BPF_O).expect("can not find bpf objects") {
                 if let Ok(path) = entry {
-                    skel.load_programs(path, self).unwrap();
+                    if globset.is_match(&path) {
+                        skel.load_programs(path, self).unwrap();
+                    }
                 }
             }
         }
