@@ -19,6 +19,23 @@ mod bpf {
         )
     }
 
+    fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<(), libbpf_rs::Error> {
+        let fd = prog.fd();
+        let data_ptr: *const libc::c_void = &data as *const _ as *const libc::c_void;
+        let mut run_opts = libbpf_sys::bpf_test_run_opts::default();
+
+        run_opts.sz = std::mem::size_of::<libbpf_sys::bpf_test_run_opts>() as u64;
+        run_opts.ctx_in = data_ptr;
+        run_opts.ctx_size_in = std::mem::size_of::<T>() as u32;
+
+        let run_opts_ptr: *mut libbpf_sys::bpf_test_run_opts = &mut run_opts;
+
+        match unsafe { libbpf_sys::bpf_prog_test_run_opts(fd, run_opts_ptr) } {
+            0 => Ok(()),
+            e => Err(libbpf_rs::Error::System(e)),
+        }
+    }
+
     impl<'a> HidBPF<'a> {
         pub fn open_and_load(debug: bool) -> Result<HidBPF<'a>, libbpf_rs::Error> {
             let mut skel_builder = AttachSkelBuilder::default();
@@ -48,7 +65,6 @@ mod bpf {
 
             let mut object = obj_builder.open_file(path)?.load()?;
 
-            let fd = self.inner.progs().attach_prog().fd();
             let hid_id = device.id();
 
             for prog in object.progs_iter_mut() {
@@ -62,25 +78,23 @@ mod bpf {
                     hid: hid_id,
                     retval: -1,
                 };
-                let attach_args_ptr: *const libc::c_void =
-                    &attach_args as *const _ as *const libc::c_void;
-                let mut run_opts = libbpf_sys::bpf_test_run_opts::default();
 
-                run_opts.sz = std::mem::size_of::<libbpf_sys::bpf_test_run_opts>() as u64;
-                run_opts.ctx_in = attach_args_ptr;
-                run_opts.ctx_size_in = std::mem::size_of::<attach_prog_args>() as u32;
-
-                let run_opts_ptr: *mut libbpf_sys::bpf_test_run_opts = &mut run_opts;
-
-                let err = unsafe { libbpf_sys::bpf_prog_test_run_opts(fd, run_opts_ptr) };
-
-                println!(
-                    "attached {} to device id {} through fd {} err: {}",
-                    tracing_prog.name(),
-                    hid_id,
-                    fd,
-                    err,
-                );
+                match run_syscall_prog(self.inner.progs().attach_prog(), attach_args) {
+                    Ok(()) => println!(
+                        "successfully attached {} to device id {}",
+                        &tracing_prog.name(),
+                        hid_id,
+                    ),
+                    Err(e) => {
+                        println!(
+                            "could not attach {} to device id {}, error {}",
+                            &tracing_prog.name(),
+                            hid_id,
+                            e.to_string(),
+                        );
+                        continue;
+                    }
+                }
 
                 let path = format!("{}/{}", get_bpffs_path(device), tracing_prog.name(),);
 
