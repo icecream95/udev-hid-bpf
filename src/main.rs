@@ -1,11 +1,10 @@
-use glob::glob_with;
-use glob::MatchOptions;
 use std::io;
 
 mod bpf {
     include!(concat!(env!("OUT_DIR"), "/attach_bindings.rs"));
     include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 
+    use crate::hidudev;
     use std::path::PathBuf;
 
     pub struct HidBPF<'a> {
@@ -13,15 +12,10 @@ mod bpf {
         debug: bool,
     }
 
-    pub fn get_bpffs_path(device: &udev::Device) -> String {
+    pub fn get_bpffs_path(device: &hidudev::HidUdev) -> String {
         format!(
             "/sys/fs/bpf/{}",
-            device
-                .sysname()
-                .to_str()
-                .unwrap()
-                .replace(":", "_")
-                .replace(".", "_"),
+            device.sysname().replace(":", "_").replace(".", "_"),
         )
     }
 
@@ -42,7 +36,7 @@ mod bpf {
         pub fn load_programs(
             &self,
             path: PathBuf,
-            device: &udev::Device,
+            device: &hidudev::HidUdev,
         ) -> Result<(), libbpf_rs::Error> {
             if self.debug {
                 println!("loading BPF object at {:?}", path.display());
@@ -55,8 +49,7 @@ mod bpf {
             let mut object = obj_builder.open_file(path)?.load()?;
 
             let fd = self.inner.progs().attach_prog().fd();
-            let hid_sys = device.sysname().to_str().unwrap();
-            let hid_id = u32::from_str_radix(&hid_sys[15..], 16).unwrap();
+            let hid_id = device.id();
 
             for prog in object.progs_iter_mut() {
                 let tracing_prog = match prog.prog_type() {
@@ -109,7 +102,10 @@ mod poll {
 
     use mio::{Events, Interest, Poll, Token};
 
-    pub fn poll<F>(mut socket: udev::MonitorSocket, mut f: F) -> io::Result<()> where  F: FnMut(udev::Event,), {
+    pub fn poll<F>(mut socket: udev::MonitorSocket, mut f: F) -> io::Result<()>
+    where
+        F: FnMut(udev::Event),
+    {
         let mut poll = Poll::new()?;
         let mut events = Events::with_capacity(1024);
 
@@ -131,23 +127,114 @@ mod poll {
     }
 }
 
-fn get_filename(device: &udev::Device) -> String {
-    let modalias = device.property_value("MODALIAS");
+mod hidudev {
+    use crate::bpf;
+    use crate::poll;
+    use glob::glob_with;
+    use glob::MatchOptions;
+    use std::io;
 
-    let modalias = match modalias {
-        Some(data) => data,
-        _ => std::ffi::OsStr::new("hid:empty"), //panic!("modalias is empty"),
-    };
+    pub struct HidUdev {
+        inner: udev::Device,
+    }
 
-    let modalias = match modalias.to_str() {
-        Some(data) => data,
-        _ => panic!("modalias problem"),
-    };
+    impl HidUdev {
+        pub fn new(device: udev::Device) -> Self {
+            HidUdev { inner: device }
+        }
 
-    /* strip out the first 4 chars ("hid:") from the modalias */
-    String::from(&modalias[4..])
-        .replace("v0000", "v")
-        .replace("p0000", "p")
+        pub fn modalias(&self) -> String {
+            let modalias = self.inner.property_value("MODALIAS");
+
+            let modalias = match modalias {
+                Some(data) => data,
+                _ => std::ffi::OsStr::new("hid:empty"), //panic!("modalias is empty"),
+            };
+
+            let modalias = match modalias.to_str() {
+                Some(data) => data,
+                _ => panic!("modalias problem"),
+            };
+
+            /* strip out the first 4 chars ("hid:") from the modalias */
+            String::from(&modalias[4..])
+                .replace("v0000", "v")
+                .replace("p0000", "p")
+        }
+
+        pub fn sysname(&self) -> String {
+            String::from(self.inner.sysname().to_str().unwrap())
+        }
+
+        pub fn id(&self) -> u32 {
+            let hid_sys = self.sysname();
+            u32::from_str_radix(&hid_sys[15..], 16).unwrap()
+        }
+
+        pub fn add(&self, skel: &bpf::HidBPF) {
+            let prefix = self.modalias();
+
+            println!("device added {}, filename: {}", self.sysname(), prefix,);
+
+            let options = MatchOptions {
+                case_sensitive: false,
+                require_literal_separator: true,
+                require_literal_leading_dot: false,
+            };
+
+            let glob_path = format!("target/bpf/{}*.bpf.o", prefix);
+
+            for entry in glob_with(&glob_path[..], options).unwrap() {
+                if let Ok(path) = entry {
+                    skel.load_programs(path, self).unwrap();
+                }
+            }
+        }
+
+        pub fn remove(&self) {
+            println!("device removed");
+
+            let path = bpf::get_bpffs_path(self);
+
+            std::fs::remove_dir_all(path).unwrap_or(())
+        }
+    }
+
+    pub fn handle_event(event: udev::Event, skel: &bpf::HidBPF) {
+        let device = HidUdev::new(event.device());
+
+        match event.event_type() {
+            udev::EventType::Add => device.add(skel),
+            udev::EventType::Remove => device.remove(),
+            _ => (),
+        }
+    }
+
+    fn add_udev_device(device: udev::Device, skel: &bpf::HidBPF) {
+        HidUdev::new(device).add(skel);
+    }
+
+    pub fn poll<F>(skel: bpf::HidBPF, mut pre_fn: F) -> io::Result<()>
+    where
+        F: FnMut(&udev::Event),
+    {
+        let socket = udev::MonitorBuilder::new()?
+            .match_subsystem("hid")?
+            .listen()?;
+
+        let mut enumerator = udev::Enumerator::new().unwrap();
+
+        enumerator.match_subsystem("hid").unwrap();
+
+        for device in enumerator.scan_devices().unwrap() {
+            add_udev_device(device, &skel);
+        }
+
+        poll::poll(socket, |x| {
+            pre_fn(&x);
+            handle_event(x, &skel)
+        })
+    }
 }
 
 fn bump_memlock_rlimit() -> Result<(), io::Error> {
@@ -161,47 +248,7 @@ fn bump_memlock_rlimit() -> Result<(), io::Error> {
     Ok(())
 }
 
-fn add_device(device: udev::Device, skel: &bpf::HidBPF) {
-    let prefix = get_filename(&device);
-
-    println!(
-        "device added {}, filename: {}",
-        device.sysname().to_str().unwrap_or(""),
-        prefix,
-    );
-
-    let options = MatchOptions {
-        case_sensitive: false,
-        require_literal_separator: true,
-        require_literal_leading_dot: false,
-    };
-
-    let glob_path = format!("target/bpf/{}*.bpf.o", prefix);
-
-    for entry in glob_with(&glob_path[..], options).unwrap() {
-        if let Ok(path) = entry {
-            skel.load_programs(path, &device).unwrap();
-        }
-    }
-}
-
-fn remove_device(device: udev::Device) {
-    println!("device removed");
-
-    let path = bpf::get_bpffs_path(&device);
-
-    std::fs::remove_dir_all(path).unwrap_or(())
-}
-
-fn handle_event(event_type: udev::EventType, device: udev::Device, skel: &bpf::HidBPF) {
-    match event_type {
-        udev::EventType::Add => add_device(device, skel),
-        udev::EventType::Remove => remove_device(device),
-        _ => (),
-    }
-}
-
-fn print_event(event: udev::Event, skel: &bpf::HidBPF) {
+fn print_event(event: &udev::Event) {
     println!(
         "{}: {} {} (subsystem={}, sysname={})",
         event.sequence_number(),
@@ -212,8 +259,6 @@ fn print_event(event: udev::Event, skel: &bpf::HidBPF) {
             .map_or("", |s| { s.to_str().unwrap_or("") }),
         event.sysname().to_str().unwrap_or(""),
     );
-
-    handle_event(event.event_type(), event.device(), skel)
 }
 
 fn main() -> Result<(), io::Error> {
@@ -221,17 +266,5 @@ fn main() -> Result<(), io::Error> {
 
     let skel = bpf::HidBPF::open_and_load(false).expect("Could not load base eBPF program");
 
-    let socket = udev::MonitorBuilder::new()?
-        .match_subsystem("hid")?
-        .listen()?;
-
-    let mut enumerator = udev::Enumerator::new().unwrap();
-
-    enumerator.match_subsystem("hid").unwrap();
-
-    for device in enumerator.scan_devices().unwrap() {
-        handle_event(udev::EventType::Add, device, &skel);
-    }
-
-    poll::poll(socket, |x| print_event(x, &skel))
+    hidudev::poll(skel, |x| print_event(x))
 }
