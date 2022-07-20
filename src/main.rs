@@ -5,9 +5,9 @@ mod bpf {
     include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 
     use crate::hidudev;
-    use std::path::PathBuf;
-    use std::fs;
     use std::convert::TryInto;
+    use std::fs;
+    use std::path::PathBuf;
 
     pub struct HidBPF<'a> {
         inner: AttachSkel<'a>,
@@ -16,7 +16,7 @@ mod bpf {
 
     pub fn get_bpffs_path(device: &hidudev::HidUdev) -> String {
         format!(
-            "/sys/fs/bpf/{}",
+            "/sys/fs/bpf/hid/{}",
             device.sysname().replace(":", "_").replace(".", "_"),
         )
     }
@@ -136,6 +136,10 @@ mod bpf {
                 }
 
                 let path = format!("{}/{}", get_bpffs_path(device), tracing_prog.name(),);
+
+                fs::create_dir_all(get_bpffs_path(device)).unwrap_or_else(|why| {
+                    println!("! {:?}", why.kind());
+                });
 
                 println!("pin prog at {}", path);
 
