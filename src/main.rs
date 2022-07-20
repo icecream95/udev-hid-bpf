@@ -1,11 +1,13 @@
 use std::io;
 
 mod bpf {
-    include!(concat!(env!("OUT_DIR"), "/attach_bindings.rs"));
+    include!(concat!(env!("OUT_DIR"), "/hid_bpf_bindings.rs"));
     include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 
     use crate::hidudev;
     use std::path::PathBuf;
+    use std::fs;
+    use std::convert::TryInto;
 
     pub struct HidBPF<'a> {
         inner: AttachSkel<'a>,
@@ -19,7 +21,7 @@ mod bpf {
         )
     }
 
-    fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<(), libbpf_rs::Error> {
+    fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_rs::Error> {
         let fd = prog.fd();
         let data_ptr: *const libc::c_void = &data as *const _ as *const libc::c_void;
         let mut run_opts = libbpf_sys::bpf_test_run_opts::default();
@@ -31,8 +33,27 @@ mod bpf {
         let run_opts_ptr: *mut libbpf_sys::bpf_test_run_opts = &mut run_opts;
 
         match unsafe { libbpf_sys::bpf_prog_test_run_opts(fd, run_opts_ptr) } {
-            0 => Ok(()),
+            0 => Ok(data),
             e => Err(libbpf_rs::Error::System(e)),
+        }
+    }
+
+    impl probe_args {
+        fn from(device: &hidudev::HidUdev) -> Self {
+            let syspath = device.syspath();
+            let rdesc = syspath + "/report_descriptor";
+
+            let mut buffer = fs::read(&rdesc).unwrap();
+            let length = buffer.len();
+
+            buffer.resize(4096, 0);
+
+            probe_args {
+                hid: device.id(),
+                rdesc_size: length as u32,
+                rdesc: buffer.try_into().unwrap(),
+                retval: -1,
+            }
         }
     }
 
@@ -67,6 +88,24 @@ mod bpf {
 
             let hid_id = device.id();
 
+            /*
+             * if there is a "probe" syscall, execute it and
+             * check for the return value: if not 0, then ignore
+             * this bpf.o file
+             */
+            match object.prog("probe") {
+                Some(probe) => {
+                    let args = probe_args::from(device);
+
+                    let args = run_syscall_prog(probe, args)?;
+
+                    if args.retval != 0 {
+                        return Ok(());
+                    }
+                }
+                _ => (),
+            };
+
             for prog in object.progs_iter_mut() {
                 let tracing_prog = match prog.prog_type() {
                     libbpf_rs::ProgramType::Tracing => prog,
@@ -80,7 +119,7 @@ mod bpf {
                 };
 
                 match run_syscall_prog(self.inner.progs().attach_prog(), attach_args) {
-                    Ok(()) => println!(
+                    Ok(_) => println!(
                         "successfully attached {} to device id {}",
                         &tracing_prog.name(),
                         hid_id,
@@ -180,6 +219,10 @@ mod hidudev {
 
         pub fn sysname(&self) -> String {
             String::from(self.inner.sysname().to_str().unwrap())
+        }
+
+        pub fn syspath(&self) -> String {
+            String::from(self.inner.syspath().to_str().unwrap())
         }
 
         pub fn id(&self) -> u32 {
