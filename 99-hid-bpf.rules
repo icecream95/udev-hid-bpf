@@ -1,0 +1,7 @@
+ACTION!="add|remove", GOTO="hid_bpf_end"
+SUBSYSTEM!="hid", GOTO="hid_bpf_end"
+
+ACTION=="add", RUN{program}+="/usr/local/bin/udev-hid-bpf $sys$devpath add"
+ACTION=="remove", RUN{program}+="/bin/sh -c \"rm -rf /sys/fs/bpf/hid/$(echo $name | sed -e 's/[:.]/_/g')\""
+
+LABEL="hid_bpf_end"
