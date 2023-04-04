@@ -1,7 +1,16 @@
+use clap::Parser;
 use std::io;
 
 pub mod bpf;
 pub mod hidudev;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Folder to look at for bpf objects
+    #[arg(short, long)]
+    bpf: Option<std::path::PathBuf>,
+}
 
 fn print_event(event: &udev::Event) {
     eprintln!(
@@ -17,7 +26,24 @@ fn print_event(event: &udev::Event) {
 }
 
 fn main() -> Result<(), io::Error> {
+    let cli = Cli::parse();
     let skel = bpf::HidBPF::open_and_load(false).expect("Could not load base eBPF program");
 
-    hidudev::poll(skel, |x| print_event(x))
+    let debug_bpf = std::path::PathBuf::from("target/bpf");
+    let default_bpf = std::path::PathBuf::from("/lib/firmware/hid/bpf");
+
+    let bpf_dir: std::path::PathBuf;
+
+    match cli.bpf {
+        None => {
+            if debug_bpf.exists() {
+                bpf_dir = debug_bpf;
+            } else {
+                bpf_dir = default_bpf;
+            }
+        }
+        Some(dir) => bpf_dir = dir,
+    }
+
+    hidudev::poll(skel, bpf_dir, |x| print_event(x) )
 }

@@ -1,9 +1,6 @@
 use crate::bpf;
-use glob::glob;
 use globset::GlobBuilder;
 use std::io;
-
-const BPF_O: &str = "target/bpf/*.bpf.o";
 
 pub struct HidUdev {
     inner: udev::Device,
@@ -46,7 +43,11 @@ impl HidUdev {
         u32::from_str_radix(&hid_sys[15..], 16).unwrap()
     }
 
-    pub fn add(&self, skel: &bpf::HidBPF) {
+    pub fn add(&self, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf) {
+        if !bpf_dir.exists() {
+            return;
+        }
+
         let prefix = self.modalias();
 
         if prefix.len() != 20 {
@@ -54,27 +55,31 @@ impl HidUdev {
             return;
         }
 
-        let name = format!(
-            "b{{{},\\*}}g{{{},\\*}}v{{{},\\*}}p{{{},\\*}}*",
+        let glob_path = bpf_dir.join(format!(
+            "b{{{},\\*}}g{{{},\\*}}v{{{},\\*}}p{{{},\\*}}*.bpf.o",
             &prefix[1..5],
             &prefix[6..10],
             &prefix[11..15],
             &prefix[16..20],
+        ));
+
+        eprintln!(
+            "device added {}, filename: {}",
+            self.sysname(),
+            glob_path.as_path().display()
         );
-        let gpath = BPF_O.replace("*", &name[..]);
 
-        eprintln!("device added {}, filename: {}", self.sysname(), gpath);
-
-        let globset = GlobBuilder::new(&gpath)
+        let globset = GlobBuilder::new(glob_path.as_path().to_str().unwrap())
             .literal_separator(true)
             .case_insensitive(true)
             .build()
             .unwrap()
             .compile_matcher();
 
-        for entry in glob(BPF_O).expect("can not find bpf objects") {
-            if let Ok(path) = entry {
-                if globset.is_match(&path) {
+        for elem in bpf_dir.read_dir().unwrap() {
+            if let Ok(dir_entry) = elem {
+                let path = dir_entry.path();
+                if globset.is_match(&path.to_str().unwrap()) && path.is_file() {
                     skel.load_programs(path, self).unwrap();
                 }
             }
@@ -90,18 +95,18 @@ impl HidUdev {
     }
 }
 
-pub fn handle_event(event: udev::Event, skel: &bpf::HidBPF) {
+pub fn handle_event(event: udev::Event, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf) {
     let device = HidUdev::new(event.device());
 
     match event.event_type() {
-        udev::EventType::Add => device.add(skel),
+        udev::EventType::Add => device.add(skel, bpf_dir),
         udev::EventType::Remove => device.remove(),
         _ => (),
     }
 }
 
-fn add_udev_device(device: udev::Device, skel: &bpf::HidBPF) {
-    HidUdev::new(device).add(skel);
+fn add_udev_device(device: udev::Device, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf) {
+    HidUdev::new(device).add(skel, bpf_dir);
 }
 
 mod poll {
@@ -134,7 +139,7 @@ mod poll {
     }
 }
 
-pub fn poll<F>(skel: bpf::HidBPF, mut pre_fn: F) -> io::Result<()>
+pub fn poll<F>(skel: bpf::HidBPF, bpf_dir: std::path::PathBuf, mut pre_fn: F) -> io::Result<()>
 where
     F: FnMut(&udev::Event),
 {
@@ -147,11 +152,11 @@ where
     enumerator.match_subsystem("hid").unwrap();
 
     for device in enumerator.scan_devices().unwrap() {
-        add_udev_device(device, &skel);
+        add_udev_device(device, &skel, &bpf_dir);
     }
 
     poll::poll(socket, |x| {
         pre_fn(&x);
-        handle_event(x, &skel)
+        handle_event(x, &skel, &bpf_dir)
     })
 }
