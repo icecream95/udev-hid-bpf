@@ -35,6 +35,17 @@ fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_r
     }
 }
 
+fn pin_hid_bpf_prog(link: i32, path: String) -> Result<(), libbpf_rs::Error> {
+    unsafe {
+        let c_str = std::ffi::CString::new(path).unwrap();
+
+        match libbpf_sys::bpf_obj_pin(link, c_str.as_ptr() as *const i8) {
+            0 => Ok(()),
+            e => Err(libbpf_rs::Error::System(e)),
+        }
+    }
+}
+
 impl probe_args {
     fn from(device: &hidudev::HidUdev) -> Self {
         let syspath = device.syspath();
@@ -115,34 +126,51 @@ impl<'a> HidBPF<'a> {
                 retval: -1,
             };
 
-            match run_syscall_prog(self.inner.progs().attach_prog(), attach_args) {
-                Ok(_) => println!(
-                    "successfully attached {} to device id {}",
+            let ret_syscall = run_syscall_prog(self.inner.progs().attach_prog(), attach_args);
+
+            if let Err(e) = ret_syscall {
+                println!(
+                    "could not call attach {} to device id {}, error {}",
                     &tracing_prog.name(),
                     hid_id,
-                ),
-                Err(e) => {
-                    println!(
-                        "could not attach {} to device id {}, error {}",
-                        &tracing_prog.name(),
-                        hid_id,
-                        e.to_string(),
-                    );
-                    continue;
-                }
+                    e.to_string(),
+                );
+                continue;
             }
 
+            let args = ret_syscall.unwrap();
+
+            if args.retval <= 0 {
+                println!(
+                    "could not attach {} to device id {}, error {}",
+                    &tracing_prog.name(),
+                    hid_id,
+                    libbpf_rs::Error::System(args.retval).to_string(),
+                );
+                continue;
+            }
+
+            let link = args.retval;
+
+            println!(
+                "successfully attached {} to device id {}",
+                &tracing_prog.name(),
+                hid_id,
+            );
             let path = format!("{}/{}", get_bpffs_path(device), tracing_prog.name(),);
 
             fs::create_dir_all(get_bpffs_path(device)).unwrap_or_else(|why| {
                 println!("! {:?}", why.kind());
             });
 
-            println!("pin prog at {}", path);
-
-            match tracing_prog.pin(path) {
-                Ok(()) => (),
-                Err(error) => println!("error while pinning: {}", error.to_string()),
+            match pin_hid_bpf_prog(link, path.clone()) {
+                Err(e) => println!(
+                    "could not pin {} to device id {}, error {}",
+                    &tracing_prog.name(),
+                    hid_id,
+                    e.to_string(),
+                ),
+                Ok(_) => println!("Successfully pinned prog at {}", path),
             }
         }
 
