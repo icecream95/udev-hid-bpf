@@ -51,7 +51,6 @@ impl HidUdev {
             return Ok(());
         }
 
-        let skel = bpf::HidBPF::open_and_load().expect("Could not load base eBPF program");
         let prefix = self.modalias();
 
         if prefix.len() != 20 {
@@ -82,11 +81,14 @@ impl HidUdev {
             .unwrap()
             .compile_matcher();
 
+        let mut hid_bpf_loader = bpf::HidBPF::new();
+
         for elem in bpf_dir.read_dir().unwrap() {
             if let Ok(dir_entry) = elem {
                 let path = dir_entry.path();
                 if globset.is_match(&path.to_str().unwrap()) && path.is_file() {
-                    skel.load_programs(path, self).unwrap();
+                    hid_bpf_loader.open_and_load().unwrap();
+                    hid_bpf_loader.load_programs(path, self).unwrap();
                 }
             }
         }

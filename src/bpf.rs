@@ -7,7 +7,7 @@ use std::fs;
 use std::path::PathBuf;
 
 pub struct HidBPF<'a> {
-    inner: AttachSkel<'a>,
+    inner: Option<AttachSkel<'a>>,
 }
 
 pub fn get_bpffs_path(device: &hidudev::HidUdev) -> String {
@@ -65,13 +65,17 @@ impl hid_bpf_probe_args {
 }
 
 impl<'a> HidBPF<'a> {
-    pub fn open_and_load() -> Result<HidBPF<'a>, libbpf_rs::Error> {
-        let skel_builder = AttachSkelBuilder::default();
-        let open_skel = skel_builder.open()?;
+    pub fn new() -> Self {
+        Self { inner: None }
+    }
 
-        Ok(HidBPF {
-            inner: open_skel.load()?,
-        })
+    pub fn open_and_load(&mut self) -> Result<(), libbpf_rs::Error> {
+        if self.inner.is_none() {
+            let skel_builder = AttachSkelBuilder::default();
+            let open_skel = skel_builder.open()?;
+            self.inner = Some(open_skel.load()?);
+        }
+        Ok(())
     }
 
     pub fn load_programs(
@@ -104,6 +108,7 @@ impl<'a> HidBPF<'a> {
             _ => (),
         };
 
+        let inner = self.inner.as_ref().expect("open_and_load() never called!");
         let mut attached = false;
 
         for prog in object.progs_iter_mut() {
@@ -118,7 +123,7 @@ impl<'a> HidBPF<'a> {
                 retval: -1,
             };
 
-            let ret_syscall = run_syscall_prog(self.inner.progs().attach_prog(), attach_args);
+            let ret_syscall = run_syscall_prog(inner.progs().attach_prog(), attach_args);
 
             if let Err(e) = ret_syscall {
                 eprintln!(
