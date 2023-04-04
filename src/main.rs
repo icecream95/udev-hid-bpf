@@ -67,7 +67,7 @@ mod bpf {
 
             Ok(HidBPF {
                 inner: open_skel.load()?,
-                debug: debug,
+                debug,
             })
         }
 
