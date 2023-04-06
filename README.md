@@ -6,23 +6,44 @@ should not be required.
 
 ## Getting started
 
-To build the loader *and* the various example HID-BPF programs use the standard Rust build process:
+### Dependencies
 
+- rust:
 ```
+# install through your package manager or rustup
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+```
+
+- udev and llvm:
+
+Check the [.gitlab-ci.yml](https://gitlab.freedesktop.org/bentiss/udev-hid-bpf/-/blob/main/.gitlab-ci.yml)
+for FEDORA_PACKAGES.
+
+### Installation
+
+Clone the repo, `cd` into it, and build the loader *and* the various example HID-BPF programs
+by using the standard Rust build process:
+```
+$ git clone https://gitlab.freedesktop.org/bentiss/udev-hid-bpf.git
+$ cd udev-hid-bpf/
 $ cargo build
 ```
 
 The above `cargo` command will build the tool and any eBPF programs it finds in `src/bpf/*.bpf.c`.
 Please see the [cargo documentation](https://doc.rust-lang.org/cargo/) for more details on invoking `cargo`.
 
-Then, we can start the binary with the following command:
-
+- Then, we can install the binary with the following command:
 ```
-sudo ./target/debug/udev-hid-bpf
+$ sudo ./install.sh
 ```
 
-The program will check for any currently plugged in HID device and load any eBPF program that matches.
-It will then listen for udev events and will load automatically eBPF programs when they are available.
+The above command will (re)build the tool and any bpf programs it finds in `src/bpf/*.bpf.c`.
+It will then install it in `/usr/local/bin` and will put the compiled bpf objects in`/lib/firmware/hid/bpf`.
+
+Last, a udev rule is installed at `/etc/udev/rules.d/99-hid-bpf.rules`.
+
+Once we are here, unplug/replug any supported device, and the bpf program will automatically be attached to the HID kernel device.
 
 ## Matching eBPF programs to a device
 
