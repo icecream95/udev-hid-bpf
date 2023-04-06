@@ -4,7 +4,7 @@ pub mod bpf;
 pub mod hidudev;
 
 fn print_event(event: &udev::Event) {
-    println!(
+    eprintln!(
         "{}: {} {} (subsystem={}, sysname={})",
         event.sequence_number(),
         event.event_type(),

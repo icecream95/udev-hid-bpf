@@ -50,7 +50,7 @@ impl HidUdev {
         let prefix = self.modalias();
 
         if prefix.len() != 20 {
-            println!("invalid modalias {} for device {}", prefix, self.sysname(),);
+            eprintln!("invalid modalias {} for device {}", prefix, self.sysname(),);
             return;
         }
 
@@ -63,7 +63,7 @@ impl HidUdev {
         );
         let gpath = BPF_O.replace("*", &name[..]);
 
-        println!("device added {}, filename: {}", self.sysname(), gpath);
+        eprintln!("device added {}, filename: {}", self.sysname(), gpath);
 
         let globset = GlobBuilder::new(&gpath)
             .literal_separator(true)
@@ -82,7 +82,7 @@ impl HidUdev {
     }
 
     pub fn remove(&self) {
-        println!("device removed");
+        eprintln!("device removed");
 
         let path = bpf::get_bpffs_path(self);
 

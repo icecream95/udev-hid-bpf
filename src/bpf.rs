@@ -85,7 +85,7 @@ impl<'a> HidBPF<'a> {
         device: &hidudev::HidUdev,
     ) -> Result<(), libbpf_rs::Error> {
         if self.debug {
-            println!("loading BPF object at {:?}", path.display());
+            eprintln!("loading BPF object at {:?}", path.display());
         }
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
@@ -129,7 +129,7 @@ impl<'a> HidBPF<'a> {
             let ret_syscall = run_syscall_prog(self.inner.progs().attach_prog(), attach_args);
 
             if let Err(e) = ret_syscall {
-                println!(
+                eprintln!(
                     "could not call attach {} to device id {}, error {}",
                     &tracing_prog.name(),
                     hid_id,
@@ -141,7 +141,7 @@ impl<'a> HidBPF<'a> {
             let args = ret_syscall.unwrap();
 
             if args.retval <= 0 {
-                println!(
+                eprintln!(
                     "could not attach {} to device id {}, error {}",
                     &tracing_prog.name(),
                     hid_id,
@@ -152,7 +152,7 @@ impl<'a> HidBPF<'a> {
 
             let link = args.retval;
 
-            println!(
+            eprintln!(
                 "successfully attached {} to device id {}",
                 &tracing_prog.name(),
                 hid_id,
@@ -160,17 +160,17 @@ impl<'a> HidBPF<'a> {
             let path = format!("{}/{}", get_bpffs_path(device), tracing_prog.name(),);
 
             fs::create_dir_all(get_bpffs_path(device)).unwrap_or_else(|why| {
-                println!("! {:?}", why.kind());
+                eprintln!("! {:?}", why.kind());
             });
 
             match pin_hid_bpf_prog(link, path.clone()) {
-                Err(e) => println!(
+                Err(e) => eprintln!(
                     "could not pin {} to device id {}, error {}",
                     &tracing_prog.name(),
                     hid_id,
                     e.to_string(),
                 ),
-                Ok(_) => println!("Successfully pinned prog at {}", path),
+                Ok(_) => eprintln!("Successfully pinned prog at {}", path),
             }
         }
 
