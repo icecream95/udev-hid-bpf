@@ -1,37 +1,52 @@
 extern crate bindgen;
 
 use libbpf_cargo::SkeletonBuilder;
-use std::fs;
-use std::process::Command;
 use std::{env, path::Path, path::PathBuf};
 
 const DIR: &str = "./src/bpf/";
-const SRC: &str = "./src/bpf/attach.bpf.c";
+const ATTACH_PROG: &str = "attach.bpf.c";
 const WRAPPER: &str = "./src/hid_bpf_wrapper.h";
-const TARGET_DIR: &str = "./target";
+const TARGET_DIR: &str = "./target/bpf";
 
 fn main() {
     println!("cargo:rerun-if-changed={}", DIR);
     println!("cargo:rerun-if-changed={}", WRAPPER);
 
-    let mut out =
-        PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script"));
-    out.push("attach.skel.rs");
+    let attach_prog = PathBuf::from(DIR).join(ATTACH_PROG);
+
+    let out = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script"))
+        .join(ATTACH_PROG.replace(".bpf.c", ".skel.rs"));
+
     SkeletonBuilder::new()
-        .source(SRC)
+        .source(attach_prog)
         .build_and_generate(&out)
         .unwrap();
 
+    let target_dir = PathBuf::from(TARGET_DIR);
+
+    std::fs::create_dir_all(target_dir.as_path())
+        .expect(format!("Can't create TARGET_DIR '{}'", TARGET_DIR).as_str());
+
     // Then compile all other .bpf.c in a .bpf.o file
-    Command::new("cargo")
-        .args(&["libbpf", "build"])
-        .status()
-        .unwrap();
+    for elem in Path::new(DIR).read_dir().unwrap() {
+        if let Ok(dir_entry) = elem {
+            let path = dir_entry.path();
+            if path.is_file()
+                && path.to_str().unwrap().ends_with(".bpf.c")
+                && path.file_name().unwrap() != ATTACH_PROG
+            {
+                let mut target_object = target_dir.clone().join(path.file_name().unwrap());
 
-    // remove unused bpf object
-    let dest_path = Path::new(TARGET_DIR).join("bpf").join("attach.bpf.o");
+                target_object.set_extension("o");
 
-    fs::remove_file(dest_path).unwrap();
+                SkeletonBuilder::new()
+                    .source(path)
+                    .obj(target_object)
+                    .build()
+                    .unwrap();
+            }
+        }
+    }
 
     // Create a wrapper around our bpf interface
     // The bindgen::Builder is the main entry point
