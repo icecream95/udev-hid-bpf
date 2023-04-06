@@ -83,7 +83,7 @@ impl<'a> HidBPF<'a> {
         &self,
         path: PathBuf,
         device: &hidudev::HidUdev,
-    ) -> Result<(), libbpf_rs::Error> {
+    ) -> Result<bool, libbpf_rs::Error> {
         if self.debug {
             eprintln!("loading BPF object at {:?}", path.display());
         }
@@ -108,11 +108,13 @@ impl<'a> HidBPF<'a> {
                 let args = run_syscall_prog(probe, args)?;
 
                 if args.retval != 0 {
-                    return Ok(());
+                    return Ok(false);
                 }
             }
             _ => (),
         };
+
+        let mut attached = false;
 
         for prog in object.progs_iter_mut() {
             let tracing_prog = match prog.prog_type() {
@@ -174,6 +176,7 @@ impl<'a> HidBPF<'a> {
                     e.to_string(),
                 ),
                 Ok(_) => {
+                    attached = true;
                     if self.debug {
                         eprintln!("Successfully pinned prog at {}", path)
                     }
@@ -181,6 +184,6 @@ impl<'a> HidBPF<'a> {
             }
         }
 
-        Ok(())
+        Ok(attached)
     }
 }
