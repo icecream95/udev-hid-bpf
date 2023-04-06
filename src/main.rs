@@ -10,19 +10,23 @@ struct Cli {
     /// Folder to look at for bpf objects
     #[arg(short, long)]
     bpf: Option<std::path::PathBuf>,
+    #[arg(short, long, default_value_t = false)]
+    debug: bool,
 }
 
-fn print_event(event: &udev::Event) {
-    eprintln!(
-        "{}: {} {} (subsystem={}, sysname={})",
-        event.sequence_number(),
-        event.event_type(),
-        event.syspath().to_str().unwrap_or("---"),
-        event
-            .subsystem()
-            .map_or("", |s| { s.to_str().unwrap_or("") }),
-        event.sysname().to_str().unwrap_or(""),
-    );
+fn print_event(event: &udev::Event, debug: bool) {
+    if debug {
+        eprintln!(
+            "{}: {} {} (subsystem={}, sysname={})",
+            event.sequence_number(),
+            event.event_type(),
+            event.syspath().to_str().unwrap_or("---"),
+            event
+                .subsystem()
+                .map_or("", |s| { s.to_str().unwrap_or("") }),
+            event.sysname().to_str().unwrap_or(""),
+        );
+    }
 }
 
 fn main() -> Result<(), io::Error> {
@@ -45,5 +49,5 @@ fn main() -> Result<(), io::Error> {
         Some(dir) => bpf_dir = dir,
     }
 
-    hidudev::poll(skel, bpf_dir, |x| print_event(x) )
+    hidudev::poll(skel, bpf_dir, cli.debug, |x| print_event(x, cli.debug) )
 }

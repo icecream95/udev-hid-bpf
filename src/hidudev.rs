@@ -43,7 +43,7 @@ impl HidUdev {
         u32::from_str_radix(&hid_sys[15..], 16).unwrap()
     }
 
-    pub fn add(&self, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf) {
+    pub fn add(&self, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf, debug: bool) {
         if !bpf_dir.exists() {
             return;
         }
@@ -63,11 +63,13 @@ impl HidUdev {
             &prefix[16..20],
         ));
 
-        eprintln!(
-            "device added {}, filename: {}",
-            self.sysname(),
-            glob_path.as_path().display()
-        );
+        if debug {
+            eprintln!(
+                "device added {}, filename: {}",
+                self.sysname(),
+                glob_path.as_path().display()
+            );
+        }
 
         let globset = GlobBuilder::new(glob_path.as_path().to_str().unwrap())
             .literal_separator(true)
@@ -95,18 +97,18 @@ impl HidUdev {
     }
 }
 
-pub fn handle_event(event: udev::Event, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf) {
+pub fn handle_event(event: udev::Event, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf, debug: bool) {
     let device = HidUdev::new(event.device());
 
     match event.event_type() {
-        udev::EventType::Add => device.add(skel, bpf_dir),
+        udev::EventType::Add => device.add(skel, bpf_dir, debug),
         udev::EventType::Remove => device.remove(),
         _ => (),
     }
 }
 
-fn add_udev_device(device: udev::Device, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf) {
-    HidUdev::new(device).add(skel, bpf_dir);
+fn add_udev_device(device: udev::Device, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf, debug: bool) {
+    HidUdev::new(device).add(skel, bpf_dir, debug);
 }
 
 mod poll {
@@ -139,7 +141,7 @@ mod poll {
     }
 }
 
-pub fn poll<F>(skel: bpf::HidBPF, bpf_dir: std::path::PathBuf, mut pre_fn: F) -> io::Result<()>
+pub fn poll<F>(skel: bpf::HidBPF, bpf_dir: std::path::PathBuf, debug: bool, mut pre_fn: F) -> io::Result<()>
 where
     F: FnMut(&udev::Event),
 {
@@ -152,11 +154,11 @@ where
     enumerator.match_subsystem("hid").unwrap();
 
     for device in enumerator.scan_devices().unwrap() {
-        add_udev_device(device, &skel, &bpf_dir);
+        add_udev_device(device, &skel, &bpf_dir, debug);
     }
 
     poll::poll(socket, |x| {
         pre_fn(&x);
-        handle_event(x, &skel, &bpf_dir)
+        handle_event(x, &skel, &bpf_dir, debug)
     })
 }

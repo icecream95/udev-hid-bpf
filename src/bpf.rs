@@ -152,11 +152,14 @@ impl<'a> HidBPF<'a> {
 
             let link = args.retval;
 
-            eprintln!(
-                "successfully attached {} to device id {}",
-                &tracing_prog.name(),
-                hid_id,
-            );
+            if self.debug {
+                eprintln!(
+                    "successfully attached {} to device id {}",
+                    &tracing_prog.name(),
+                    hid_id,
+                );
+            }
+
             let path = format!("{}/{}", get_bpffs_path(device), tracing_prog.name(),);
 
             fs::create_dir_all(get_bpffs_path(device)).unwrap_or_else(|why| {
@@ -170,7 +173,11 @@ impl<'a> HidBPF<'a> {
                     hid_id,
                     e.to_string(),
                 ),
-                Ok(_) => eprintln!("Successfully pinned prog at {}", path),
+                Ok(_) => {
+                    if self.debug {
+                        eprintln!("Successfully pinned prog at {}", path)
+                    }
+                }
             }
         }
 
