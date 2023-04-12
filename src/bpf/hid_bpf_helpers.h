@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only
+/* SPDX-License-Identifier: GPL-2.0-only */
 /* Copyright (c) 2022 Benjamin Tissoires
  */
 
@@ -7,7 +7,6 @@
 
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
-#include "hid_bpf.h"
 
 extern __u8 *hid_bpf_get_data(struct hid_bpf_ctx *ctx,
 			      unsigned int offset,

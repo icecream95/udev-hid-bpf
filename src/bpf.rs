@@ -46,7 +46,7 @@ fn pin_hid_bpf_prog(link: i32, path: String) -> Result<(), libbpf_rs::Error> {
     }
 }
 
-impl probe_args {
+impl hid_bpf_probe_args {
     fn from(device: &hidudev::HidUdev) -> Self {
         let syspath = device.syspath();
         let rdesc = syspath + "/report_descriptor";
@@ -56,7 +56,7 @@ impl probe_args {
 
         buffer.resize(4096, 0);
 
-        probe_args {
+        hid_bpf_probe_args {
             hid: device.id(),
             rdesc_size: length as u32,
             rdesc: buffer.try_into().unwrap(),
@@ -103,7 +103,7 @@ impl<'a> HidBPF<'a> {
          */
         match object.prog("probe") {
             Some(probe) => {
-                let args = probe_args::from(device);
+                let args = hid_bpf_probe_args::from(device);
 
                 let args = run_syscall_prog(probe, args)?;
 

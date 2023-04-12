@@ -1,15 +1,15 @@
-// SPDX-License-Identifier: GPL-2.0-only
+/* SPDX-License-Identifier: GPL-2.0-only */
 /* Copyright (c) 2022 Benjamin Tissoires
  */
 
-#ifndef __HID_BPF_H
-#define __HID_BPF_H
+#ifndef ____HID_BPF__H
+#define ____HID_BPF__H
 
-struct probe_args {
+struct hid_bpf_probe_args {
 	unsigned int hid;
 	unsigned int rdesc_size;
 	unsigned char rdesc[4096];
 	int retval;
 };
 
-#endif /* __HID_BPF_H */
+#endif /* ____HID_BPF__H */

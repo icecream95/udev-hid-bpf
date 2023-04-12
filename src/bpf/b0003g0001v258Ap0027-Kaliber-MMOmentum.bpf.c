@@ -3,6 +3,7 @@
  */
 
 #include "vmlinux.h"
+#include "hid_bpf.h"
 #include "hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
@@ -32,7 +33,7 @@ int BPF_PROG(hid_fix_rdesc, struct hid_bpf_ctx *hctx)
 }
 
 SEC("syscall")
-int probe(struct probe_args *ctx)
+int probe(struct hid_bpf_probe_args *ctx)
 {
 	/* only bind to the keyboard interface */
 	ctx->retval = ctx->rdesc_size != 213;
