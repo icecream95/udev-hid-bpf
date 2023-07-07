@@ -1,19 +1,21 @@
 use crate::bpf;
 use globset::GlobBuilder;
 use log;
-use std::io;
 
 pub struct HidUdev {
-    inner: udev::Device,
+    udev_device: udev::Device,
 }
 
 impl HidUdev {
-    pub fn new(device: udev::Device) -> Self {
-        HidUdev { inner: device }
+    pub fn from_syspath(syspath: std::path::PathBuf) -> std::io::Result<Self> {
+        let device = udev::Device::from_syspath(syspath.as_path())?;
+        Ok(HidUdev {
+            udev_device: device,
+        })
     }
 
     pub fn modalias(&self) -> String {
-        let modalias = self.inner.property_value("MODALIAS");
+        let modalias = self.udev_device.property_value("MODALIAS");
 
         let modalias = match modalias {
             Some(data) => data,
@@ -32,11 +34,11 @@ impl HidUdev {
     }
 
     pub fn sysname(&self) -> String {
-        String::from(self.inner.sysname().to_str().unwrap())
+        String::from(self.udev_device.sysname().to_str().unwrap())
     }
 
     pub fn syspath(&self) -> String {
-        String::from(self.inner.syspath().to_str().unwrap())
+        String::from(self.udev_device.syspath().to_str().unwrap())
     }
 
     pub fn id(&self) -> u32 {
@@ -44,16 +46,19 @@ impl HidUdev {
         u32::from_str_radix(&hid_sys[15..], 16).unwrap()
     }
 
-    pub fn add(&self, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf) {
+    pub fn add_directory(&self, bpf_dir: std::path::PathBuf) -> std::io::Result<()> {
         if !bpf_dir.exists() {
-            return;
+            return Ok(());
         }
 
+        let skel = bpf::HidBPF::open_and_load().expect("Could not load base eBPF program");
         let prefix = self.modalias();
 
         if prefix.len() != 20 {
-            eprintln!("invalid modalias {} for device {}", prefix, self.sysname(),);
-            return;
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("invalid modalias {} for device {}", prefix, self.sysname()),
+            ));
         }
 
         let glob_path = bpf_dir.join(format!(
@@ -85,79 +90,17 @@ impl HidUdev {
                 }
             }
         }
+
+        Ok(())
     }
 
-    pub fn remove(&self) {
+    pub fn remove(&self) -> std::io::Result<()> {
         eprintln!("device removed");
 
         let path = bpf::get_bpffs_path(self);
 
-        std::fs::remove_dir_all(path).unwrap_or(())
+        std::fs::remove_dir_all(path).unwrap_or(());
+
+        Ok(())
     }
-}
-
-pub fn handle_event(event: udev::Event, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf) {
-    let device = HidUdev::new(event.device());
-
-    match event.event_type() {
-        udev::EventType::Add => device.add(skel, bpf_dir),
-        udev::EventType::Remove => device.remove(),
-        _ => (),
-    }
-}
-
-fn add_udev_device(device: udev::Device, skel: &bpf::HidBPF, bpf_dir: &std::path::PathBuf) {
-    HidUdev::new(device).add(skel, bpf_dir);
-}
-
-mod poll {
-    use std::io;
-
-    use mio::{Events, Interest, Poll, Token};
-
-    pub fn poll<F>(mut socket: udev::MonitorSocket, mut f: F) -> io::Result<()>
-    where
-        F: FnMut(udev::Event),
-    {
-        let mut poll = Poll::new()?;
-        let mut events = Events::with_capacity(1024);
-
-        poll.registry().register(
-            &mut socket,
-            Token(0),
-            Interest::READABLE | Interest::WRITABLE,
-        )?;
-
-        loop {
-            poll.poll(&mut events, None)?;
-
-            for event in &events {
-                if event.token() == Token(0) && event.is_writable() {
-                    socket.clone().for_each(&mut f);
-                }
-            }
-        }
-    }
-}
-
-pub fn poll<F>(skel: bpf::HidBPF, bpf_dir: std::path::PathBuf, mut pre_fn: F) -> io::Result<()>
-where
-    F: FnMut(&udev::Event),
-{
-    let socket = udev::MonitorBuilder::new()?
-        .match_subsystem("hid")?
-        .listen()?;
-
-    let mut enumerator = udev::Enumerator::new().unwrap();
-
-    enumerator.match_subsystem("hid").unwrap();
-
-    for device in enumerator.scan_devices().unwrap() {
-        add_udev_device(device, &skel, &bpf_dir);
-    }
-
-    poll::poll(socket, |x| {
-        pre_fn(&x);
-        handle_event(x, &skel, &bpf_dir)
-    })
 }

@@ -1,7 +1,6 @@
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use libbpf_rs;
 use log;
-use std::io;
 
 pub mod bpf;
 pub mod hidudev;
@@ -18,19 +17,9 @@ struct Cli {
     /// Enable verbose output
     #[arg(short, long, default_value_t = false)]
     verbose: bool,
-}
-
-fn print_event(event: &udev::Event) {
-    log::debug!(
-        "{}: {} {} (subsystem={}, sysname={})",
-        event.sequence_number(),
-        event.event_type(),
-        event.syspath().to_str().unwrap_or("---"),
-        event
-            .subsystem()
-            .map_or("", |s| { s.to_str().unwrap_or("") }),
-        event.sysname().to_str().unwrap_or(""),
-    );
+    #[command(subcommand)]
+    command: Commands,
+    device: std::path::PathBuf,
 }
 
 fn print_to_log(level: libbpf_rs::PrintLevel, msg: String) {
@@ -41,7 +30,19 @@ fn print_to_log(level: libbpf_rs::PrintLevel, msg: String) {
     }
 }
 
-fn main() -> Result<(), io::Error> {
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// A new device is created
+    Add {
+        /// Folder to look at for bpf objects
+        #[arg(short, long)]
+        bpf: Option<std::path::PathBuf>,
+    },
+    /// A device is removed from the sysfs
+    Remove,
+}
+
+fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
     libbpf_rs::set_print(Some((
@@ -63,25 +64,25 @@ fn main() -> Result<(), io::Error> {
         .init()
         .unwrap();
 
-    let skel = bpf::HidBPF::open_and_load().expect("Could not load base eBPF program");
+    match hidudev::HidUdev::from_syspath(cli.device) {
+        Err(e) => Err(e),
+        Ok(dev) => match cli.command {
+            Commands::Add { bpf } => {
+                let target_bpf_dir = match bpf {
+                    Some(bpf_dir) => bpf_dir,
+                    None => {
+                        let bpf_dir = std::path::PathBuf::from("target/bpf");
+                        if bpf_dir.exists() {
+                            bpf_dir
+                        } else {
+                            std::path::PathBuf::from("/lib/firmware/hid/bpf")
+                        }
+                    }
+                };
 
-    let debug_bpf = std::path::PathBuf::from("target/bpf");
-    let default_bpf = std::path::PathBuf::from("/lib/firmware/hid/bpf");
-
-    let bpf_dir: std::path::PathBuf;
-
-    match cli.bpf {
-        None => {
-            if debug_bpf.exists() {
-                bpf_dir = debug_bpf;
-            } else {
-                bpf_dir = default_bpf;
+                dev.add_directory(target_bpf_dir)
             }
-        }
-        Some(dir) => bpf_dir = dir,
+            Commands::Remove => dev.remove(),
+        },
     }
-
-    log::debug!("Using eBPF programs from {}", bpf_dir.display());
-
-    hidudev::poll(skel, bpf_dir, |x| print_event(x))
 }
