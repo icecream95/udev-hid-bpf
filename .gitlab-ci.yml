@@ -1,13 +1,133 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
-# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/#customizing-settings
-# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
-# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
+# vim: set expandtab shiftwidth=2 tabstop=8 textwidth=0 filetype=yaml:
+
+.templates_sha: &template_sha 3a2bcd49a2a6a34a5fdd35a7fc8c8f9246c0bffc
+
+include:
+  - project: 'freedesktop/ci-templates'
+    ref: *template_sha
+    file:
+      - '/templates/fedora.yml'
+      - '/templates/ci-fairy.yml'
+  - template: Security/SAST.gitlab-ci.yml
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_PIPELINE_SOURCE == 'push'
+
 stages:
-- test
+  - prep             # prep work like rebuilding the container images if there is a change
+  - build            # for actually building and testing things in a container
+  - test
+
+variables:
+  FDO_UPSTREAM_REPO: bentiss/udev-hid-bpf
+  FEDORA_VERSION: 38
+  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel systemd-devel zlib-devel'
+  FEDORA_TAG:  '2023-07-10.0'
+
+.policy:
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+  # cancel run when a newer version is pushed to the branch
+  interruptible: true
+
+
+#################################################################
+#                                                               #
+#                          prep stage                           #
+#                                                               #
+#################################################################
+
+fail-if-fork-is-not-public:
+  stage: prep
+  script:
+    - |
+      if [ $CI_PROJECT_VISIBILITY != "public" ]; then
+           echo "*************************************************************************************"
+           echo "Project visibility must be set to 'public'"
+           echo "Change this in $CI_PROJECT_URL/edit under 'Visibility, project features, permissions'"
+           echo "*************************************************************************************"
+           exit 1
+      fi
+  except:
+    - main@$FDO_UPSTREAM_REPO
+
+#
+# Verify that commit messages are as expected, signed-off, etc.
+#
+
+check-commit:
+  extends:
+    - .fdo.ci-fairy
+  stage: prep
+  script:
+    - ci-fairy check-commits --signed-off-by --junit-xml=results.xml
+  except:
+    - main@$FDO_UPSTREAM_REPO
+  variables:
+    GIT_DEPTH: 100
+  artifacts:
+    reports:
+      junit: results.xml
+
+
+#
+# Build distribution-specific images used by the jobs in the build stage
+#
+
+fedora@container-prep:
+  extends:
+    - .fdo.container-build@fedora
+    - .policy
+  stage: prep
+  variables:
+    GIT_STRATEGY: none
+    FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
+    FDO_DISTRIBUTION_PACKAGES: $FEDORA_PACKAGES
+    FDO_DISTRIBUTION_TAG: $FEDORA_TAG
+
+
+#################################################################
+#                                                               #
+#                       build stage                             #
+#                                                               #
+#################################################################
+
+.build@template:
+  extends:
+    - .policy
+  stage: build
+  script:
+    - cargo build
+    - cargo test
+  dependencies: []
+
+
+.fedora-build@template:
+  extends:
+    - .fdo.distribution-image@fedora
+    - .build@template
+  variables:
+    FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
+    FDO_DISTRIBUTION_TAG: $FEDORA_TAG
+  dependencies:
+    - fedora@container-prep
+
+
+cargo build and test:
+  extends:
+    - .fedora-build@template
+
+
+#################################################################
+#                                                               #
+#                        test stage                             #
+#                                                               #
+#################################################################
+
 sast:
   stage: test
-include:
-- template: Security/SAST.gitlab-ci.yml
