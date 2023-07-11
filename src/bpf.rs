@@ -114,7 +114,7 @@ impl<'a> HidBPF<'a> {
                 _ => continue,
             };
 
-            let attach_args = attach_prog_args {
+            let attach_args = AttachProgArgs {
                 prog_fd: tracing_prog.fd(),
                 hid: hid_id,
                 retval: -1,
