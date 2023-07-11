@@ -8,7 +8,6 @@ use std::path::PathBuf;
 
 pub struct HidBPF<'a> {
     inner: AttachSkel<'a>,
-    debug: bool,
 }
 
 pub fn get_bpffs_path(device: &hidudev::HidUdev) -> String {
@@ -66,16 +65,12 @@ impl hid_bpf_probe_args {
 }
 
 impl<'a> HidBPF<'a> {
-    pub fn open_and_load(debug: bool) -> Result<HidBPF<'a>, libbpf_rs::Error> {
-        let mut skel_builder = AttachSkelBuilder::default();
-
-        skel_builder.obj_builder.debug(debug);
-
+    pub fn open_and_load() -> Result<HidBPF<'a>, libbpf_rs::Error> {
+        let skel_builder = AttachSkelBuilder::default();
         let open_skel = skel_builder.open()?;
 
         Ok(HidBPF {
             inner: open_skel.load()?,
-            debug,
         })
     }
 
@@ -84,14 +79,9 @@ impl<'a> HidBPF<'a> {
         path: PathBuf,
         device: &hidudev::HidUdev,
     ) -> Result<bool, libbpf_rs::Error> {
-        if self.debug {
-            eprintln!("loading BPF object at {:?}", path.display());
-        }
+        log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
-
-        obj_builder.debug(self.debug);
-
         let mut object = obj_builder.open_file(path)?.load()?;
 
         let hid_id = device.id();
@@ -154,13 +144,12 @@ impl<'a> HidBPF<'a> {
 
             let link = args.retval;
 
-            if self.debug {
-                eprintln!(
-                    "successfully attached {} to device id {}",
-                    &tracing_prog.name(),
-                    hid_id,
-                );
-            }
+            log::debug!(
+                target: "libbpf",
+                "successfully attached {} to device id {}",
+                &tracing_prog.name(),
+                hid_id,
+            );
 
             let path = format!("{}/{}", get_bpffs_path(device), tracing_prog.name(),);
 
@@ -177,9 +166,7 @@ impl<'a> HidBPF<'a> {
                 ),
                 Ok(_) => {
                     attached = true;
-                    if self.debug {
-                        eprintln!("Successfully pinned prog at {}", path)
-                    }
+                    log::debug!(target: "libbpf", "Successfully pinned prog at {}", path);
                 }
             }
         }

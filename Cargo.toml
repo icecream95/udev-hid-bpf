@@ -13,6 +13,8 @@ mio = { version = "0.8", features = ["os-ext"] }
 globset = "0.4"
 libc = "0.2"
 clap = { version = "4.2.1", features = ["derive"] }
+log = "0.4"
+stderrlog = "0.5"
 
 [build-dependencies]
 libbpf-cargo = { version = "0.20" }
