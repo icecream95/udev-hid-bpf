@@ -95,17 +95,14 @@ impl<'a> HidBPF<'a> {
          * check for the return value: if not 0, then ignore
          * this bpf.o file
          */
-        match object.prog("probe") {
-            Some(probe) => {
-                let args = hid_bpf_probe_args::from(device);
+        if let Some(probe) = object.prog("probe") {
+            let args = hid_bpf_probe_args::from(device);
 
-                let args = run_syscall_prog(probe, args)?;
+            let args = run_syscall_prog(probe, args)?;
 
-                if args.retval != 0 {
-                    return Ok(false);
-                }
+            if args.retval != 0 {
+                return Ok(false);
             }
-            _ => (),
         };
 
         let inner = self.inner.as_ref().expect("open_and_load() never called!");
