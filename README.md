@@ -66,13 +66,11 @@ Where:
 Instead of building this name yourself, it is way more efficient to simply use the
 modalias of the device as provided by the kernel:
 ```
-# filesystem version:
 $> cat /sys/bus/hid/devices/0003:04D9:A09F.0009/modalias
 hid:b0003g0001v000004D9p0000A09F
 
-# udevadm version (fancy way of going from hidraw to the modalias)
-$> udevadm info --query=property --property=MODALIAS /sys/$(udevadm info --query=path /dev/hidraw0)/../..
-MODALIAS=hid:b0003g0001v000004D9p0000A09F
+$> cat /sys/class/hidraw/hidraw0/device/modalias
+hid:b0003g0001v000004D9p0000A09F
 ```
 
 Just strip out the `hid:` prefix and done.
