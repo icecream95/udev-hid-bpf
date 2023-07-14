@@ -88,7 +88,7 @@ impl<'a> HidBPF<'a> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
-        let mut object = obj_builder.open_file(path)?.load()?;
+        let object = obj_builder.open_file(path)?.load()?;
 
         let hid_id = device.id();
 
@@ -110,7 +110,7 @@ impl<'a> HidBPF<'a> {
         let inner = self.inner.as_ref().expect("open_and_load() never called!");
         let mut attached = false;
 
-        for prog in object.progs_iter_mut() {
+        for prog in object.progs_iter() {
             let tracing_prog = match prog.prog_type() {
                 libbpf_rs::ProgramType::Tracing => prog,
                 _ => continue,
