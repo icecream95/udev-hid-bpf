@@ -29,8 +29,9 @@ impl HidUdev {
             _ => panic!("modalias problem"),
         };
 
-        /* strip out the first 4 chars ("hid:") from the modalias */
-        String::from(&modalias[4..])
+        /* strip out the "hid:" prefix from the modalias */
+        String::from(modalias)
+            .trim_start_matches("hid:")
             .replace("v0000", "v")
             .replace("p0000", "p")
     }
