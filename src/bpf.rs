@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-only
+
 include!(concat!(env!("OUT_DIR"), "/hid_bpf_bindings.rs"));
 include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 

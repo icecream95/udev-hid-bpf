@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-only
+
 extern crate bindgen;
 
 use libbpf_cargo::SkeletonBuilder;
