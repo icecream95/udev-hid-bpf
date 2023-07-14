@@ -127,7 +127,7 @@ impl HidUdev {
 
         let path = bpf::get_bpffs_path(self);
 
-        std::fs::remove_dir_all(path).unwrap_or(());
+        std::fs::remove_dir_all(path).ok();
 
         Ok(())
     }
