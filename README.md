@@ -8,17 +8,15 @@ should not be required.
 
 ### Dependencies
 
-- rust:
+- rust: install through your package manager or with `rustup`
+
 ```
-# install through your package manager or rustup
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
+$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+$ source "$HOME/.cargo/env"
 ```
 
-- udev and llvm:
-
-Check the [.gitlab-ci.yml](https://gitlab.freedesktop.org/bentiss/udev-hid-bpf/-/blob/main/.gitlab-ci.yml)
-for FEDORA_PACKAGES.
+- udev and llvm: Check the [.gitlab-ci.yml](https://gitlab.freedesktop.org/bentiss/udev-hid-bpf/-/blob/main/.gitlab-ci.yml)
+for `FEDORA_PACKAGES`.
 
 ### Installation
 
@@ -33,17 +31,18 @@ $ cargo build
 The above `cargo` command will build the tool and any eBPF programs it finds in `src/bpf/*.bpf.c`.
 Please see the [cargo documentation](https://doc.rust-lang.org/cargo/) for more details on invoking `cargo`.
 
-- Then, we can install the binary with the following command:
+Then, we can install the binary with the following command:
 ```
 $ sudo ./install.sh
 ```
 
-The above command will (re)build the tool and any bpf programs it finds in `src/bpf/*.bpf.c`.
-It will then install it in `/usr/local/bin` and will put the compiled bpf objects in`/lib/firmware/hid/bpf`.
+The above command will (re)build the tool and any eBPF programs it finds in `src/bpf/*.bpf.c`.
+It will then install
+- the tool itself into in `/usr/local/bin`
+- the compiled eBPF objects in`/lib/firmware/hid/bpf`.
+- a udev rule to trigger the tool in `/etc/udev/rules.d/99-hid-bpf.rules`
 
-Last, a udev rule is installed at `/etc/udev/rules.d/99-hid-bpf.rules`.
-
-Once we are here, unplug/replug any supported device, and the bpf program will automatically be attached to the HID kernel device.
+Once installed, unplug/replug any supported device, and the bpf program will automatically be attached to the HID kernel device.
 
 ## Matching eBPF programs to a device
 
@@ -54,14 +53,14 @@ This tool supports multiple ways of matching a eBPF program to a HID device:
 The filename of a HID-BPF program should follow the following syntax:
 
 ```
-bBBBBgGGGGvVVVVpPPPPanything.bpf.c
+bBBBBgGGGGvVVVVpPPPPsome-identifier.bpf.c
 ```
 
 Where:
 - `BBBB` is the bus raw value (in hexadecimal) (`0003` for USB, `0018` for I2C, `0005` for Bluetooth, etc...)
 - `GGGG` is the HID group as detected by HID (again, in hexadecimal)
 - `VVVV` and `PPPP` are respectively the vendor ID and product ID (as in `lsusb`, so hexadecimal too)
-- `anything` can be anything and can be used to have separate eBPF programs based on the functionality for the same HID device
+- `some-identifier` is a string aimed at humans to identify what the program does, e.g. `correct-mouse-button`.
 
 Instead of building this name yourself, it is way more efficient to simply use the
 modalias of the device as provided by the kernel:
