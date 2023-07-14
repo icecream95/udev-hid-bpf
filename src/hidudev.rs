@@ -72,7 +72,7 @@ impl HidUdev {
         u32::from_str_radix(&hid_sys[15..], 16).unwrap()
     }
 
-    pub fn add_directory(&self, bpf_dir: std::path::PathBuf) -> std::io::Result<()> {
+    pub fn load_bpf_from_directory(&self, bpf_dir: std::path::PathBuf) -> std::io::Result<()> {
         if !bpf_dir.exists() {
             return Ok(());
         }
@@ -122,7 +122,7 @@ impl HidUdev {
         Ok(())
     }
 
-    pub fn remove(&self) -> std::io::Result<()> {
+    pub fn remove_bpf_objects(&self) -> std::io::Result<()> {
         log::info!("device removed");
 
         let path = bpf::get_bpffs_path(self);

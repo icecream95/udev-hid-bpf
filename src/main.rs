@@ -58,11 +58,11 @@ fn cmd_add(dev: hidudev::HidUdev, bpf: Option<std::path::PathBuf>) -> std::io::R
         }
     };
 
-    dev.add_directory(target_bpf_dir)
+    dev.load_bpf_from_directory(target_bpf_dir)
 }
 
 fn cmd_remove(dev: hidudev::HidUdev) -> std::io::Result<()> {
-    dev.remove()
+    dev.remove_bpf_objects()
 }
 
 fn main() -> std::io::Result<()> {
