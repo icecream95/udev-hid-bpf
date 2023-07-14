@@ -10,7 +10,30 @@ pub struct HidUdev {
 
 impl HidUdev {
     pub fn from_syspath(syspath: std::path::PathBuf) -> std::io::Result<Self> {
-        let device = udev::Device::from_syspath(syspath.as_path())?;
+        let mut device = udev::Device::from_syspath(syspath.as_path())?;
+        let subsystem = device.property_value("SUBSYSTEM");
+
+        let is_hid_device = match subsystem {
+            Some(sub) => sub == "hid",
+            None => false,
+        };
+
+        if !is_hid_device {
+            log::debug!(
+                "Device {} is not a HID device, searching for parent devices",
+                syspath.display()
+            );
+            if let Some(parent) = device.parent_with_subsystem("hid")? {
+                log::debug!("Using {}", parent.syspath().to_str().unwrap());
+                device = parent
+            } else {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("Device {} is not a HID device", syspath.display()),
+                ));
+            }
+        };
+
         Ok(HidUdev {
             udev_device: device,
         })
