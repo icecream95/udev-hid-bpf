@@ -66,25 +66,23 @@ fn main() -> std::io::Result<()> {
         .init()
         .unwrap();
 
-    match hidudev::HidUdev::from_syspath(cli.device) {
-        Err(e) => Err(e),
-        Ok(dev) => match cli.command {
-            Commands::Add { bpf } => {
-                let target_bpf_dir = match bpf {
-                    Some(bpf_dir) => bpf_dir,
-                    None => {
-                        let bpf_dir = std::path::PathBuf::from("target/bpf");
-                        if bpf_dir.exists() {
-                            bpf_dir
-                        } else {
-                            std::path::PathBuf::from("/lib/firmware/hid/bpf")
-                        }
+    let dev = hidudev::HidUdev::from_syspath(cli.device)?;
+    match cli.command {
+        Commands::Add { bpf } => {
+            let target_bpf_dir = match bpf {
+                Some(bpf_dir) => bpf_dir,
+                None => {
+                    let bpf_dir = std::path::PathBuf::from("target/bpf");
+                    if bpf_dir.exists() {
+                        bpf_dir
+                    } else {
+                        std::path::PathBuf::from("/lib/firmware/hid/bpf")
                     }
-                };
+                }
+            };
 
-                dev.add_directory(target_bpf_dir)
-            }
-            Commands::Remove => dev.remove(),
-        },
+            dev.add_directory(target_bpf_dir)
+        }
+        Commands::Remove => dev.remove(),
     }
 }
