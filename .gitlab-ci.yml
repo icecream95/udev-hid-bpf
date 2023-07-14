@@ -23,8 +23,8 @@ stages:
 variables:
   FDO_UPSTREAM_REPO: bentiss/udev-hid-bpf
   FEDORA_VERSION: 38
-  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel systemd-devel zlib-devel'
-  FEDORA_TAG:  '2023-07-10.0'
+  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel rustfmt systemd-devel zlib-devel'
+  FEDORA_TAG:  '2023-07-17.0'
 
 .policy:
   retry:
@@ -121,6 +121,13 @@ fedora@container-prep:
 cargo build and test:
   extends:
     - .fedora-build@template
+
+
+cargo fmt:
+  extends:
+    - .fedora-build@template
+  script:
+    - cargo fmt --check
 
 
 #################################################################
