@@ -123,7 +123,7 @@ impl HidUdev {
     }
 
     pub fn remove(&self) -> std::io::Result<()> {
-        eprintln!("device removed");
+        log::info!("device removed");
 
         let path = bpf::get_bpffs_path(self);
 
