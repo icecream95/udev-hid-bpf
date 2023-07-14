@@ -10,6 +10,18 @@ const ATTACH_PROG: &str = "attach.bpf.c";
 const WRAPPER: &str = "./src/hid_bpf_wrapper.h";
 const TARGET_DIR: &str = "./target/bpf";
 
+fn build_bpf_file(bpf_source: &std::path::Path, target_dir: &std::path::Path) {
+    let mut target_object = target_dir.clone().join(bpf_source.file_name().unwrap());
+
+    target_object.set_extension("o");
+
+    SkeletonBuilder::new()
+        .source(bpf_source)
+        .obj(target_object)
+        .build()
+        .unwrap();
+}
+
 fn main() {
     println!("cargo:rerun-if-changed={}", DIR);
     println!("cargo:rerun-if-changed={}", WRAPPER);
@@ -37,15 +49,7 @@ fn main() {
                 && path.to_str().unwrap().ends_with(".bpf.c")
                 && path.file_name().unwrap() != ATTACH_PROG
             {
-                let mut target_object = target_dir.clone().join(path.file_name().unwrap());
-
-                target_object.set_extension("o");
-
-                SkeletonBuilder::new()
-                    .source(path)
-                    .obj(target_object)
-                    .build()
-                    .unwrap();
+                build_bpf_file(&path, &target_dir);
             }
         }
     }
