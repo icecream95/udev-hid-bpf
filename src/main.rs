@@ -44,6 +44,26 @@ enum Commands {
     Remove,
 }
 
+fn cmd_add(dev: hidudev::HidUdev, bpf: Option<std::path::PathBuf>) -> std::io::Result<()> {
+    let target_bpf_dir = match bpf {
+        Some(bpf_dir) => bpf_dir,
+        None => {
+            let bpf_dir = std::path::PathBuf::from("target/bpf");
+            if bpf_dir.exists() {
+                bpf_dir
+            } else {
+                std::path::PathBuf::from("/lib/firmware/hid/bpf")
+            }
+        }
+    };
+
+    dev.add_directory(target_bpf_dir)
+}
+
+fn cmd_remove(dev: hidudev::HidUdev) -> std::io::Result<()> {
+    dev.remove()
+}
+
 fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
@@ -68,21 +88,7 @@ fn main() -> std::io::Result<()> {
 
     let dev = hidudev::HidUdev::from_syspath(cli.device)?;
     match cli.command {
-        Commands::Add { bpf } => {
-            let target_bpf_dir = match bpf {
-                Some(bpf_dir) => bpf_dir,
-                None => {
-                    let bpf_dir = std::path::PathBuf::from("target/bpf");
-                    if bpf_dir.exists() {
-                        bpf_dir
-                    } else {
-                        std::path::PathBuf::from("/lib/firmware/hid/bpf")
-                    }
-                }
-            };
-
-            dev.add_directory(target_bpf_dir)
-        }
-        Commands::Remove => dev.remove(),
+        Commands::Add { bpf } => cmd_add(dev, bpf),
+        Commands::Remove => cmd_remove(dev),
     }
 }
