@@ -124,7 +124,7 @@ impl HidUdev {
         let modalias = self.modalias();
 
         let glob_path = bpf_dir.join(format!(
-            "b{{{:04X},\\*}}g{{{:04X},\\*}}v{{{:04X},\\*}}p{{{:04X},\\*}}*.bpf.o",
+            "b{{{:04X},\\*}}g{{{:04X},\\*}}v{{{:08X},\\*}}p{{{:08X},\\*}}*.bpf.o",
             modalias.bus, modalias.group, modalias.vid, modalias.pid,
         ));
 
