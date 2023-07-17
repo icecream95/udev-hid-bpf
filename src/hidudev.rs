@@ -94,12 +94,6 @@ impl HidUdev {
             &prefix[16..20],
         ));
 
-        log::debug!(
-            "device added {}, filename: {}",
-            self.sysname(),
-            glob_path.as_path().display()
-        );
-
         let globset = GlobBuilder::new(glob_path.as_path().to_str().unwrap())
             .literal_separator(true)
             .case_insensitive(true)
@@ -107,15 +101,25 @@ impl HidUdev {
             .unwrap()
             .compile_matcher();
 
-        let mut hid_bpf_loader = bpf::HidBPF::new();
-
+        let mut matches = Vec::new();
         for elem in bpf_dir.read_dir().unwrap() {
             if let Ok(dir_entry) = elem {
                 let path = dir_entry.path();
                 if globset.is_match(&path.to_str().unwrap()) && path.is_file() {
-                    hid_bpf_loader.open_and_load().unwrap();
-                    hid_bpf_loader.load_programs(path, self).unwrap();
+                    log::debug!(
+                        "device added {}, filename: {}",
+                        self.sysname(),
+                        path.display(),
+                    );
+                    matches.push(path);
                 }
+            }
+        }
+
+        if !matches.is_empty() {
+            let hid_bpf_loader = bpf::HidBPF::new().unwrap();
+            for path in matches {
+                hid_bpf_loader.load_programs(path, self).unwrap();
             }
         }
 

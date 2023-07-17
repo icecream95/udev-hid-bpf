@@ -67,17 +67,11 @@ impl hid_bpf_probe_args {
 }
 
 impl<'a> HidBPF<'a> {
-    pub fn new() -> Self {
-        Self { inner: None }
-    }
-
-    pub fn open_and_load(&mut self) -> Result<(), libbpf_rs::Error> {
-        if self.inner.is_none() {
-            let skel_builder = AttachSkelBuilder::default();
-            let open_skel = skel_builder.open()?;
-            self.inner = Some(open_skel.load()?);
-        }
-        Ok(())
+    pub fn new() -> Result<Self, libbpf_rs::Error> {
+        let skel_builder = AttachSkelBuilder::default();
+        let open_skel = skel_builder.open()?;
+        let inner = Some(open_skel.load()?);
+        Ok(Self { inner })
     }
 
     pub fn load_programs(
