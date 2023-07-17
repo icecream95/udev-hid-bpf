@@ -3,6 +3,7 @@
 extern crate bindgen;
 
 use libbpf_cargo::SkeletonBuilder;
+use regex::Regex;
 use std::{env, path::Path, path::PathBuf};
 
 const DIR: &str = "./src/bpf/";
@@ -10,7 +11,40 @@ const ATTACH_PROG: &str = "attach.bpf.c";
 const WRAPPER: &str = "./src/hid_bpf_wrapper.h";
 const TARGET_DIR: &str = "./target/bpf";
 
-fn build_bpf_file(bpf_source: &std::path::Path, target_dir: &std::path::Path) {
+fn build_bpf_file(
+    bpf_source: &std::path::Path,
+    target_dir: &std::path::Path,
+) -> std::io::Result<()> {
+    let re = Regex::new(r"b(?<bus>[0-9A-Z\*]{1,4})g(?<group>[0-9A-Z\*]{1,4})v(?<vid>[0-9A-Z\*]{1,8})p(?<pid>[0-9A-Z\*]{1,8})-.*.bpf.c").unwrap();
+    let re_match = re.captures(bpf_source.file_name().unwrap().to_str().unwrap());
+
+    let error = Err(std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        format!(
+            "Invalid filename '{}', must be bBBBBgGGGGv0000VVVVp0000PPPP-any-value.bpf.c",
+            bpf_source.file_name().unwrap().to_str().unwrap()
+        ),
+    ));
+
+    if re_match.is_none() {
+        return error;
+    }
+
+    let caps = re_match.unwrap();
+    let (bus, group, vid, pid) = (&caps["bus"], &caps["group"], &caps["vid"], &caps["pid"]);
+    if !bus.contains("*") && bus.len() != 4 {
+        return error;
+    }
+    if !group.contains("*") && group.len() != 4 {
+        return error;
+    }
+    if !vid.contains("*") && (vid.len() != 8 || !vid.starts_with("0000")) {
+        return error;
+    }
+    if !pid.contains("*") && (pid.len() != 8 || !pid.starts_with("0000")) {
+        return error;
+    }
+
     let mut target_object = target_dir.clone().join(bpf_source.file_name().unwrap());
 
     target_object.set_extension("o");
@@ -20,9 +54,11 @@ fn build_bpf_file(bpf_source: &std::path::Path, target_dir: &std::path::Path) {
         .obj(target_object)
         .build()
         .unwrap();
+
+    Ok(())
 }
 
-fn main() {
+fn main() -> std::io::Result<()> {
     println!("cargo:rerun-if-changed={}", DIR);
     println!("cargo:rerun-if-changed={}", WRAPPER);
 
@@ -49,7 +85,7 @@ fn main() {
                 && path.to_str().unwrap().ends_with(".bpf.c")
                 && path.file_name().unwrap() != ATTACH_PROG
             {
-                build_bpf_file(&path, &target_dir);
+                build_bpf_file(&path, &target_dir)?;
             }
         }
     }
@@ -75,4 +111,6 @@ fn main() {
     bindings
         .write_to_file(out_path.join("hid_bpf_bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    Ok(())
 }

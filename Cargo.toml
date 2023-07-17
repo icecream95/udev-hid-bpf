@@ -19,3 +19,4 @@ stderrlog = "0.5"
 [build-dependencies]
 libbpf-cargo = { version = "0.20" }
 bindgen = "0.66.1"
+regex = "1.9.1"

@@ -50,16 +50,16 @@ This tool supports multiple ways of matching a eBPF program to a HID device:
 
 ### Filename modalias matches
 
-The filename of a HID-BPF program should follow the following syntax:
+The filename of a HID-BPF program must follow the following syntax:
 
 ```
-bBBBBgGGGGvVVVVpPPPPsome-identifier.bpf.c
+bBBBBgGGGGv0000VVVVp0000PPPP-some-identifier.bpf.c
 ```
 
 Where:
-- `BBBB` is the bus raw value (in hexadecimal) (`0003` for USB, `0018` for I2C, `0005` for Bluetooth, etc...)
-- `GGGG` is the HID group as detected by HID (again, in hexadecimal)
-- `VVVV` and `PPPP` are respectively the vendor ID and product ID (as in `lsusb`, so hexadecimal too)
+- `BBBB` is the bus raw value (in uppercase hexadecimal) (`0003` for USB, `0018` for I2C, `0005` for Bluetooth, etc...)
+- `GGGG` is the HID group as detected by HID (again, in uppercase hexadecimal)
+- `VVVV` and `PPPP` are respectively the vendor ID and product ID (as in `lsusb`, so uppercase hexadecimal too)
 - `some-identifier` is a string aimed at humans to identify what the program does, e.g. `correct-mouse-button`.
 
 Instead of building this name yourself, it is way more efficient to simply use the
