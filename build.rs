@@ -4,7 +4,10 @@ extern crate bindgen;
 
 use libbpf_cargo::SkeletonBuilder;
 use regex::Regex;
-use std::{env, path::Path, path::PathBuf};
+use std::env;
+use std::fs::File;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 
 const DIR: &str = "./src/bpf/";
 const ATTACH_PROG: &str = "attach.bpf.c";
@@ -14,7 +17,7 @@ const TARGET_DIR: &str = "./target/bpf";
 fn build_bpf_file(
     bpf_source: &std::path::Path,
     target_dir: &std::path::Path,
-) -> std::io::Result<()> {
+) -> std::io::Result<String> {
     let re = Regex::new(r"b(?<bus>[0-9A-Z\*]{1,4})g(?<group>[0-9A-Z\*]{1,4})v(?<vid>[0-9A-Z\*]{1,8})p(?<pid>[0-9A-Z\*]{1,8})-.*.bpf.c").unwrap();
     let re_match = re.captures(bpf_source.file_name().unwrap().to_str().unwrap());
 
@@ -55,6 +58,14 @@ fn build_bpf_file(
         .build()
         .unwrap();
 
+    Ok(format!("b{}g{}v{}p{}", bus, group, vid, pid))
+}
+
+fn write_hwdb_entry(modalias: String, mut hwdb_fd: &File) -> std::io::Result<()> {
+    let hwdb_match = format!("hid-bpf:hid:{}\n", modalias);
+    hwdb_fd.write_all(hwdb_match.as_bytes())?;
+    hwdb_fd.write_all(b" HID_BPF=1\n\n")?;
+
     Ok(())
 }
 
@@ -77,6 +88,9 @@ fn main() -> std::io::Result<()> {
     std::fs::create_dir_all(target_dir.as_path())
         .expect(format!("Can't create TARGET_DIR '{}'", TARGET_DIR).as_str());
 
+    let hwdb_file = target_dir.clone().join("99-hid-bpf.hwdb");
+    let hwdb_fd = File::create(hwdb_file)?;
+
     // Then compile all other .bpf.c in a .bpf.o file
     for elem in Path::new(DIR).read_dir().unwrap() {
         if let Ok(dir_entry) = elem {
@@ -85,7 +99,8 @@ fn main() -> std::io::Result<()> {
                 && path.to_str().unwrap().ends_with(".bpf.c")
                 && path.file_name().unwrap() != ATTACH_PROG
             {
-                build_bpf_file(&path, &target_dir)?;
+                let modalias = build_bpf_file(&path, &target_dir)?;
+                write_hwdb_entry(modalias, &hwdb_fd)?;
             }
         }
     }

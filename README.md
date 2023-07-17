@@ -40,6 +40,7 @@ The above command will (re)build the tool and any eBPF programs it finds in `src
 It will then install
 - the tool itself into in `/usr/local/bin`
 - the compiled eBPF objects in`/lib/firmware/hid/bpf`.
+- a hwdb entry to tag matching devices in `/etc/udev/hwdb.d/99-hid-bpf.hwdb`
 - a udev rule to trigger the tool in `/etc/udev/rules.d/99-hid-bpf.rules`
 
 Once installed, unplug/replug any supported device, and the bpf program will automatically be attached to the HID kernel device.

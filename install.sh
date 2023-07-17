@@ -21,4 +21,6 @@ install -D -t "$PREFIX"/bin/ "$TMP_INSTALL_DIR"/bin/udev-hid-bpf
 
 install -D -t /lib/firmware/hid/bpf target/bpf/*.bpf.o
 install -D -m 644 -t /etc/udev/rules.d 99-hid-bpf.rules
+install -D -m 644 -t /etc/udev/hwdb.d target/bpf/99-hid-bpf.hwdb
 udevadm control --reload
+systemd-hwdb update
