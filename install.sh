@@ -20,5 +20,5 @@ sudo -u "$CARGO_USER" -i cargo install --force --path "$SCRIPT_DIR" --root "$TMP
 install -D -t "$PREFIX"/bin/ "$TMP_INSTALL_DIR"/bin/udev-hid-bpf
 
 install -D -t /lib/firmware/hid/bpf target/bpf/*.bpf.o
-install -D -t /etc/udev/rules.d 99-hid-bpf.rules
+install -D -m 644 -t /etc/udev/rules.d 99-hid-bpf.rules
 udevadm control --reload
