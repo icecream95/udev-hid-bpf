@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 const DIR: &str = "./src/bpf/";
 const ATTACH_PROG: &str = "attach.bpf.c";
 const WRAPPER: &str = "./src/hid_bpf_wrapper.h";
-const TARGET_DIR: &str = "./target/bpf";
+const TARGET_DIR: &str = "bpf"; // inside $CARGO_TARGET_DIR
 
 fn build_bpf_file(
     bpf_source: &std::path::Path,
@@ -83,7 +83,9 @@ fn main() -> std::io::Result<()> {
         .build_and_generate(&out)
         .unwrap();
 
-    let target_dir = PathBuf::from(TARGET_DIR);
+    let cargo_target_dir = env::var("CARGO_TARGET_DIR").unwrap_or(String::from("./target"));
+    let mut target_dir = PathBuf::from(cargo_target_dir);
+    target_dir.push(TARGET_DIR);
 
     std::fs::create_dir_all(target_dir.as_path())
         .expect(format!("Can't create TARGET_DIR '{}'", TARGET_DIR).as_str());
