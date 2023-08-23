@@ -2,12 +2,6 @@
 
 SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 
-if [ "$EUID" -ne 0 ]
-then
-  echo "This script needs to install global udev rules, so please run as root."
-  exit 1
-fi
-
 usage () {
   echo "Usage: $(basename "$0") [-v|--verbose] [--dry-run] [PREFIX]"
 }
@@ -32,6 +26,12 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [ "$EUID" -ne 0 ]
+then
+  echo "This script needs to install global udev rules, so please run as root."
+  exit 1
+fi
 
 set -e
 
