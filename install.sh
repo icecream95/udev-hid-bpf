@@ -48,6 +48,7 @@ TMP_INSTALL_DIR="$CARGO_TARGET_DIR/install"
 sudo -u "$CARGO_USER" -i \
   CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
   CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" \
+  PATH="$PATH:$TMP_INSTALL_DIR/bin" \
   cargo install --force --path "$SCRIPT_DIR" --root "$TMP_INSTALL_DIR" --no-track
 
 sed -e "s|/usr/local|$PREFIX|" 99-hid-bpf.rules > "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.rules
