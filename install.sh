@@ -37,11 +37,17 @@ set -e
 
 CARGO_USER=${SUDO_USER:-root}
 CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$SCRIPT_DIR/target}
+if [[ -n "$SUDO_USER" ]]; then
+  user_home=$(sudo -u "$SUDO_USER" sh -c 'echo $HOME')
+  CARGO_HOME=${CARGO_HOME:-$user_home/.cargo/}
+fi
 
 PREFIX=${1:-/usr/local}
 TMP_INSTALL_DIR="$CARGO_TARGET_DIR/install"
 
-sudo -u "$CARGO_USER" -i CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
+sudo -u "$CARGO_USER" -i \
+  CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
+  CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}" \
   cargo install --force --path "$SCRIPT_DIR" --root "$TMP_INSTALL_DIR" --no-track
 
 sed -e "s|/usr/local|$PREFIX|" 99-hid-bpf.rules > "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.rules
