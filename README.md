@@ -6,50 +6,21 @@ should not be required.
 
 ## Getting started
 
-### Dependencies
+You can build and install using Rust's `cargo` and our custom install script:
 
-- rust: install through your package manager or with `rustup`
-
-```
-$ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-$ source "$HOME/.cargo/env"
-```
-
-- udev and llvm: Check the [.gitlab-ci.yml](https://gitlab.freedesktop.org/bentiss/udev-hid-bpf/-/blob/main/.gitlab-ci.yml)
-for `FEDORA_PACKAGES`.
-
-### Installation
-
-Clone the repo, `cd` into it, and build the loader *and* the various example HID-BPF programs
-by using the standard Rust build process:
 ```
 $ git clone https://gitlab.freedesktop.org/bentiss/udev-hid-bpf.git
 $ cd udev-hid-bpf/
 $ cargo build
-```
-
-The above `cargo` command will build the tool and any eBPF programs it finds in `src/bpf/*.bpf.c`.
-Please see the [cargo documentation](https://doc.rust-lang.org/cargo/) for more details on invoking `cargo`.
-
-Then, we can install the binary with the following command:
-```
 $ sudo ./install.sh
 ```
 
-The above command will (re)build the tool and any eBPF programs it finds in `src/bpf/*.bpf.c`.
-It will then install
-- the tool itself into in `/usr/local/bin`
-- the compiled eBPF objects in`/lib/firmware/hid/bpf`.
-- a hwdb entry to tag matching devices in `/etc/udev/hwdb.d/99-hid-bpf.hwdb`
-- a udev rule to trigger the tool in `/etc/udev/rules.d/99-hid-bpf.rules`
-
 Once installed, unplug/replug any supported device, and the bpf program will automatically be attached to the HID kernel device.
 
-## Matching eBPF programs to a device
+For details on required dependencies etc. please see [our documentation](https://bentiss.pages.freedesktop.org/udev-hid-bpf/).
 
-This tool supports multiple ways of matching a eBPF program to a HID device:
 
-### Filename modalias matches
+## Adding custom files
 
 The filename of a HID-BPF program must follow the following syntax:
 
@@ -75,22 +46,4 @@ hid:b0003g0001v000004D9p0000A09F
 
 Just strip out the `hid:` prefix and done.
 
-#### Sharing the same eBPF program for different devices
-
-The modalias supports basic globbing features: any of
-`BBBB`, `GGGG`, `VVVV` or `PPPP` may be the literal character `*`.
-Any device that matches all the other fields will thus match. For example
-a filename of `b0003g*v*p*foo.bpf.c` will match any USB device.
-
-### Run-time probe
-
-Sometimes having just the static modalias is not enough to know if a program needs to be loaded.
-For example, one mouse I am doing tests with (`b0003g0001v04d9pa09f-mouse.bpf.c`) exports 3 HID interfaces,
-but the eBPF program only applies to one of those HID interfaces.
-
-`udev-hid-bpf` provides a similar functionality as the kernel with a `probe` function.
-Before loading and attaching any eBPF program to a given HID device, `udev-hid-bpf` executes the syscall `probe` in the `.bpf.c` file if there is any.
-
-The arguments of this syscall are basically the unique id of the HID device, its report descriptor and its report descriptor size.
-If the eBPF program sets the `ctx->retval` to zero, the  eBPF program is loaded for this device. A nonzero value (typically `-EINVAL`)
-prevents the eBPF program from loading. See the `b0003g0001v04d9pa09f-mouse.bpf.c` program for an example of this functionality.
+For details on file name and how they are matched to devices please see [our documentation](https://bentiss.pages.freedesktop.org/udev-hid-bpf/).
