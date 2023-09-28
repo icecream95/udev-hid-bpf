@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+die() {
+   echo "$1" >&2
+   exit 1
+}
+
+command -v udevadm > /dev/null || die "The udevadm command is required"
+
+for dev in /sys/bus/hid/devices/*; do
+  modalias=$(udevadm info "$dev" | grep "MODALIAS" | sed -e "s/.*MODALIAS=hid://")
+  name=$(udevadm info "$dev" | grep "HID_NAME" | sed -e "s/.*HID_NAME=//")
+  echo "$dev"
+  echo "  - name:     $name"
+  echo "  - modalias: $modalias"
+done
