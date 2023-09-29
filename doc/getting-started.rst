@@ -1,5 +1,9 @@
+.. _getting_started:
+
 Getting started
 ===============
+
+.. _dependencies:
 
 Dependencies
 ------------
@@ -10,6 +14,8 @@ Dependencies
    $ source "$HOME/.cargo/env"
 
 - ``udev`` and ``llvm``: Check the `.gitlab-ci.yml <https://gitlab.freedesktop.org/bentiss/udev-hid-bpf/-/blob/main/.gitlab-ci.yml>`_ for ``FEDORA_PACKAGES``.
+
+.. _installation:
 
 Installation
 ------------

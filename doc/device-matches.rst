@@ -1,3 +1,5 @@
+.. _matching_programs:
+
 Matching eBPF programs to a device
 ==================================
 

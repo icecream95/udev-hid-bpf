@@ -16,3 +16,4 @@ dependencies.
 
    getting-started
    device-matches
+   tutorial
