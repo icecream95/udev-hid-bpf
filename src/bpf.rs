@@ -4,6 +4,7 @@ include!(concat!(env!("OUT_DIR"), "/hid_bpf_bindings.rs"));
 include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 
 use crate::hidudev;
+use errno;
 use std::convert::TryInto;
 use std::fs;
 use std::path::PathBuf;
@@ -156,12 +157,18 @@ impl<'a> HidBPF<'a> {
             });
 
             match pin_hid_bpf_prog(link, path.clone()) {
-                Err(e) => eprintln!(
-                    "could not pin {} to device id {}, error {}",
-                    &tracing_prog.name(),
-                    hid_id,
-                    e.to_string(),
-                ),
+                Err(e) => {
+                    let errstr = match e {
+                        libbpf_rs::Error::System(errno) => errno::Errno(-errno).to_string(),
+                        _ => e.to_string(),
+                    };
+                    eprintln!(
+                        "could not pin {} to device id {}, error {}",
+                        &tracing_prog.name(),
+                        hid_id,
+                        errstr,
+                    );
+                }
                 Ok(_) => {
                     attached = true;
                     log::debug!(target: "libbpf", "Successfully pinned prog at {}", path);
