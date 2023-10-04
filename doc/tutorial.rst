@@ -115,6 +115,12 @@ And we can remove it again (so we can re-add it later)::
   $ sudo udev-hid-bpf --verbose /sys/bus/hid/devices/0003:045E:07A5.0001 remove
 
 
+.. note:: The official tool for listing BPF programs is ``bpftool prog`` which
+          will list all currently loaded BPF programs. Our program will be
+          listed as ``hid_fix_rdesc`` and/or ``trace_usb``, this project does
+          not currently set the BPF name correctly.
+
+
 Probing
 -------
 
