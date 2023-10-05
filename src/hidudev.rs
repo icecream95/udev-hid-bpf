@@ -69,7 +69,7 @@ impl Modalias {
 }
 
 impl HidUdev {
-    pub fn from_syspath(syspath: std::path::PathBuf) -> std::io::Result<Self> {
+    pub fn from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<Self> {
         let mut device = udev::Device::from_syspath(syspath.as_path())?;
         let subsystem = device.property_value("SUBSYSTEM");
 

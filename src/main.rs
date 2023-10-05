@@ -87,7 +87,7 @@ fn main() -> std::io::Result<()> {
         .init()
         .unwrap();
 
-    let dev = hidudev::HidUdev::from_syspath(cli.device)?;
+    let dev = hidudev::HidUdev::from_syspath(&cli.device)?;
     match cli.command {
         Commands::Add { bpf } => cmd_add(dev, bpf),
         Commands::Remove => cmd_remove(dev),
