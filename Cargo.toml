@@ -16,6 +16,7 @@ clap = { version = "4.2.1", features = ["derive"] }
 log = "0.4"
 stderrlog = "0.5"
 errno = "0.3.3"
+regex = "1.9.1"
 
 [build-dependencies]
 libbpf-cargo = { version = "0.20" }

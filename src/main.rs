@@ -3,6 +3,7 @@
 use clap::{Parser, Subcommand};
 use libbpf_rs;
 use log;
+use regex::Regex;
 
 pub mod bpf;
 pub mod hidudev;
@@ -45,7 +46,8 @@ enum Commands {
     Remove,
 }
 
-fn cmd_add(dev: hidudev::HidUdev, bpf: Option<std::path::PathBuf>) -> std::io::Result<()> {
+fn cmd_add(syspath: &std::path::PathBuf, bpf: Option<std::path::PathBuf>) -> std::io::Result<()> {
+    let dev = hidudev::HidUdev::from_syspath(syspath)?;
     let target_bpf_dir = match bpf {
         Some(bpf_dir) => bpf_dir,
         None => {
@@ -61,8 +63,27 @@ fn cmd_add(dev: hidudev::HidUdev, bpf: Option<std::path::PathBuf>) -> std::io::R
     dev.load_bpf_from_directory(target_bpf_dir)
 }
 
-fn cmd_remove(dev: hidudev::HidUdev) -> std::io::Result<()> {
-    dev.remove_bpf_objects()
+fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String> {
+    let re = Regex::new(r"[A-Z0-9]{4}:[A-Z0-9]{4}:[A-Z0-9]{4}\.[A-Z0-9]{4}").unwrap();
+    let abspath = std::fs::read_link(syspath).unwrap_or(syspath.clone());
+    abspath
+        .file_name()
+        .map(|s| s.to_str())
+        .flatten()
+        .filter(|d| re.captures(d).is_some())
+        .map(|d| String::from(d))
+        .ok_or(std::io::Error::from_raw_os_error(libc::EINVAL))
+}
+
+fn cmd_remove(syspath: &std::path::PathBuf) -> std::io::Result<()> {
+    let sysname = match hidudev::HidUdev::from_syspath(syspath) {
+        Ok(dev) => dev.sysname(),
+        Err(e) => match e.raw_os_error() {
+            Some(libc::ENODEV) => sysname_from_syspath(syspath)?,
+            _ => return Err(e),
+        },
+    };
+    bpf::remove_bpf_objects(&sysname)
 }
 
 fn main() -> std::io::Result<()> {
@@ -87,9 +108,35 @@ fn main() -> std::io::Result<()> {
         .init()
         .unwrap();
 
-    let dev = hidudev::HidUdev::from_syspath(&cli.device)?;
     match cli.command {
-        Commands::Add { bpf } => cmd_add(dev, bpf),
-        Commands::Remove => cmd_remove(dev),
+        Commands::Add { bpf } => cmd_add(&cli.device, bpf),
+        Commands::Remove => cmd_remove(&cli.device),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sysname_resolution() {
+        let syspath = "/sys/blah/1234";
+        let sysname = sysname_from_syspath(&std::path::PathBuf::from(syspath));
+        assert!(sysname.is_err());
+
+        let syspath = "/sys/blah/0003:04F3:2D4A.0001";
+        let sysname = sysname_from_syspath(&std::path::PathBuf::from(syspath));
+        assert!(sysname.unwrap() == "0003:04F3:2D4A.0001");
+
+        let syspath = "/sys/blah/0003:04F3:2D4A-0001";
+        let sysname = sysname_from_syspath(&std::path::PathBuf::from(syspath));
+        assert!(sysname.is_err());
+
+        // Only run this test if there's a local hidraw0 device
+        let syspath = "/sys/class/hidraw/hidraw0/device";
+        if std::path::Path::new(syspath).exists() {
+            let sysname = sysname_from_syspath(&std::path::PathBuf::from(syspath));
+            assert!(sysname.is_ok());
+        }
     }
 }

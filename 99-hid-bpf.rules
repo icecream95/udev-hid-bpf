@@ -3,6 +3,6 @@ SUBSYSTEM!="hid", GOTO="hid_bpf_end"
 
 IMPORT{builtin}="hwdb --subsystem=hid --lookup-prefix=hid-bpf:"
 ACTION=="add", ENV{HID_BPF}=="1", RUN{program}+="/usr/local/bin/udev-hid-bpf $sys$devpath add"
-ACTION=="remove", ENV{HID_BPF}=="1", RUN{program}+="/bin/sh -c \"rm -rf /sys/fs/bpf/hid/$$(echo $name | sed -e 's/[:.]/_/g')\""
+ACTION=="remove", ENV{HID_BPF}=="1", RUN{program}+="/usr/local/bin/udev-hid-bpf $sys$devpath remove"
 
 LABEL="hid_bpf_end"

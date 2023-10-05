@@ -20,6 +20,14 @@ pub fn get_bpffs_path(sysname: &str) -> String {
     )
 }
 
+pub fn remove_bpf_objects(sysname: &str) -> std::io::Result<()> {
+    let path = get_bpffs_path(sysname);
+
+    std::fs::remove_dir_all(path).ok();
+
+    Ok(())
+}
+
 fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_rs::Error> {
     let fd = prog.fd();
     let data_ptr: *const libc::c_void = &data as *const _ as *const libc::c_void;
