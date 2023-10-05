@@ -13,10 +13,10 @@ pub struct HidBPF<'a> {
     inner: Option<AttachSkel<'a>>,
 }
 
-pub fn get_bpffs_path(device: &hidudev::HidUdev) -> String {
+pub fn get_bpffs_path(sysname: &str) -> String {
     format!(
         "/sys/fs/bpf/hid/{}",
-        device.sysname().replace(":", "_").replace(".", "_"),
+        sysname.replace(":", "_").replace(".", "_"),
     )
 }
 
@@ -150,9 +150,13 @@ impl<'a> HidBPF<'a> {
                 hid_id,
             );
 
-            let path = format!("{}/{}", get_bpffs_path(device), tracing_prog.name(),);
+            let path = format!(
+                "{}/{}",
+                get_bpffs_path(&device.sysname()),
+                tracing_prog.name(),
+            );
 
-            fs::create_dir_all(get_bpffs_path(device)).unwrap_or_else(|why| {
+            fs::create_dir_all(get_bpffs_path(&device.sysname())).unwrap_or_else(|why| {
                 eprintln!("! {:?}", why.kind());
             });
 

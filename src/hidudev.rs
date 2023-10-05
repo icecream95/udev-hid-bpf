@@ -163,7 +163,7 @@ impl HidUdev {
     pub fn remove_bpf_objects(&self) -> std::io::Result<()> {
         log::info!("device removed");
 
-        let path = bpf::get_bpffs_path(self);
+        let path = bpf::get_bpffs_path(&self.sysname());
 
         std::fs::remove_dir_all(path).ok();
 
