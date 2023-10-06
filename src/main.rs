@@ -23,7 +23,7 @@ struct Cli {
     #[command(subcommand)]
     command: Commands,
     /// sysfs path to a device, e.g. /sys/class/hidraw/hidraw0/device
-    device: std::path::PathBuf,
+    devpath: std::path::PathBuf,
 }
 
 fn print_to_log(level: libbpf_rs::PrintLevel, msg: String) {
@@ -109,8 +109,8 @@ fn main() -> std::io::Result<()> {
         .unwrap();
 
     match cli.command {
-        Commands::Add { bpf } => cmd_add(&cli.device, bpf),
-        Commands::Remove => cmd_remove(&cli.device),
+        Commands::Add { bpf } => cmd_add(&cli.devpath, bpf),
+        Commands::Remove => cmd_remove(&cli.devpath),
     }
 }
 
