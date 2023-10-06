@@ -22,7 +22,7 @@ struct Cli {
     verbose: bool,
     #[command(subcommand)]
     command: Commands,
-    /// sysfs path to a device, e.g. /sys/class/hidraw/hidraw0/device
+    /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
     devpath: std::path::PathBuf,
 }
 
