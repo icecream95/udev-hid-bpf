@@ -16,7 +16,7 @@ events for a button that doesn't event exist on the device.
 
 There is a page on :ref:`matching_programs` but for now we'll use the tool::
 
-    $> ./tools/show-modalias
+    $ ./tools/show-modalias
     /sys/bus/hid/devices/0003:045E:07A5.0001
       - name:     Microsoft Microsoft® 2.4GHz Transceiver v9.0
       - modalias: b0003g0001v0000045Ep000007A5
@@ -55,7 +55,7 @@ Scaffolding
 
 Let's create the file and fill it with enough information to compile::
 
-  $> touch ./src/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.c
+  $ touch ./src/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.c
 
 And this file contains:
 
@@ -68,13 +68,13 @@ And this file contains:
   #include <bpf/bpf_tracing.h>
 
   SEC("fmod_ret/hid_bpf_rdesc_fixup")
-  int BPF_PROG(hid_fix_rdesc, struct hid_bpf_ctx *hctx)
+  int BPF_PROG(ignore_button_fix_rdesc, struct hid_bpf_ctx *hctx)
   {
       return 0;
   }
 
   SEC("fmod_ret/hid_bpf_device_event")
-  int BPF_PROG(trace_usb, struct hid_bpf_ctx *hid_ctx)
+  int BPF_PROG(ignore_button_fix_event, struct hid_bpf_ctx *hid_ctx)
   {
       return 0;
   }
@@ -99,16 +99,16 @@ be buildable, can be installed and we can attempt to load it manually::
   $ sudo udev-hid-bpf --verbose /sys/bus/hid/devices/0003:045E:07A5.0001 add
   DEBUG - device added 0003:045E:07A5.0001, filename: target/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o
   DEBUG - loading BPF object at "target/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o"
-  DEBUG - successfully attached trace_usb to device id 1
-  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0001/trace_usb
+  DEBUG - successfully attached ignore_button_fix_event to device id 1
+  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0001/ignore_button_fix_event
 
 Because the BPF program is "pinned" it will remain even after the loading process terminates.
-And indeed, the BPF program shows up here::
+And indeed, the BPF program shows up in the bpffs::
 
   $ sudo tree /sys/fs/bpf/hid/
     /sys/fs/bpf/hid/
     └── 0003_045E_07A5_0001
-        └── trace_usb
+        └── ignore_button_fix_event
 
 And we can remove it again (so we can re-add it later)::
 
@@ -117,15 +117,14 @@ And we can remove it again (so we can re-add it later)::
 
 .. note:: The official tool for listing BPF programs is ``bpftool prog`` which
           will list all currently loaded BPF programs. Our program will be
-          listed as ``hid_fix_rdesc`` and/or ``trace_usb``, this project does
+          listed as ``ignore_button_fix_rdesc`` and/or ``ignore_button_fix_event``.
           not currently set the BPF name correctly.
-
 
 Probing
 -------
 
-.. note:: If your device only has one HID interface you can skip this section
-          since you do not need a ``probe`` function.
+.. note:: If your device only has one HID interface you do not need a ``probe``
+          function. Feel free to skip this section.
 
 Now, before we do anything we want to make sure our program is only called for
 the HID interface we actually want to fix up. Most complex devices
@@ -144,7 +143,7 @@ at the HID report descriptor that is passed to us as a byte array in the ``ctx``
 
 In our case, we want to operate on the device that has a HID Usage `Generic Desktop, Mouse`
 (this particular device has a `Keyboard` and a `Consumer Control`). So our ``probe()``
-changes to check exactly
+changes to check exactly that:
 
 .. code-block:: c
 
@@ -167,8 +166,8 @@ changes to check exactly
           to analyze HID report descriptors.
 
 Now, as it turns out we actually stop loading the program now. Why? Because the device
-we gave to the manual load is the Keyboard device, not the Mouse. Passing in the other
-interface (with the ``0002`` suffix) works::
+path we provided to the ``udev-hid-bpf`` tool is the Keyboard device, not the Mouse.
+Passing in the other interface (with the ``0002`` suffix) works::
 
   $ sudo udev-hid-bpf --verbose /sys/bus/hid/devices/0003:045E:07A5.0001 add
   DEBUG - device added 0003:045E:07A5.0001, filename: /lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o
@@ -177,8 +176,8 @@ interface (with the ``0002`` suffix) works::
   $ sudo udev-hid-bpf --verbose /sys/bus/hid/devices/0003:045E:07A5.0002 add
   DEBUG - device added 0003:045E:07A5.0002, filename: /lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o
   DEBUG - loading BPF object at "/lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o"
-  DEBUG - successfully attached trace_usb to device id 2
-  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0002/trace_usb
+  DEBUG - successfully attached ignore_button_fix_event to device id 2
+  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0002/ignore_button_fix_event
 
 This indicates our probe is working correctly.
 
@@ -194,7 +193,7 @@ for the annoying button:
 .. code-block:: c
 
   SEC("fmod_ret/hid_bpf_device_event")
-  int BPF_PROG(trace_usb, struct hid_bpf_ctx *hid_ctx)
+  int BPF_PROG(ignore_button_fix_event, struct hid_bpf_ctx *hid_ctx)
   {
       const int expected_length = 6;
       const int expected_report_id = 26;
@@ -228,7 +227,7 @@ report descriptor, much in the same way as we manipulated the HID report above:
 .. code-block:: c
 
   SEC("fmod_ret/hid_bpf_rdesc_fixup")
-  int BPF_PROG(hid_fix_rdesc, struct hid_bpf_ctx *hctx)
+  int BPF_PROG(ignore_button_fix_rdesc, struct hid_bpf_ctx *hctx)
   {
       const int expected_length = 223;
       if (hid_ctx->size != expected_length)
@@ -250,7 +249,7 @@ report descriptor, much in the same way as we manipulated the HID report above:
           data[34] == 0x75) { /* Report Size */
           data[23] = 3; /* Usage Maximum to 3 buttons */
           data[25] = 3; /* Report count to 3 bits */
-          data[35] = 5; /* Report size for padding bits to bits */
+          data[35] = 5; /* Report size for padding bits to 5 bits */
       }
 
       return 0;
@@ -260,7 +259,7 @@ The ``data`` returned this time is the HID Report Descriptor as an allocated 4K
 buffer.
 
 Because we're modifying the HID report descriptor, injecting the BPF program causes
-disconnect of our real HID device and a reconnect of the modified device (see
+a disconnect of our real HID device and a reconnect of the modified device (see
 ``dmesg`` or ``udevadm monitor``). Likewise, removing our BPF program causes a
 disconnect of the modified device and a reconnect of the real HID device.
 
