@@ -7,6 +7,7 @@ use regex::Regex;
 
 pub mod bpf;
 pub mod hidudev;
+pub mod modalias;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
