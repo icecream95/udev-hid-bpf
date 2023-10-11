@@ -1,3 +1,7 @@
+use libbpf_rs::btf::types as BtfTypes;
+use libbpf_rs::ReferencesType;
+use log;
+
 #[derive(Debug, PartialEq)]
 pub enum Bus {
     Any,
@@ -182,6 +186,84 @@ pub struct Modalias {
 }
 
 impl Modalias {
+    fn new() -> Modalias {
+        Modalias {
+            bus: Bus::Any,
+            group: Group::Any,
+            vid: 0,
+            pid: 0,
+        }
+    }
+
+    pub fn extract_from_btf<'a>(btf: &'a libbpf_rs::btf::Btf) -> Option<BtfTypes::Union<'a>> {
+        let datasec = btf.type_by_name::<libbpf_rs::btf::types::DataSec>(".hid_bpf_config")?;
+
+        for var_sec_info in datasec.iter() {
+            log::debug!(target:"HID-BPF metadata", "{:?}", var_sec_info);
+
+            let var = btf.type_by_id::<BtfTypes::Var>(var_sec_info.ty)?;
+
+            let var_type = var.referenced_type().skip_mods_and_typedefs();
+
+            log::debug!(target:"HID-BPF metadata", "  -> {:?} / {:?}", var, var_type);
+
+            if let Ok(hb_union) = BtfTypes::Union::try_from(var_type) {
+                return Some(hb_union);
+            }
+        }
+
+        None
+    }
+
+    pub fn iter<'a>(
+        btf: &'a libbpf_rs::btf::Btf,
+        datasec: &'a BtfTypes::Union,
+    ) -> impl Iterator<Item = Modalias> + 'a {
+        /* parse the HID_BPF config section */
+        datasec
+            .iter()
+            .enumerate()
+            .filter_map(|(_, e)| Modalias::from_btf_type_id(btf, e))
+    }
+
+    fn from_btf_type_id(
+        btf: &libbpf_rs::btf::Btf,
+        union_member: BtfTypes::UnionMember,
+    ) -> Option<Modalias> {
+        let device_descr = btf.type_by_id::<BtfTypes::Struct>(union_member.ty)?;
+
+        let mut prefix = String::from("");
+
+        let mut modalias = Modalias::new();
+
+        for member in device_descr.iter() {
+            let member_name = String::from(member.name.unwrap().to_str().unwrap());
+            log::debug!(target:"HID-BPF metadata", "    -> {:?}", member);
+            if let Some(Ok(array)) = btf
+                .type_by_id::<BtfTypes::Ptr>(member.ty)
+                .map(|pointer| BtfTypes::Array::try_from(pointer.referenced_type()))
+            {
+                // if prefix is not set, we are at the first element
+                if prefix == "" {
+                    prefix = member_name + "_";
+                    continue;
+                }
+
+                if let Some(name) = member_name.strip_prefix(&prefix) {
+                    match name {
+                        "bus" => modalias.bus = Bus::try_from(array.capacity()).unwrap(),
+                        "group" => modalias.group = Group::try_from(array.capacity()).unwrap(),
+                        "vid" => modalias.vid = u32::try_from(array.capacity()).unwrap(),
+                        "pid" => modalias.pid = u32::try_from(array.capacity()).unwrap(),
+                        _ => (),
+                    }
+                    log::debug!(target:"HID-BPF metadata", "      -> {:?}: {:#06X}", name, array.capacity());
+                }
+            }
+        }
+        Some(modalias)
+    }
+
     pub fn from_str(modalias: &str) -> std::io::Result<Self> {
         /* strip out the "hid:" prefix from the modalias */
         let modalias = modalias.trim_start_matches("hid:");

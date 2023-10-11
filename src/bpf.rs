@@ -4,6 +4,7 @@ include!(concat!(env!("OUT_DIR"), "/hid_bpf_bindings.rs"));
 include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 
 use crate::hidudev;
+use crate::modalias;
 use errno;
 use libbpf_rs::skel::{OpenSkel, SkelBuilder};
 use std::convert::TryInto;
@@ -93,9 +94,19 @@ impl<'a> HidBPF<'a> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
-        let object = obj_builder.open_file(path)?.load()?;
+        let object = obj_builder.open_file(path.clone())?.load()?;
 
         let hid_id = device.id();
+
+        let btf = object.btf()?;
+
+        if let Some(metadata) = modalias::Modalias::extract_from_btf(&btf) {
+            for modalias in modalias::Modalias::iter(&btf, &metadata) {
+                eprintln!("{:?}", modalias);
+            }
+        } else {
+            log::debug!(target: "libbpf", "BPF object at {:?} doesn't have HID-BPF metadata", path.display());
+        }
 
         /*
          * if there is a "probe" syscall, execute it and

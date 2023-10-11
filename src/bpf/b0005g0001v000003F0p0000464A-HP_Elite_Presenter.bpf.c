@@ -7,6 +7,10 @@
 #include "hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
+union {
+	HID_DEVICE(tracing, BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x03F0, 0x464A);
+} HID_BPF_CONFIG(device_ids);
+
 SEC("fmod_ret/hid_bpf_rdesc_fixup")
 int BPF_PROG(hid_fix_rdesc, struct hid_bpf_ctx *hctx)
 {

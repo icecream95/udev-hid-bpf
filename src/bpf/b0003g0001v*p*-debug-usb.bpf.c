@@ -7,6 +7,10 @@
 #include "hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
+union {
+	HID_DEVICE(tracing, BUS_USB, HID_GROUP_GENERIC, HID_ANY_ID, HID_ANY_ID);
+} HID_BPF_CONFIG(device_ids);
+
 char str[64];
 
 SEC("fmod_ret/hid_bpf_device_event")

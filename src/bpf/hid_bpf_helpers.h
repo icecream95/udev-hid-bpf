@@ -19,4 +19,67 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 			      enum hid_report_type type,
 			      enum hid_class_request reqtype) __ksym;
 
+#define _CONCAT(x,y) x ## y
+#define HID_BPF_CONFIG(f) _CONCAT(_, f) SEC(".hid_bpf_config")
+
+/* extracted from <linux/input.h> */
+#define BUS_ANY			0x00
+#define BUS_PCI			0x01
+#define BUS_ISAPNP		0x02
+#define BUS_USB			0x03
+#define BUS_HIL			0x04
+#define BUS_BLUETOOTH		0x05
+#define BUS_VIRTUAL		0x06
+#define BUS_ISA			0x10
+#define BUS_I8042		0x11
+#define BUS_XTKBD		0x12
+#define BUS_RS232		0x13
+#define BUS_GAMEPORT		0x14
+#define BUS_PARPORT		0x15
+#define BUS_AMIGA		0x16
+#define BUS_ADB			0x17
+#define BUS_I2C			0x18
+#define BUS_HOST		0x19
+#define BUS_GSC			0x1A
+#define BUS_ATARI		0x1B
+#define BUS_SPI			0x1C
+#define BUS_RMI			0x1D
+#define BUS_CEC			0x1E
+#define BUS_INTEL_ISHTP		0x1F
+#define BUS_AMD_SFH		0x20
+
+/* extracted from <linux/hid.h> */
+#define HID_GROUP_ANY				0x0000
+#define HID_GROUP_GENERIC			0x0001
+#define HID_GROUP_MULTITOUCH			0x0002
+#define HID_GROUP_SENSOR_HUB			0x0003
+#define HID_GROUP_MULTITOUCH_WIN_8		0x0004
+#define HID_GROUP_RMI				0x0100
+#define HID_GROUP_WACOM				0x0101
+#define HID_GROUP_LOGITECH_DJ_DEVICE		0x0102
+#define HID_GROUP_STEAM				0x0103
+#define HID_GROUP_LOGITECH_27MHZ_DEVICE		0x0104
+#define HID_GROUP_VIVALDI			0x0105
+
+/* include/linux/mod_devicetable.h defines as (~0), but that gives us negative size arrays */
+#define HID_ANY_ID				0x0000
+
+#define HID_USB_DEVICE(ven, prod)				\
+	.bus = BUS_USB, .vendor = (ven), .product = (prod)
+#define HID_BLUETOOTH_DEVICE(ven, prod)					\
+	.bus = BUS_BLUETOOTH, .vendor = (ven), .product = (prod)
+#define HID_I2C_DEVICE(ven, prod)				\
+	.bus = BUS_I2C, .vendor = (ven), .product = (prod)
+
+
+#define HID_DEVICE(n, b, g, ven, prod)				\
+	struct {						\
+		__uint(n, 0);					\
+		__uint(n ## _bus, (b));				\
+		__uint(n ## _group, (g));			\
+		__uint(n ## _vid, (ven));			\
+		__uint(n ## _pid, (prod));		\
+	}
+
+
 #endif /* __HID_BPF_HELPERS_H */
