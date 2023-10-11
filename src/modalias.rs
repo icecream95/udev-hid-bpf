@@ -91,6 +91,60 @@ impl From<&Bus> for usize {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Group {
+    Any,
+    Generic,
+    Multitouch,
+    SensorHub,
+    MultitouchWin8,
+    RMI,
+    Wacom,
+    LogitechDJ,
+    Steam,
+    Logitech27mhz,
+    Vivaldi,
+}
+
+impl TryFrom<usize> for Group {
+    type Error = &'static str;
+
+    fn try_from(sz: usize) -> Result<Self, Self::Error> {
+        match sz {
+            0x00 => Ok(Group::Any),
+            0x01 => Ok(Group::Generic),
+            0x02 => Ok(Group::Multitouch),
+            0x03 => Ok(Group::SensorHub),
+            0x04 => Ok(Group::MultitouchWin8),
+            0x0100 => Ok(Group::RMI),
+            0x0101 => Ok(Group::Wacom),
+            0x0102 => Ok(Group::LogitechDJ),
+            0x0103 => Ok(Group::Steam),
+            0x0104 => Ok(Group::Logitech27mhz),
+            0x0105 => Ok(Group::Vivaldi),
+            _ => Err("Invalid group type"),
+        }
+    }
+}
+
+impl From<&Group> for usize {
+    fn from(group: &Group) -> Self {
+        match group {
+            Group::Any => 0x00,
+            Group::Generic => 0x01,
+            Group::Multitouch => 0x02,
+            Group::SensorHub => 0x03,
+            Group::MultitouchWin8 => 0x04,
+            Group::RMI => 0x0100,
+            Group::Wacom => 0x0101,
+            Group::LogitechDJ => 0x0102,
+            Group::Steam => 0x0103,
+            Group::Logitech27mhz => 0x0104,
+            Group::Vivaldi => 0x0105,
+        }
+    }
+}
+
 impl std::fmt::UpperHex for Bus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let val: usize = self.into();
@@ -105,10 +159,24 @@ impl std::fmt::LowerHex for Bus {
     }
 }
 
+impl std::fmt::UpperHex for Group {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let val: usize = self.into();
+        std::fmt::UpperHex::fmt(&val, f)
+    }
+}
+
+impl std::fmt::LowerHex for Group {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let val: usize = self.into();
+        std::fmt::LowerHex::fmt(&val, f)
+    }
+}
+
 #[derive(Debug)]
 pub struct Modalias {
     pub bus: Bus,
-    pub group: u32,
+    pub group: Group,
     pub vid: u32,
     pub pid: u32,
 }
@@ -134,7 +202,8 @@ impl Modalias {
 
         let bus =
             Bus::try_from(usize::from_str_radix(&modalias[1..5], 16).map_err(econvert)?).unwrap();
-        let group = u32::from_str_radix(&modalias[6..10], 16).map_err(econvert)?;
+        let group = Group::try_from(usize::from_str_radix(&modalias[6..10], 16).map_err(econvert)?)
+            .unwrap();
         let vid = u32::from_str_radix(&modalias[11..19], 16).map_err(econvert)?;
         let pid = u32::from_str_radix(&modalias[20..28], 16).map_err(econvert)?;
 

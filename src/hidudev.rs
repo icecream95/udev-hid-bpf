@@ -115,7 +115,7 @@ impl HidUdev {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::modalias::Bus;
+    use crate::modalias::{Bus, Group};
 
     #[test]
     fn test_modalias() {
@@ -124,7 +124,7 @@ mod tests {
         assert!(m.is_ok());
         let m = m.unwrap();
         assert!(m.bus == Bus::USB);
-        assert!(m.group == 0x0001);
+        assert!(m.group == Group::Generic);
         assert!(m.vid == 0x04d9);
         assert!(m.pid == 0xa09f);
 
@@ -133,7 +133,7 @@ mod tests {
         assert!(m.is_ok());
         let m = m.unwrap();
         assert!(m.bus == Bus::USB);
-        assert!(m.group == 0x0001);
+        assert!(m.group == Group::Generic);
         assert!(m.vid == 0x04d9);
         assert!(m.pid == 0xa09f);
 
