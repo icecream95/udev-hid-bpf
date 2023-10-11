@@ -5,8 +5,10 @@ include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 
 use crate::hidudev;
 use errno;
+use libbpf_rs::skel::{OpenSkel, SkelBuilder};
 use std::convert::TryInto;
 use std::fs;
+use std::os::fd::{AsFd, AsRawFd};
 use std::path::PathBuf;
 
 pub struct HidBPF<'a> {
@@ -29,7 +31,7 @@ pub fn remove_bpf_objects(sysname: &str) -> std::io::Result<()> {
 }
 
 fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_rs::Error> {
-    let fd = prog.fd();
+    let fd = prog.as_fd().as_raw_fd();
     let data_ptr: *const libc::c_void = &data as *const _ as *const libc::c_void;
     let mut run_opts = libbpf_sys::bpf_test_run_opts::default();
 
@@ -120,7 +122,7 @@ impl<'a> HidBPF<'a> {
             };
 
             let attach_args = AttachProgArgs {
-                prog_fd: tracing_prog.fd(),
+                prog_fd: tracing_prog.as_fd().as_raw_fd(),
                 hid: hid_id,
                 retval: -1,
             };
