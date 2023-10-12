@@ -100,8 +100,8 @@ impl<'a> HidBPF<'a> {
 
         let btf = object.btf()?;
 
-        if let Some(metadata) = modalias::Modalias::extract_from_btf(&btf) {
-            for modalias in modalias::Modalias::iter(&btf, &metadata) {
+        if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
+            for modalias in metadata.iter() {
                 eprintln!("{:?}", modalias);
             }
         } else {

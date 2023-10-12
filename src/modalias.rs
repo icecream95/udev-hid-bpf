@@ -177,6 +177,47 @@ impl std::fmt::LowerHex for Group {
     }
 }
 
+pub struct Metadata<'m> {
+    btf: &'m libbpf_rs::btf::Btf<'m>,
+    types: BtfTypes::Union<'m>,
+}
+
+impl<'m> Metadata<'m> {
+    pub fn from_btf<'a>(btf: &'a libbpf_rs::btf::Btf<'m>) -> Option<Self>
+    where
+        'a: 'm,
+    {
+        let datasec = btf.type_by_name::<libbpf_rs::btf::types::DataSec>(".hid_bpf_config")?;
+
+        for var_sec_info in datasec.iter() {
+            log::debug!(target:"HID-BPF metadata", "{:?}", var_sec_info);
+
+            let var = btf.type_by_id::<BtfTypes::Var>(var_sec_info.ty)?;
+
+            let var_type = var.referenced_type().skip_mods_and_typedefs();
+
+            log::debug!(target:"HID-BPF metadata", "  -> {:?} / {:?}", var, var_type);
+
+            if let Ok(hb_union) = BtfTypes::Union::try_from(var_type) {
+                return Some(Metadata {
+                    btf,
+                    types: hb_union,
+                });
+            }
+        }
+
+        None
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = Modalias> + '_ {
+        /* parse the HID_BPF config section */
+        self.types
+            .iter()
+            .enumerate()
+            .filter_map(|(_, e)| Modalias::from_btf_type_id(&self.btf, e))
+    }
+}
+
 #[derive(Debug)]
 pub struct Modalias {
     pub bus: Bus,
@@ -193,37 +234,6 @@ impl Modalias {
             vid: 0,
             pid: 0,
         }
-    }
-
-    pub fn extract_from_btf<'a>(btf: &'a libbpf_rs::btf::Btf) -> Option<BtfTypes::Union<'a>> {
-        let datasec = btf.type_by_name::<libbpf_rs::btf::types::DataSec>(".hid_bpf_config")?;
-
-        for var_sec_info in datasec.iter() {
-            log::debug!(target:"HID-BPF metadata", "{:?}", var_sec_info);
-
-            let var = btf.type_by_id::<BtfTypes::Var>(var_sec_info.ty)?;
-
-            let var_type = var.referenced_type().skip_mods_and_typedefs();
-
-            log::debug!(target:"HID-BPF metadata", "  -> {:?} / {:?}", var, var_type);
-
-            if let Ok(hb_union) = BtfTypes::Union::try_from(var_type) {
-                return Some(hb_union);
-            }
-        }
-
-        None
-    }
-
-    pub fn iter<'a>(
-        btf: &'a libbpf_rs::btf::Btf,
-        datasec: &'a BtfTypes::Union,
-    ) -> impl Iterator<Item = Modalias> + 'a {
-        /* parse the HID_BPF config section */
-        datasec
-            .iter()
-            .enumerate()
-            .filter_map(|(_, e)| Modalias::from_btf_type_id(btf, e))
     }
 
     fn from_btf_type_id(
