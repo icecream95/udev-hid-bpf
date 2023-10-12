@@ -19,9 +19,6 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 			      enum hid_report_type type,
 			      enum hid_class_request reqtype) __ksym;
 
-#define _CONCAT(x,y) x ## y
-#define HID_BPF_CONFIG(f) _CONCAT(_, f) SEC(".hid_bpf_config")
-
 /* extracted from <linux/input.h> */
 #define BUS_ANY			0x00
 #define BUS_PCI			0x01
@@ -72,14 +69,20 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 	.bus = BUS_I2C, .vendor = (ven), .product = (prod)
 
 
-#define HID_DEVICE(n, b, g, ven, prod)				\
-	struct {						\
-		__uint(n, 0);					\
-		__uint(n ## _bus, (b));				\
-		__uint(n ## _group, (g));			\
-		__uint(n ## _vid, (ven));			\
-		__uint(n ## _pid, (prod));		\
+#define COMBINE1(X,Y) X ## Y  // helper macro
+#define COMBINE(X,Y) COMBINE1(X,Y)
+
+
+#define HID_DEVICE(b, g, ven, prod)					\
+	struct {							\
+		__uint(COMBINE(foo, __LINE__), 0);			\
+		__uint(COMBINE(COMBINE(foo, __LINE__), _bus), (b));	\
+		__uint(COMBINE(COMBINE(foo, __LINE__), _group), (g));	\
+		__uint(COMBINE(COMBINE(foo, __LINE__), _vid), (ven));	\
+		__uint(COMBINE(COMBINE(foo, __LINE__), _pid), (prod));	\
 	}
+
+#define HID_BPF_CONFIG(f) COMBINE(_, f) SEC(".hid_bpf_config")
 
 
 #endif /* __HID_BPF_HELPERS_H */

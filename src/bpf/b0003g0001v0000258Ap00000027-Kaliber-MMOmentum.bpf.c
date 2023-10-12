@@ -8,7 +8,7 @@
 #include <bpf/bpf_tracing.h>
 
 union {
-	HID_DEVICE(tracing, BUS_USB, HID_GROUP_GENERIC, 0x258A, 0x0027);
+	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x258A, 0x0027);
 } HID_BPF_CONFIG(device_ids);
 
 SEC("fmod_ret/hid_bpf_rdesc_fixup")

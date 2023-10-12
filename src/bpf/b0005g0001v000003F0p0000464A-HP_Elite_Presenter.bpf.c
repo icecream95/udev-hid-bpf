@@ -8,7 +8,7 @@
 #include <bpf/bpf_tracing.h>
 
 union {
-	HID_DEVICE(tracing, BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x03F0, 0x464A);
+	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x03F0, 0x464A);
 } HID_BPF_CONFIG(device_ids);
 
 SEC("fmod_ret/hid_bpf_rdesc_fixup")

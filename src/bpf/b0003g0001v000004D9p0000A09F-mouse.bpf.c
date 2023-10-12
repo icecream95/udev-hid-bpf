@@ -8,7 +8,7 @@
 #include <bpf/bpf_tracing.h>
 
 union {
-	HID_DEVICE(tracing, BUS_USB, HID_GROUP_GENERIC, 0x04D9, 0xA09F);
+	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x04D9, 0xA09F);
 } HID_BPF_CONFIG(device_ids);
 
 SEC("fmod_ret/hid_bpf_device_event")
