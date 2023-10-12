@@ -2,7 +2,6 @@
 
 use crate::bpf;
 use crate::modalias::Modalias;
-use globset::GlobBuilder;
 use log;
 
 pub struct HidUdev {
@@ -62,38 +61,26 @@ impl HidUdev {
             return Ok(());
         }
 
-        let modalias = self.modalias();
+        let mut paths = Vec::new();
 
-        let glob_path = bpf_dir.join(format!(
-            "b{{{:04X},\\*}}g{{{:04X},\\*}}v{{{:08X},\\*}}p{{{:08X},\\*}}*.bpf.o",
-            modalias.bus, modalias.group, modalias.vid, modalias.pid,
-        ));
-
-        let globset = GlobBuilder::new(glob_path.as_path().to_str().unwrap())
-            .literal_separator(true)
-            .case_insensitive(true)
-            .build()
-            .unwrap()
-            .compile_matcher();
-
-        let mut matches = Vec::new();
-        for elem in bpf_dir.read_dir().unwrap() {
-            if let Ok(dir_entry) = elem {
-                let path = dir_entry.path();
-                if globset.is_match(&path.to_str().unwrap()) && path.is_file() {
+        for property in self.udev_device.properties() {
+            log::debug!("property: {:?} = {:?}", property.name(), property.value());
+            if property.name().to_str().unwrap().starts_with("HID_BPF_") {
+                let target_object = bpf_dir.join(property.value());
+                if target_object.is_file() {
                     log::debug!(
                         "device added {}, filename: {}",
                         self.sysname(),
-                        path.display(),
+                        target_object.display(),
                     );
-                    matches.push(path);
+                    paths.push(target_object);
                 }
             }
         }
 
-        if !matches.is_empty() {
+        if !paths.is_empty() {
             let hid_bpf_loader = bpf::HidBPF::new().unwrap();
-            for path in matches {
+            for path in paths {
                 hid_bpf_loader.load_programs(path, self).unwrap();
             }
         }

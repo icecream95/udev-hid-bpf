@@ -2,8 +2,15 @@
 
 extern crate bindgen;
 
+#[allow(dead_code)]
+/// modalias is not used completely here, so some functions are not used
+#[path = "src/modalias.rs"]
+mod modalias;
+
+use crate::modalias::Modalias;
 use libbpf_cargo::SkeletonBuilder;
-use regex::Regex;
+use libbpf_rs;
+use std::collections::hash_map::Entry;
 use std::env;
 use std::fs::File;
 use std::io::Write;
@@ -17,59 +24,57 @@ const TARGET_DIR: &str = "bpf"; // inside $CARGO_TARGET_DIR
 fn build_bpf_file(
     bpf_source: &std::path::Path,
     target_dir: &std::path::Path,
-) -> std::io::Result<String> {
-    let re = Regex::new(r"b(?<bus>[0-9A-Z\*]{1,4})g(?<group>[0-9A-Z\*]{1,4})v(?<vid>[0-9A-Z\*]{1,8})p(?<pid>[0-9A-Z\*]{1,8})-.*.bpf.c").unwrap();
-    let re_match = re.captures(bpf_source.file_name().unwrap().to_str().unwrap());
-
-    let error = Err(std::io::Error::new(
-        std::io::ErrorKind::InvalidData,
-        format!(
-            "Invalid filename '{}', must be bBBBBgGGGGv0000VVVVp0000PPPP-any-value.bpf.c",
-            bpf_source.file_name().unwrap().to_str().unwrap()
-        ),
-    ));
-
-    if re_match.is_none() {
-        return error;
-    }
-
-    let caps = re_match.unwrap();
-    let (bus, group, vid, pid) = (&caps["bus"], &caps["group"], &caps["vid"], &caps["pid"]);
-    if !bus.contains("*") && bus.len() != 4 {
-        return error;
-    }
-    if !group.contains("*") && group.len() != 4 {
-        return error;
-    }
-    if !vid.contains("*") && (vid.len() != 8 || !vid.starts_with("0000")) {
-        return error;
-    }
-    if !pid.contains("*") && (pid.len() != 8 || !pid.starts_with("0000")) {
-        return error;
-    }
-
+    modaliases: &mut std::collections::HashMap<Modalias, Vec<String>>,
+) -> Result<(), libbpf_rs::Error> {
     let mut target_object = target_dir.clone().join(bpf_source.file_name().unwrap());
 
     target_object.set_extension("o");
 
     SkeletonBuilder::new()
         .source(bpf_source)
-        .obj(target_object)
+        .obj(target_object.clone())
         .build()
         .unwrap();
 
-    Ok(format!("b{}g{}v{}p{}", bus, group, vid, pid))
-}
+    let btf = libbpf_rs::btf::Btf::from_path(target_object.clone())?;
 
-fn write_hwdb_entry(modalias: String, mut hwdb_fd: &File) -> std::io::Result<()> {
-    let hwdb_match = format!("hid-bpf:hid:{}\n", modalias);
-    hwdb_fd.write_all(hwdb_match.as_bytes())?;
-    hwdb_fd.write_all(b" HID_BPF=1\n\n")?;
-
+    if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
+        for modalias in metadata.iter() {
+            match modaliases.entry(modalias) {
+                Entry::Vacant(e) => {
+                    e.insert(vec![String::from(
+                        target_object.file_name().unwrap().to_str().unwrap(),
+                    )]);
+                }
+                Entry::Occupied(mut e) => {
+                    e.get_mut().push(String::from(
+                        target_object.file_name().unwrap().to_str().unwrap(),
+                    ));
+                }
+            }
+        }
+    }
     Ok(())
 }
 
-fn main() -> std::io::Result<()> {
+fn write_hwdb_entry(
+    mut cur_idx: u32,
+    modalias: Modalias,
+    files: Vec<String>,
+    mut hwdb_fd: &File,
+) -> std::io::Result<u32> {
+    let hwdb_match = format!("hid-bpf:hid:{}\n", String::from(modalias));
+    hwdb_fd.write_all(hwdb_match.as_bytes())?;
+    for f in files {
+        hwdb_fd.write_all(format!(" HID_BPF_{:?}={}\n", cur_idx, f).as_bytes())?;
+        cur_idx += 1;
+    }
+    hwdb_fd.write_all(b"\n")?;
+
+    Ok(cur_idx)
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed={}", DIR);
     println!("cargo:rerun-if-changed={}", WRAPPER);
 
@@ -93,6 +98,8 @@ fn main() -> std::io::Result<()> {
     let hwdb_file = target_dir.clone().join("99-hid-bpf.hwdb");
     let hwdb_fd = File::create(hwdb_file)?;
 
+    let mut modaliases = std::collections::HashMap::new();
+
     // Then compile all other .bpf.c in a .bpf.o file
     for elem in Path::new(DIR).read_dir().unwrap() {
         if let Ok(dir_entry) = elem {
@@ -101,10 +108,14 @@ fn main() -> std::io::Result<()> {
                 && path.to_str().unwrap().ends_with(".bpf.c")
                 && path.file_name().unwrap() != ATTACH_PROG
             {
-                let modalias = build_bpf_file(&path, &target_dir)?;
-                write_hwdb_entry(modalias, &hwdb_fd)?;
+                build_bpf_file(&path, &target_dir, &mut modaliases)?;
             }
         }
+    }
+
+    let mut idx = 0;
+    for (modalias, files) in modaliases {
+        idx = write_hwdb_entry(idx, modalias, files, &hwdb_fd)?;
     }
 
     // Create a wrapper around our bpf interface

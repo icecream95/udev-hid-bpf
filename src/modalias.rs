@@ -2,7 +2,7 @@ use libbpf_rs::btf::types as BtfTypes;
 use libbpf_rs::ReferencesType;
 use log;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Hash, Eq)]
 pub enum Bus {
     Any,
     PCI,
@@ -95,7 +95,16 @@ impl From<&Bus> for usize {
     }
 }
 
-#[derive(Debug, PartialEq)]
+impl From<Bus> for String {
+    fn from(bus: Bus) -> String {
+        match bus {
+            Bus::Any => String::from("*"),
+            _ => format!("{:04X}", bus),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Hash, Eq)]
 pub enum Group {
     Any,
     Generic,
@@ -145,6 +154,15 @@ impl From<&Group> for usize {
             Group::Steam => 0x0103,
             Group::Logitech27mhz => 0x0104,
             Group::Vivaldi => 0x0105,
+        }
+    }
+}
+
+impl From<Group> for String {
+    fn from(group: Group) -> String {
+        match group {
+            Group::Any => String::from("*"),
+            _ => format!("{:04X}", group),
         }
     }
 }
@@ -218,7 +236,7 @@ impl<'m> Metadata<'m> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
 pub struct Modalias {
     pub bus: Bus,
     pub group: Group,
@@ -325,5 +343,26 @@ impl Modalias {
         };
 
         Self::from_str(modalias)
+    }
+}
+
+impl From<Modalias> for String {
+    fn from(modalias: Modalias) -> String {
+        let vid = match modalias.vid {
+            0 => String::from("*"),
+            _ => format!("{:08X}", modalias.vid),
+        };
+        let pid = match modalias.pid {
+            0 => String::from("*"),
+            _ => format!("{:08X}", modalias.pid),
+        };
+
+        format!(
+            "b{}g{}v{}p{}",
+            String::from(modalias.bus),
+            String::from(modalias.group),
+            vid,
+            pid
+        )
     }
 }
