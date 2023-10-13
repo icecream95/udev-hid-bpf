@@ -7,13 +7,10 @@
 #include "hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
-union {
-} HID_BPF_CONFIG(device_ids);
-
 char str[64];
 
 SEC("fmod_ret/hid_bpf_device_event")
-int BPF_PROG(trace_usb, struct hid_bpf_ctx *hid_ctx)
+int BPF_PROG(trace_hid_events, struct hid_bpf_ctx *hid_ctx)
 {
 	int i, j;
 	__u8 *data;
@@ -46,14 +43,4 @@ int BPF_PROG(trace_usb, struct hid_bpf_ctx *hid_ctx)
 	return 0;
 }
 
-SEC("syscall")
-int probe(struct hid_bpf_probe_args *ctx)
-{
-	ctx->retval = 0;
-
-	/* comment the following line to actually bind the program */
-	ctx->retval = -22;
-
-	return 0;
-}
 char _license[] SEC("license") = "GPL";
