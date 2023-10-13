@@ -227,7 +227,7 @@ impl<'m> Metadata<'m> {
         None
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = Modalias> + '_ {
+    pub fn modaliases(&self) -> impl Iterator<Item = Modalias> + '_ {
         /* parse the HID_BPF config section */
         self.types
             .iter()

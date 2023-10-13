@@ -39,7 +39,7 @@ fn build_bpf_file(
     let btf = libbpf_rs::btf::Btf::from_path(target_object.clone())?;
 
     if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
-        for modalias in metadata.iter() {
+        for modalias in metadata.modaliases() {
             match modaliases.entry(modalias) {
                 Entry::Vacant(e) => {
                     e.insert(vec![String::from(
