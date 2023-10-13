@@ -96,7 +96,7 @@ This doesn't do anything (in fact it will refuse to even attach) but it should
 be buildable, can be installed and we can attempt to load it manually::
 
   $ sudo ./install.sh
-  $ sudo udev-hid-bpf --verbose /sys/bus/hid/devices/0003:045E:07A5.0001 add
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001
   DEBUG - device added 0003:045E:07A5.0001, filename: target/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o
   DEBUG - loading BPF object at "target/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o"
   DEBUG - successfully attached ignore_button_fix_event to device id 1
@@ -112,7 +112,7 @@ And indeed, the BPF program shows up in the bpffs::
 
 And we can remove it again (so we can re-add it later)::
 
-  $ sudo udev-hid-bpf --verbose /sys/bus/hid/devices/0003:045E:07A5.0001 remove
+  $ sudo udev-hid-bpf --verbose remove /sys/bus/hid/devices/0003:045E:07A5.0001
 
 
 .. note:: The official tool for listing BPF programs is ``bpftool prog`` which
@@ -169,11 +169,11 @@ Now, as it turns out we actually stop loading the program now. Why? Because the 
 path we provided to the ``udev-hid-bpf`` tool is the Keyboard device, not the Mouse.
 Passing in the other interface (with the ``0002`` suffix) works::
 
-  $ sudo udev-hid-bpf --verbose /sys/bus/hid/devices/0003:045E:07A5.0001 add
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001
   DEBUG - device added 0003:045E:07A5.0001, filename: /lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o
   DEBUG - loading BPF object at "/lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o"
 
-  $ sudo udev-hid-bpf --verbose /sys/bus/hid/devices/0003:045E:07A5.0002 add
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0002
   DEBUG - device added 0003:045E:07A5.0002, filename: /lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o
   DEBUG - loading BPF object at "/lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o"
   DEBUG - successfully attached ignore_button_fix_event to device id 2

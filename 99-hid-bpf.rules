@@ -2,7 +2,7 @@ ACTION!="add|remove", GOTO="hid_bpf_end"
 SUBSYSTEM!="hid", GOTO="hid_bpf_end"
 
 IMPORT{builtin}="hwdb --subsystem=hid --lookup-prefix=hid-bpf:"
-ACTION=="add", ENV{HID_BPF_*}=="*", RUN{program}+="/usr/local/bin/udev-hid-bpf $sys$devpath add"
-ACTION=="remove", ENV{HID_BPF_*}=="*", RUN{program}+="/usr/local/bin/udev-hid-bpf $sys$devpath remove"
+ACTION=="add", ENV{HID_BPF_*}=="*", RUN{program}+="/usr/local/bin/udev-hid-bpf add $sys$devpath"
+ACTION=="remove", ENV{HID_BPF_*}=="*", RUN{program}+="/usr/local/bin/udev-hid-bpf remove $sys$devpath"
 
 LABEL="hid_bpf_end"

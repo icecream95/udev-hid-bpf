@@ -23,8 +23,6 @@ struct Cli {
     verbose: bool,
     #[command(subcommand)]
     command: Commands,
-    /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
-    devpath: std::path::PathBuf,
 }
 
 fn print_to_log(level: libbpf_rs::PrintLevel, msg: String) {
@@ -39,12 +37,17 @@ fn print_to_log(level: libbpf_rs::PrintLevel, msg: String) {
 enum Commands {
     /// A new device is created
     Add {
+        /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
+        devpath: std::path::PathBuf,
         /// Folder to look at for bpf objects
         #[arg(short, long)]
         bpf: Option<std::path::PathBuf>,
     },
     /// A device is removed from the sysfs
-    Remove,
+    Remove {
+        /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
+        devpath: std::path::PathBuf,
+    },
 }
 
 fn cmd_add(syspath: &std::path::PathBuf, bpf: Option<std::path::PathBuf>) -> std::io::Result<()> {
@@ -110,8 +113,8 @@ fn main() -> std::io::Result<()> {
         .unwrap();
 
     match cli.command {
-        Commands::Add { bpf } => cmd_add(&cli.devpath, bpf),
-        Commands::Remove => cmd_remove(&cli.devpath),
+        Commands::Add { devpath, bpf } => cmd_add(&devpath, bpf),
+        Commands::Remove { devpath } => cmd_remove(&devpath),
     }
 }
 
