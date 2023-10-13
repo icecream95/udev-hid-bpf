@@ -56,32 +56,50 @@ impl HidUdev {
         u32::from_str_radix(&hid_sys[15..], 16).unwrap()
     }
 
-    pub fn load_bpf_from_directory(&self, bpf_dir: std::path::PathBuf) -> std::io::Result<()> {
+    pub fn load_bpf_from_directory(
+        &self,
+        bpf_dir: std::path::PathBuf,
+        prog: Option<String>,
+    ) -> std::io::Result<()> {
         if !bpf_dir.exists() {
             return Ok(());
         }
 
         let mut paths = Vec::new();
 
-        for property in self.udev_device.properties() {
-            log::debug!("property: {:?} = {:?}", property.name(), property.value());
-            if property.name().to_str().unwrap().starts_with("HID_BPF_") {
-                let target_object = bpf_dir.join(property.value());
-                if target_object.is_file() {
-                    log::debug!(
-                        "device added {}, filename: {}",
-                        self.sysname(),
-                        target_object.display(),
-                    );
-                    paths.push(target_object);
+        if prog.is_none() {
+            for property in self.udev_device.properties() {
+                log::debug!("property: {:?} = {:?}", property.name(), property.value());
+                if property.name().to_str().unwrap().starts_with("HID_BPF_") {
+                    let target_object = bpf_dir.join(property.value());
+                    if target_object.is_file() {
+                        log::debug!(
+                            "device added {}, filename: {}",
+                            self.sysname(),
+                            target_object.display(),
+                        );
+                        paths.push(target_object);
+                    }
                 }
+            }
+        } else {
+            let target_object = bpf_dir.join(prog.unwrap());
+            if target_object.is_file() {
+                log::debug!(
+                    "device added {}, filename: {}",
+                    self.sysname(),
+                    target_object.display(),
+                );
+                paths.push(target_object);
             }
         }
 
         if !paths.is_empty() {
             let hid_bpf_loader = bpf::HidBPF::new().unwrap();
             for path in paths {
-                hid_bpf_loader.load_programs(&path, self).unwrap();
+                if let Err(e) = hid_bpf_loader.load_programs(&path, self) {
+                    log::warn!("Failed to load {:?}: {:?}", path, e);
+                };
             }
         }
 

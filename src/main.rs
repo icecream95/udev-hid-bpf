@@ -39,6 +39,8 @@ enum Commands {
     Add {
         /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
         devpath: std::path::PathBuf,
+        /// The BPF program to load
+        prog: Option<String>,
         /// Folder to look at for bpf objects
         #[arg(short, long)]
         bpf: Option<std::path::PathBuf>,
@@ -50,7 +52,11 @@ enum Commands {
     },
 }
 
-fn cmd_add(syspath: &std::path::PathBuf, bpf: Option<std::path::PathBuf>) -> std::io::Result<()> {
+fn cmd_add(
+    syspath: &std::path::PathBuf,
+    prog: Option<String>,
+    bpf: Option<std::path::PathBuf>,
+) -> std::io::Result<()> {
     let dev = hidudev::HidUdev::from_syspath(syspath)?;
     let target_bpf_dir = match bpf {
         Some(bpf_dir) => bpf_dir,
@@ -64,7 +70,7 @@ fn cmd_add(syspath: &std::path::PathBuf, bpf: Option<std::path::PathBuf>) -> std
         }
     };
 
-    dev.load_bpf_from_directory(target_bpf_dir)
+    dev.load_bpf_from_directory(target_bpf_dir, prog)
 }
 
 fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String> {
@@ -113,7 +119,7 @@ fn main() -> std::io::Result<()> {
         .unwrap();
 
     match cli.command {
-        Commands::Add { devpath, bpf } => cmd_add(&devpath, bpf),
+        Commands::Add { devpath, prog, bpf } => cmd_add(&devpath, prog, bpf),
         Commands::Remove { devpath } => cmd_remove(&devpath),
     }
 }
