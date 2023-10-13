@@ -81,7 +81,7 @@ impl HidUdev {
         if !paths.is_empty() {
             let hid_bpf_loader = bpf::HidBPF::new().unwrap();
             for path in paths {
-                hid_bpf_loader.load_programs(path, self).unwrap();
+                hid_bpf_loader.load_programs(&path, self).unwrap();
             }
         }
 

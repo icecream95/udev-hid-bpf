@@ -87,7 +87,7 @@ impl<'a> HidBPF<'a> {
 
     pub fn load_programs(
         &self,
-        path: PathBuf,
+        path: &PathBuf,
         device: &hidudev::HidUdev,
     ) -> Result<bool, libbpf_rs::Error> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
