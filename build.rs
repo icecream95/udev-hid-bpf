@@ -26,7 +26,7 @@ fn build_bpf_file(
     target_dir: &std::path::Path,
     modaliases: &mut std::collections::HashMap<Modalias, Vec<String>>,
 ) -> Result<(), libbpf_rs::Error> {
-    let mut target_object = target_dir.clone().join(bpf_source.file_name().unwrap());
+    let mut target_object = target_dir.join(bpf_source.file_name().unwrap());
 
     target_object.set_extension("o");
 
