@@ -61,14 +61,6 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 /* include/linux/mod_devicetable.h defines as (~0), but that gives us negative size arrays */
 #define HID_ANY_ID				0x0000
 
-#define HID_USB_DEVICE(ven, prod)				\
-	.bus = BUS_USB, .vendor = (ven), .product = (prod)
-#define HID_BLUETOOTH_DEVICE(ven, prod)					\
-	.bus = BUS_BLUETOOTH, .vendor = (ven), .product = (prod)
-#define HID_I2C_DEVICE(ven, prod)				\
-	.bus = BUS_I2C, .vendor = (ven), .product = (prod)
-
-
 #define COMBINE1(X,Y) X ## Y  // helper macro
 #define COMBINE(X,Y) COMBINE1(X,Y)
 
