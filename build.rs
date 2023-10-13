@@ -10,7 +10,6 @@ mod modalias;
 use crate::modalias::Modalias;
 use libbpf_cargo::SkeletonBuilder;
 use libbpf_rs;
-use std::collections::hash_map::Entry;
 use std::env;
 use std::fs::File;
 use std::io::Write;
@@ -39,19 +38,12 @@ fn build_bpf_file(
     let btf = libbpf_rs::btf::Btf::from_path(target_object.clone())?;
 
     if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
+        let fname = String::from(target_object.file_name().unwrap().to_str().unwrap());
         for modalias in metadata.modaliases() {
-            match modaliases.entry(modalias) {
-                Entry::Vacant(e) => {
-                    e.insert(vec![String::from(
-                        target_object.file_name().unwrap().to_str().unwrap(),
-                    )]);
-                }
-                Entry::Occupied(mut e) => {
-                    e.get_mut().push(String::from(
-                        target_object.file_name().unwrap().to_str().unwrap(),
-                    ));
-                }
-            }
+            modaliases
+                .entry(modalias)
+                .or_insert(Vec::new())
+                .push(fname.clone());
         }
     }
     Ok(())
