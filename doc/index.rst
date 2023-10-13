@@ -17,3 +17,4 @@ dependencies.
    getting-started
    device-matches
    tutorial
+   metadata

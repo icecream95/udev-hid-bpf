@@ -16,34 +16,43 @@ events for a button that doesn't event exist on the device.
 
 There is a page on :ref:`matching_programs` but for now we'll use the tool::
 
-    $ ./tools/show-modalias
-    /sys/bus/hid/devices/0003:045E:07A5.0001
-      - name:     Microsoft Microsoft® 2.4GHz Transceiver v9.0
-      - modalias: b0003g0001v0000045Ep000007A5
-    /sys/bus/hid/devices/0003:045E:07A5.0002
-      - name:     Microsoft Microsoft® 2.4GHz Transceiver v9.0
-      - modalias: b0003g0001v0000045Ep000007A5
-    /sys/bus/hid/devices/0003:045E:07A5.0003
-      - name:     Microsoft Microsoft® 2.4GHz Transceiver v9.0
-      - modalias: b0003g0001v0000045Ep000007A5
-    /sys/bus/hid/devices/0003:046D:4088.0009
-      - name:     Logitech ERGO K860
-      - modalias: b0003g0102v0000046Dp00004088
-    /sys/bus/hid/devices/0003:046D:C52B.0004
-      - name:     Logitech USB Receiver
-      - modalias: b0003g0001v0000046Dp0000C52B
-    /sys/bus/hid/devices/0003:046D:C52B.0005
-      - name:     Logitech USB Receiver
-      - modalias: b0003g0001v0000046Dp0000C52B
-    /sys/bus/hid/devices/0003:046D:C52B.0006
-      - name:     Logitech USB Receiver
-      - modalias: b0003g0001v0000046Dp0000C52B
-    /sys/bus/hid/devices/0003:1050:0407.0007
-      - name:     Yubico YubiKey OTP+FIDO+CCID
-      - modalias: b0003g0001v00001050p00000407
-    /sys/bus/hid/devices/0003:1050:0407.0008
-      - name:     Yubico YubiKey OTP+FIDO+CCID
-      - modalias: b0003g0001v00001050p00000407
+   $ ./tools/show-modalias
+   /sys/bus/hid/devices/0003:045E:07A5.0001
+     - name:         Microsoft Microsoft® 2.4GHz Transceiver v9.0
+     - modalias:     b0003g0001v0000045Ep000007A5
+     - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
+   /sys/bus/hid/devices/0003:045E:07A5.0002
+     - name:         Microsoft Microsoft® 2.4GHz Transceiver v9.0
+     - modalias:     b0003g0001v0000045Ep000007A5
+     - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
+   /sys/bus/hid/devices/0003:045E:07A5.0003
+     - name:         Microsoft Microsoft® 2.4GHz Transceiver v9.0
+     - modalias:     b0003g0001v0000045Ep000007A5
+     - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
+   /sys/bus/hid/devices/0003:046D:4088.0009
+     - name:         Logitech ERGO K860
+     - modalias:     b0003g0102v0000046Dp00004088
+     - device entry: HID_DEVICE(BUS_USB, HID_GROUP_LOGITECH_DJ_DEVICE, 0x046D, 0x046D)
+   /sys/bus/hid/devices/0003:046D:C52B.0004
+     - name:         Logitech USB Receiver
+     - modalias:     b0003g0001v0000046Dp0000C52B
+     - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0xC52B)
+   /sys/bus/hid/devices/0003:046D:C52B.0005
+     - name:         Logitech USB Receiver
+     - modalias:     b0003g0001v0000046Dp0000C52B
+     - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0xC52B)
+   /sys/bus/hid/devices/0003:046D:C52B.0006
+     - name:         Logitech USB Receiver
+     - modalias:     b0003g0001v0000046Dp0000C52B
+     - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0xC52B)
+   /sys/bus/hid/devices/0003:1050:0407.0007
+     - name:         Yubico YubiKey OTP+FIDO+CCID
+     - modalias:     b0003g0001v00001050p00000407
+     - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x1050, 0x0407)
+   /sys/bus/hid/devices/0003:1050:0407.0008
+     - name:         Yubico YubiKey OTP+FIDO+CCID
+     - modalias:     b0003g0001v00001050p00000407
+     - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x1050, 0x0407)
    ...
 
 .. note:: This device has multiple HID interfaces, so we will have to use the
@@ -55,7 +64,7 @@ Scaffolding
 
 Let's create the file and fill it with enough information to compile::
 
-  $ touch ./src/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.c
+  $ touch ./src/bpf/ignore-button.bpf.c
 
 And this file contains:
 
@@ -66,6 +75,10 @@ And this file contains:
   #include "hid_bpf.h"
   #include "hid_bpf_helpers.h"
   #include <bpf/bpf_tracing.h>
+
+   union {
+       HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5);
+   } HID_BPF_CONFIG(device_ids)
 
   SEC("fmod_ret/hid_bpf_rdesc_fixup")
   int BPF_PROG(ignore_button_fix_rdesc, struct hid_bpf_ctx *hctx)
@@ -92,13 +105,13 @@ And this file contains:
 
   char _license[] SEC("license") = "GPL";
 
-This doesn't do anything (in fact it will refuse to even attach) but it should
-be buildable, can be installed and we can attempt to load it manually::
+This doesn't do anything but it should be buildable, can be installed and
+we can attempt to load it manually::
 
   $ sudo ./install.sh
-  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001
-  DEBUG - device added 0003:045E:07A5.0001, filename: target/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o
-  DEBUG - loading BPF object at "target/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o"
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 ignore-button.bpf.o
+  DEBUG - device added 0003:045E:07A5.0001, filename: target/bpf/ignore-button.bpf.o
+  DEBUG - loading BPF object at "target/bpf/ignore-button.bpf.o"
   DEBUG - successfully attached ignore_button_fix_event to device id 1
   DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0001/ignore_button_fix_event
 
@@ -169,13 +182,13 @@ Now, as it turns out we actually stop loading the program now. Why? Because the 
 path we provided to the ``udev-hid-bpf`` tool is the Keyboard device, not the Mouse.
 Passing in the other interface (with the ``0002`` suffix) works::
 
-  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001
-  DEBUG - device added 0003:045E:07A5.0001, filename: /lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o
-  DEBUG - loading BPF object at "/lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o"
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 ignore-button.bpf.o
+  DEBUG - device added 0003:045E:07A5.0001, filename: /lib/firmware/hid/bpf/ignore-button.bpf.o
+  DEBUG - loading BPF object at "/lib/firmware/hid/bpf/ignore-button.bpf.o"
 
-  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0002
-  DEBUG - device added 0003:045E:07A5.0002, filename: /lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o
-  DEBUG - loading BPF object at "/lib/firmware/hid/bpf/b0003g0001v0000045Ep000007A5-ignore-button.bpf.o"
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0002 ignore-button.bpf.o
+  DEBUG - device added 0003:045E:07A5.0002, filename: /lib/firmware/hid/bpf/ignore-button.bpf.o
+  DEBUG - loading BPF object at "/lib/firmware/hid/bpf/ignore-button.bpf.o"
   DEBUG - successfully attached ignore_button_fix_event to device id 2
   DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0002/ignore_button_fix_event
 
@@ -269,7 +282,7 @@ Bringing it all together
 Once the BPF program works as expected, :ref:`installing it <installation>` sets up
 the systemd hwdb and the udev rules for the program to be loaded automatically whenever
 the device is plugged in. This can be verified by checking wether the
-``HID_BPF`` property exists on the device::
+``HID_BPF_n`` property exists on the device::
 
   $ udevadm info /sys/bus/hid/devices/0003:045E:07A5*
   P: /devices/pci0000:00/0000:00:14.0/usb1/1-4/1-4:1.0/0003:045E:07A5.0022
@@ -286,7 +299,7 @@ the device is plugged in. This can be verified by checking wether the
   E: HID_UNIQ=
   E: MODALIAS=hid:b0003g0001v0000045Ep000007A5
   E: USEC_INITIALIZED=4768059665
-  E: HID_BPF=1
+  E: HID_BPF_27=ignore-button.bpf.o
 
   ...
 
