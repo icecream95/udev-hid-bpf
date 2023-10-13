@@ -1,6 +1,7 @@
-ACTION!="add|remove", GOTO="hid_bpf_end"
+ACTION!="add|remove|bind", GOTO="hid_bpf_end"
 SUBSYSTEM!="hid", GOTO="hid_bpf_end"
 
+# We lookup the hwdb during bind to set the property, but we don't do anything else
 IMPORT{builtin}="hwdb --subsystem=hid --lookup-prefix=hid-bpf:"
 ACTION=="add", ENV{HID_BPF_*}=="*", RUN{program}+="/usr/local/bin/udev-hid-bpf add $sys$devpath"
 ACTION=="remove", ENV{HID_BPF_*}=="*", RUN{program}+="/usr/local/bin/udev-hid-bpf remove $sys$devpath"
