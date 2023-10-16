@@ -11,8 +11,8 @@ The HID report descriptor for this device is listed in the :ref:`example_report_
 Identifying the device
 ----------------------
 
-Let's assume we have a mouse that needs some fixes, for example a mouse that keeps sending
-events for a button that doesn't event exist on the device.
+Let's assume we have a mouse that needs some fixes, for example a mouse that
+keeps sending events for a button that doesn't even exist on the device.
 
 There is a page on :ref:`matching_programs` but for now we'll use the tool::
 
@@ -131,7 +131,7 @@ Probing
 
 Now, before we do anything we want to make sure our program is only called for
 the HID interface we actually want to fix up. Most complex devices
-(Gaming mice, anything on a receiver, etc.) will expose multiple HID interfaces
+(gaming mice, anything on a receiver, etc.) will expose multiple HID interfaces
 and we don't want to change the HID reports on the wrong device. We do this by looking
 at the HID report descriptor that is passed to us as a byte array in the ``ctx`` struct:
 
