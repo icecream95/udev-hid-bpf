@@ -15,6 +15,6 @@ dependencies.
    :caption: Contents:
 
    getting-started
-   device-matches
    tutorial
+   device-matches
    metadata
