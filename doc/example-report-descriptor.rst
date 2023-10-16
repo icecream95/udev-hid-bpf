@@ -5,7 +5,9 @@
 Example HID Report Descriptor
 =============================
 
-This report descriptor is used in the :ref:`tutorial`::
+This report descriptor (obtained via
+`hid-recorder <https://gitlab.freedesktop.org/libevdev/hid-tools/>`_)
+is used in the :ref:`tutorial`::
 
    # Microsoft Microsoft® 2.4GHz Transceiver v9.0
    # 0x05, 0x01,                    // Usage Page (Generic Desktop)        0
