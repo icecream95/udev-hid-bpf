@@ -3,6 +3,7 @@ if not build_userhacks
 endif
 
 sources = [
+    'Logitech-MX-Master-3B-middle-button.bpf.c',
     'mouse_invert_y.bpf.c',
     'trace_hid_events.bpf.c',
 ]
