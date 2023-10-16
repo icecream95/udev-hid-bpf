@@ -13,9 +13,13 @@ Users can manually attach a HID-BPF program to a device::
    $ sudo udev-hid-bpf add /sys/bus/hid/devices/0003:05F3:0405 trace_hid_events.bpf.o
 
 Note that the filename doesn't contain the full path. The list of available
-programs are in::
+programs can be shown with::
 
-   $ ls ./target/bpf/*.bpf.o /lib/firmware/hid/*.bpf.*
+   $ udev-hid-bpf list-bpf-programs
+
+.. note:: If invoked from the git repository, this will show the BPF programs
+          in the build directory. Otherwise, it shows the installed programs.
+
 
 Metadata in the HID-BPF sources (modalias matches)
 --------------------------------------------------

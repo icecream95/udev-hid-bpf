@@ -9,6 +9,8 @@ pub mod bpf;
 pub mod hidudev;
 pub mod modalias;
 
+static DEFAULT_BPF_DIR: &str = "/lib/firmware/hid/bpf";
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
@@ -50,6 +52,21 @@ enum Commands {
         /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
         devpath: std::path::PathBuf,
     },
+    /// List currently installed BPF programs
+    ListBpfPrograms {
+        /// Folder to look at for bpf objects
+        #[arg(short, long)]
+        bpfdir: Option<std::path::PathBuf>,
+    },
+}
+
+fn default_bpf_dir() -> std::path::PathBuf {
+    let bpf_dir = std::path::PathBuf::from("target/bpf");
+    if bpf_dir.exists() {
+        bpf_dir
+    } else {
+        std::path::PathBuf::from(DEFAULT_BPF_DIR)
+    }
 }
 
 fn cmd_add(
@@ -60,14 +77,7 @@ fn cmd_add(
     let dev = hidudev::HidUdev::from_syspath(syspath)?;
     let target_bpf_dir = match bpfdir {
         Some(bpf_dir) => bpf_dir,
-        None => {
-            let bpf_dir = std::path::PathBuf::from("target/bpf");
-            if bpf_dir.exists() {
-                bpf_dir
-            } else {
-                std::path::PathBuf::from("/lib/firmware/hid/bpf")
-            }
-        }
+        None => default_bpf_dir(),
     };
 
     dev.load_bpf_from_directory(target_bpf_dir, prog)
@@ -94,6 +104,25 @@ fn cmd_remove(syspath: &std::path::PathBuf) -> std::io::Result<()> {
         },
     };
     bpf::remove_bpf_objects(&sysname)
+}
+
+fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> std::io::Result<()> {
+    let dir = bpfdir.or(Some(default_bpf_dir())).unwrap();
+    println!(
+        "Showing available BPF files in {}:",
+        dir.as_path().to_str().unwrap()
+    );
+    for entry in std::fs::read_dir(dir)? {
+        if let Ok(entry) = entry {
+            let fname = entry.file_name();
+            let name = fname.to_string_lossy();
+            if name.ends_with(".bpf.o") {
+                println!(" {name}");
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn main() -> std::io::Result<()> {
@@ -125,6 +154,7 @@ fn main() -> std::io::Result<()> {
             bpfdir,
         } => cmd_add(&devpath, prog, bpfdir),
         Commands::Remove { devpath } => cmd_remove(&devpath),
+        Commands::ListBpfPrograms { bpfdir } => cmd_list_bpf_programs(bpfdir),
     }
 }
 
