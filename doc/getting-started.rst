@@ -13,7 +13,7 @@ Dependencies
    $ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
    $ source "$HOME/.cargo/env"
 
-- ``udev`` and ``llvm``: Check the `.gitlab-ci.yml <https://gitlab.freedesktop.org/bentiss/udev-hid-bpf/-/blob/main/.gitlab-ci.yml>`_ for ``FEDORA_PACKAGES``.
+- ``udev`` and ``llvm``: Check the `.gitlab-ci.yml <https://gitlab.freedesktop.org/libevdev/udev-hid-bpf/-/blob/main/.gitlab-ci.yml>`_ for ``FEDORA_PACKAGES``.
 
 .. _installation:
 
@@ -23,7 +23,7 @@ Installation
 Clone the repo, ``cd`` into it, and build the loader *and* the various example HID-BPF programs
 using the standard Rust build process::
 
-   $ git clone https://gitlab.freedesktop.org/bentiss/udev-hid-bpf.git
+   $ git clone https://gitlab.freedesktop.org/libevdev/udev-hid-bpf.git
    $ cd udev-hid-bpf/
    $ cargo build
 

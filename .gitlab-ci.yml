@@ -22,7 +22,7 @@ stages:
   - deploy
 
 variables:
-  FDO_UPSTREAM_REPO: bentiss/udev-hid-bpf
+  FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
   FEDORA_VERSION: 38
   FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel rustfmt systemd-devel zlib-devel'
   FEDORA_TAG:  '2023-07-17.0'

@@ -9,7 +9,7 @@ should not be required.
 You can build and install using Rust's `cargo` and our custom install script:
 
 ```
-$ git clone https://gitlab.freedesktop.org/bentiss/udev-hid-bpf.git
+$ git clone https://gitlab.freedesktop.org/libevdev/udev-hid-bpf.git
 $ cd udev-hid-bpf/
 $ cargo build
 $ sudo ./install.sh
@@ -17,7 +17,7 @@ $ sudo ./install.sh
 
 Once installed, unplug/replug any supported device, and the bpf program will automatically be attached to the HID kernel device.
 
-For details on required dependencies etc. please see [our documentation](https://bentiss.pages.freedesktop.org/udev-hid-bpf/).
+For details on required dependencies etc. please see [our documentation](https://libevdev.pages.freedesktop.org/udev-hid-bpf/).
 
 
 ## Adding custom files
@@ -46,4 +46,4 @@ hid:b0003g0001v000004D9p0000A09F
 
 Just strip out the `hid:` prefix and done.
 
-For details on file name and how they are matched to devices please see [our documentation](https://bentiss.pages.freedesktop.org/udev-hid-bpf/).
+For details on file name and how they are matched to devices please see [our documentation](https://libevdev.pages.freedesktop.org/udev-hid-bpf/).
