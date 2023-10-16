@@ -131,7 +131,6 @@ And we can remove it again (so we can re-add it later)::
 .. note:: The official tool for listing BPF programs is ``bpftool prog`` which
           will list all currently loaded BPF programs. Our program will be
           listed as ``ignore_button_fix_rdesc`` and/or ``ignore_button_fix_event``.
-          not currently set the BPF name correctly.
 
 Probing
 -------
