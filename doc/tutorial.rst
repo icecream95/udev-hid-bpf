@@ -46,6 +46,15 @@ There is a page on :ref:`matching_programs` but for now we'll use the tool::
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x1050, 0x0407)
    ...
 
+The syspath and device name are merely for you to identify the correct device.
+For our code, the **device entry** is what matters. In our case, this is
+
+.. code-block:: c
+
+  HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
+
+This macro will identify our device for us in the BPF program.
+
 .. note:: This device has multiple HID interfaces, so we will have to use the
          :ref:`run_time_probe` in our program.
 
@@ -144,9 +153,11 @@ at the HID report descriptor that is passed to us as a byte array in the ``ctx``
     int retval;
   };
 
-In our case, we want to operate on the device that has a HID Usage `Generic Desktop, Mouse`
-(this particular device has a `Keyboard` and a `Consumer Control`). So our ``probe()``
-changes to check exactly that:
+In our case, we want to operate on the device that has a
+`HID Usage <https://usb.org/sites/default/files/hut1_4.pdf>`_ ``Generic
+Desktop``, ``Mouse``.  This particular device also has a ``Keyboard`` and a
+``Consumer Control`` but
+we need to ignore those. So our ``probe()`` changes to check exactly that:
 
 .. code-block:: c
 
