@@ -259,9 +259,6 @@ impl Modalias {
         union_member: BtfTypes::UnionMember,
     ) -> Option<Modalias> {
         let device_descr = btf.type_by_id::<BtfTypes::Struct>(union_member.ty)?;
-
-        let mut prefix = String::from("");
-
         let mut modalias = Modalias::new();
 
         for member in device_descr.iter() {
@@ -271,22 +268,14 @@ impl Modalias {
                 .type_by_id::<BtfTypes::Ptr>(member.ty)
                 .map(|pointer| BtfTypes::Array::try_from(pointer.referenced_type()))
             {
-                // if prefix is not set, we are at the first element
-                if prefix == "" {
-                    prefix = member_name + "_";
-                    continue;
+                match member_name.as_str() {
+                    "bus" => modalias.bus = Bus::try_from(array.capacity()).unwrap(),
+                    "group" => modalias.group = Group::try_from(array.capacity()).unwrap(),
+                    "vid" => modalias.vid = u32::try_from(array.capacity()).unwrap(),
+                    "pid" => modalias.pid = u32::try_from(array.capacity()).unwrap(),
+                    _ => (),
                 }
-
-                if let Some(name) = member_name.strip_prefix(&prefix) {
-                    match name {
-                        "bus" => modalias.bus = Bus::try_from(array.capacity()).unwrap(),
-                        "group" => modalias.group = Group::try_from(array.capacity()).unwrap(),
-                        "vid" => modalias.vid = u32::try_from(array.capacity()).unwrap(),
-                        "pid" => modalias.pid = u32::try_from(array.capacity()).unwrap(),
-                        _ => (),
-                    }
-                    log::debug!(target:"HID-BPF metadata", "      -> {:?}: {:#06X}", name, array.capacity());
-                }
+                log::debug!(target:"HID-BPF metadata", "      -> {:?}: {:#06X}", member_name, array.capacity());
             }
         }
         Some(modalias)

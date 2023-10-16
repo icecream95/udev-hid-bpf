@@ -66,13 +66,13 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 
 
 #define HID_DEVICE(b, g, ven, prod)					\
-	struct {							\
-		__uint(COMBINE(foo, __LINE__), 0);			\
-		__uint(COMBINE(COMBINE(foo, __LINE__), _bus), (b));	\
-		__uint(COMBINE(COMBINE(foo, __LINE__), _group), (g));	\
-		__uint(COMBINE(COMBINE(foo, __LINE__), _vid), (ven));	\
-		__uint(COMBINE(COMBINE(foo, __LINE__), _pid), (prod));	\
-	}
+	struct { \
+		__uint(name, 0);			\
+		__uint(bus, (b));	\
+		__uint(group, (g));	\
+		__uint(vid, (ven));	\
+		__uint(pid, (prod));	\
+	} COMBINE(_entry, __LINE__)
 
 #define HID_BPF_CONFIG(f) COMBINE(_, f) SEC(".hid_bpf_config")
 
