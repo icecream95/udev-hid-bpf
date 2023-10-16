@@ -39,33 +39,28 @@ How this is interpreted?
 ------------------------
 
 The idea of these metadata was borrowed from the `libxdp project <https://github.com/xdp-project/xdp-tools>`_.
+See the ``src/bpf/hid_bpf_helpers.h`` in the repository to see the actual macros.
 
 The macro ``HID_BPF_CONFIG`` defines a new section in the ELF object that is later
-parsed by BTF and our ``build.rs`` script when generating the hwdb:
+parsed by BTF and our ``build.rs`` script when generating the hwdb. The actual C code
+expands to something like this:
 
 .. code-block:: c
 
-   #define COMBINE(X,Y) X ## Y  // helper macro
-   #define HID_BPF_CONFIG(f) COMBINE(_, f) SEC(".hid_bpf_config")
+   union {
+     /* HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x1234, 0xabcd); */
+     struct { int (*bus)[0x3]; int (*group)[0x1]; int (*vid)[0x1234]; int (*pid)[0xabcd] } entry1;
+     /* HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x5678, 0xdead); */
+     struct { int (*bus)[0x5]; int (*group)[0x1]; int (*vid)[0x5678]; int (*pid)[0xdead] } entry2;
+   } _device_ids;
 
-So this basically declares a new global variable, that is never instantiated.
+So this declares a global variable that is a union containing a set of structs. Note that the variable is
+never actually instantiated, this variable is only used for **introspection** via BTF.
 
-The metadata information is then stored in the *type* of this global variable (simplified version):
-
-.. code-block:: c
-
-   #define HID_DEVICE(b, g, ven, prod)					\
-   	struct {							\
-   		__uint(bus, (b));	\
-   		__uint(group, (g));	\
-   		__uint(vid, (ven));	\
-   		__uint(pid, (prod));	\
-   	}
-
-And each field of this struct here defines an array of length ``n``, where ``n`` is the metadata value.
-
-Because we are using a ``union`` to have multiple matches, we cannot
-``bus`` as an anonymous struct field more than once, so we use the line number
-as a prefix to have unique names.
+The metadata information is then stored in the *type* of this global variable
+(simplified version). During parsing we can iterate through the union and
+inspect each field of the struct, including the size of the declared (pointer
+to) array. In the above case: because the ``bus`` field is a pointer to an
+array of size 3 we know the bus was 0x03 - USB.
 
 See the ``src/bpf/hid_bpf_helpers.h`` in the repository to see the details.
