@@ -208,7 +208,7 @@ fn main() -> std::io::Result<()> {
     )));
 
     stderrlog::new()
-        .modules(vec![module_path!(), "libbpf"])
+        .modules(vec![module_path!(), "libbpf", "HID-BPF metadata"])
         .verbosity(if cli.verbose {
             log::LevelFilter::Debug
         } else {
