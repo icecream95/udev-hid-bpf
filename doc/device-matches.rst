@@ -8,7 +8,7 @@ This tool supports multiple ways of matching a eBPF program to a HID device:
 Manual loading
 --------------
 
-User can manually attach a HID-BPF program to a device::
+Users can manually attach a HID-BPF program to a device::
 
    $ sudo udev-hid-bpf add /sys/bus/hid/devices/0003:05F3:0405 trace_hid_events.bpf.o
 
@@ -24,7 +24,9 @@ Each program can tell which devices it is supposed to be bound to.
 If those metadata are given, udev will automatically bind the HID-BPF
 program to the device on plug.
 
-To do so, add the following metadata to your HID-BPF sources::
+To do so, add the following metadata to your HID-BPF sources:
+
+.. code-block:: c
 
    union {
        HID_DEVICE(BBBB, GGGG, 0xVVVV, 0xPPPP);

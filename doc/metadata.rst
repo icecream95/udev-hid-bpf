@@ -9,7 +9,9 @@ Overview
 The metadata of which device is a target for which bpf program is
 stored directly in the bpf resulting object file.
 
-The syntax is the following::
+The syntax is the following:
+
+.. code-block:: c
 
    union {
        HID_DEVICE(BBBB, GGGG, 0xVVVV, 0xPPPP);
@@ -18,11 +20,13 @@ The syntax is the following::
 Where:
 
 - ``BBBB`` is the bus value (in hexadecimal or by using the ``#define`` in ``hid_bpf_helpers.h``)
-  (``3`` or ``BUS_USB`` for USB, ``0x18`` or ``BUS_I2C`` for I2C, ``0x5`` or ``BUS_BLUETOOTH`` for Bluetooth, etc...)
+  (``0x3`` or ``BUS_USB`` for USB, ``0x18`` or ``BUS_I2C`` for I2C, ``0x5`` or ``BUS_BLUETOOTH`` for Bluetooth, etc...)
 - ``GGGG`` is the HID group as detected by HID (again, in hexadecimal or by using one of the ``#define``)
 - ``VVVV`` and ``PPPP`` are respectively the vendor ID and product ID (as in ``lsusb``, so hexadecimal is easier too)
 
-We can also add more than one match::
+We can also add more than one match:
+
+.. code-block:: c
 
    union {
        HID_DEVICE(BUS_USB, HID_GROUP_ANY, HID_ANY_ID, HID_ANY_ID);
@@ -36,15 +40,19 @@ How this is interpreted?
 
 The idea of these metadata was borrowed from the `libxdp project <https://github.com/xdp-project/xdp-tools>`_.
 
-The macro ``HID_BPF_CONFIG`` defines a new section in the elf object that is later
-parsed by BTF and our ``build.rs`` script when geenrating the hwdb::
+The macro ``HID_BPF_CONFIG`` defines a new section in the ELF object that is later
+parsed by BTF and our ``build.rs`` script when generating the hwdb:
+
+.. code-block:: c
 
    #define COMBINE(X,Y) X ## Y  // helper macro
    #define HID_BPF_CONFIG(f) COMBINE(_, f) SEC(".hid_bpf_config")
 
 So this basically declares a new global variable, that is never instantiated.
 
-The metadata information is then stored in the *type* of this global variable (simplified version)::
+The metadata information is then stored in the *type* of this global variable (simplified version):
+
+.. code-block:: c
 
    #define HID_DEVICE(b, g, ven, prod)					\
    	struct {							\
@@ -56,8 +64,8 @@ The metadata information is then stored in the *type* of this global variable (s
 
 And each field of this struct here defines an array of length ``n``, where ``n`` is the metadata value.
 
-Because we are using a ``union`` to have multiple matches, we can not have multiple time
-``bus`` as an anonymous struct field, so we use the line number as a prefix to have unique
-names.
+Because we are using a ``union`` to have multiple matches, we cannot
+``bus`` as an anonymous struct field more than once, so we use the line number
+as a prefix to have unique names.
 
 See the ``src/bpf/hid_bpf_helpers.h`` in the repository to see the details.
