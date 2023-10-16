@@ -16,42 +16,33 @@ events for a button that doesn't event exist on the device.
 
 There is a page on :ref:`matching_programs` but for now we'll use the tool::
 
-   $ ./tools/show-modalias
+   $ udev-hid-bpf list-devices
    /sys/bus/hid/devices/0003:045E:07A5.0001
      - name:         Microsoft Microsoft® 2.4GHz Transceiver v9.0
-     - modalias:     b0003g0001v0000045Ep000007A5
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
    /sys/bus/hid/devices/0003:045E:07A5.0002
      - name:         Microsoft Microsoft® 2.4GHz Transceiver v9.0
-     - modalias:     b0003g0001v0000045Ep000007A5
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
    /sys/bus/hid/devices/0003:045E:07A5.0003
      - name:         Microsoft Microsoft® 2.4GHz Transceiver v9.0
-     - modalias:     b0003g0001v0000045Ep000007A5
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
    /sys/bus/hid/devices/0003:046D:4088.0009
      - name:         Logitech ERGO K860
-     - modalias:     b0003g0102v0000046Dp00004088
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_LOGITECH_DJ_DEVICE, 0x046D, 0x046D)
    /sys/bus/hid/devices/0003:046D:C52B.0004
      - name:         Logitech USB Receiver
-     - modalias:     b0003g0001v0000046Dp0000C52B
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0xC52B)
    /sys/bus/hid/devices/0003:046D:C52B.0005
      - name:         Logitech USB Receiver
-     - modalias:     b0003g0001v0000046Dp0000C52B
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0xC52B)
    /sys/bus/hid/devices/0003:046D:C52B.0006
      - name:         Logitech USB Receiver
-     - modalias:     b0003g0001v0000046Dp0000C52B
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0xC52B)
    /sys/bus/hid/devices/0003:1050:0407.0007
      - name:         Yubico YubiKey OTP+FIDO+CCID
-     - modalias:     b0003g0001v00001050p00000407
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x1050, 0x0407)
    /sys/bus/hid/devices/0003:1050:0407.0008
      - name:         Yubico YubiKey OTP+FIDO+CCID
-     - modalias:     b0003g0001v00001050p00000407
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x1050, 0x0407)
    ...
 

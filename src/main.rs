@@ -58,6 +58,8 @@ enum Commands {
         #[arg(short, long)]
         bpfdir: Option<std::path::PathBuf>,
     },
+    /// List available devices
+    ListDevices {},
 }
 
 fn default_bpf_dir() -> std::path::PathBuf {
@@ -125,6 +127,74 @@ fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> std::io::Result<
     Ok(())
 }
 
+fn cmd_list_devices() -> std::io::Result<()> {
+    let re = Regex::new(r"hid:b([A-Z0-9]{4})g([A-Z0-9]{4})v0000([A-Z0-9]{4})p0000([A-Z0-9]{4})")
+        .unwrap();
+
+    // We use this path because it looks nicer than the true device path in /sys/devices/pci...
+    for entry in std::fs::read_dir("/sys/bus/hid/devices")? {
+        let syspath = entry.unwrap().path();
+        let device = udev::Device::from_syspath(&syspath)?;
+        let name = device.property_value("HID_NAME").unwrap().to_str().unwrap();
+        if let Some(Some(matches)) = device
+            .property_value("MODALIAS")
+            .map(|modalias| re.captures(modalias.to_str().unwrap()))
+        {
+            let bus = matches.get(1).unwrap().as_str();
+            let group = matches.get(2).unwrap().as_str();
+            let vid = matches.get(3).unwrap().as_str();
+            let pid = matches.get(4).unwrap().as_str();
+
+            let bus = match bus {
+                "0001" => "BUS_PCI",
+                "0002" => "BUS_ISAPNP",
+                "0003" => "BUS_USB",
+                "0004" => "BUS_HIL",
+                "0005" => "BUS_BLUETOOTH",
+                "0006" => "BUS_VIRTUAL",
+                "0010" => "BUS_ISA",
+                "0011" => "BUS_I8042",
+                "0012" => "BUS_XTKBD",
+                "0013" => "BUS_RS232",
+                "0014" => "BUS_GAMEPORT",
+                "0015" => "BUS_PARPORT",
+                "0016" => "BUS_AMIGA",
+                "0017" => "BUS_ADB",
+                "0018" => "BUS_I2C",
+                "0019" => "BUS_HOST",
+                "001A" => "BUS_GSC",
+                "001B" => "BUS_ATARI",
+                "001C" => "BUS_SPI",
+                "001D" => "BUS_RMI",
+                "001E" => "BUS_CEC",
+                "001F" => "BUS_INTEL_ISHTP",
+                "0020" => "BUS_AMD_SFH",
+                _ => bus,
+            };
+
+            let group = match group {
+                "0001" => "HID_GROUP_GENERIC",
+                "0002" => "HID_GROUP_MULTITOUCH",
+                "0003" => "HID_GROUP_SENSOR_HUB",
+                "0004" => "HID_GROUP_MULTITOUCH_WIN_8",
+                "0100" => "HID_GROUP_RMI",
+                "0101" => "HID_GROUP_WACOM",
+                "0102" => "HID_GROUP_LOGITECH_DJ_DEVICE",
+                "0103" => "HID_GROUP_STEAM",
+                "0104" => "HID_GROUP_LOGITECH_27MHZ_DEVICE",
+                "0105" => "HID_GROUP_VIVALDI",
+                _ => group,
+            };
+
+            println!("{}", syspath.to_str().unwrap());
+            println!("  - name: {name}");
+            println!("  - device entry: HID_DEVICE({bus}, {group}, 0x{vid}, 0x{pid})");
+            println!("");
+        }
+    }
+    Ok(())
+}
+
 fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
@@ -155,6 +225,7 @@ fn main() -> std::io::Result<()> {
         } => cmd_add(&devpath, prog, bpfdir),
         Commands::Remove { devpath } => cmd_remove(&devpath),
         Commands::ListBpfPrograms { bpfdir } => cmd_list_bpf_programs(bpfdir),
+        Commands::ListDevices {} => cmd_list_devices(),
     }
 }
 

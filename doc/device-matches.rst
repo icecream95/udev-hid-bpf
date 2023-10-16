@@ -46,51 +46,43 @@ Where:
 For the curious, there is a page on :ref:`metadata` that explains how these metadata are
 embedded in the resulting BPF object.
 
-Instead of building this metadata yourself, it is way more efficient to simply use
-the ``show-modalias`` tool provided in this repository::
+Instead of building this metadata yourself, it is way more efficient to use the
+``udev-hid-bpf list-devices`` command provided in this repository::
 
-   $ ./tools/show-modalias
+   $ udev-hid-bpf list-devices
    /sys/bus/hid/devices/0003:045E:07A5.0001
      - name:         Microsoft Microsoft® 2.4GHz Transceiver v9.0
-     - modalias:     b0003g0001v0000045Ep000007A5
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
    /sys/bus/hid/devices/0003:045E:07A5.0002
      - name:         Microsoft Microsoft® 2.4GHz Transceiver v9.0
-     - modalias:     b0003g0001v0000045Ep000007A5
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
    /sys/bus/hid/devices/0003:045E:07A5.0003
      - name:         Microsoft Microsoft® 2.4GHz Transceiver v9.0
-     - modalias:     b0003g0001v0000045Ep000007A5
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5)
    /sys/bus/hid/devices/0003:046D:4088.0009
      - name:         Logitech ERGO K860
-     - modalias:     b0003g0102v0000046Dp00004088
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_LOGITECH_DJ_DEVICE, 0x046D, 0x046D)
    /sys/bus/hid/devices/0003:046D:C52B.0004
      - name:         Logitech USB Receiver
-     - modalias:     b0003g0001v0000046Dp0000C52B
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0xC52B)
    /sys/bus/hid/devices/0003:046D:C52B.0005
      - name:         Logitech USB Receiver
-     - modalias:     b0003g0001v0000046Dp0000C52B
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0xC52B)
    /sys/bus/hid/devices/0003:046D:C52B.0006
      - name:         Logitech USB Receiver
-     - modalias:     b0003g0001v0000046Dp0000C52B
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0xC52B)
    /sys/bus/hid/devices/0003:1050:0407.0007
      - name:         Yubico YubiKey OTP+FIDO+CCID
-     - modalias:     b0003g0001v00001050p00000407
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x1050, 0x0407)
    /sys/bus/hid/devices/0003:1050:0407.0008
      - name:         Yubico YubiKey OTP+FIDO+CCID
-     - modalias:     b0003g0001v00001050p00000407
      - device entry: HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x1050, 0x0407)
 
 As shown above, many devices export multiple HID interfaces. See :ref:`run_time_probe` for details
 on how to handle this situation.
 
-Alternatively, the modalias of the device is provided by the kernel::
+Alternatively, the bus, group, vendor ID and product ID (``b``, ``g``, ``v``, ``p``)
+can be extracted from the modalias of the device as provided by the kernel::
 
    $ cat /sys/bus/hid/devices/0003:04D9:A09F.0009/modalias
    hid:b0003g0001v000004D9p0000A09F
