@@ -28,20 +28,36 @@ Each program can tell which devices it is supposed to be bound to.
 If those metadata are given, udev will automatically bind the HID-BPF
 program to the device on plug.
 
-To do so, add the following metadata to your HID-BPF sources:
+To do so, add metadata to your HID-BPF sources specifying the **bus**, the
+**HID group**, and the **vendor** and **product** IDs. Here's an example of a
+BPF program that matches multiple different devices and uses the ``#defines``
+in ``hid_bpf_helpers.h``:
 
 .. code-block:: c
 
    union {
-       HID_DEVICE(BBBB, GGGG, 0xVVVV, 0xPPPP);
+       /* A specific Logitech (0x046D) USB device on the generic HID group */
+       HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0x1234);
+
+       /* A specific Yubikey (0x1040) USB device on the generic HID group */
+       HID_DEVICE(0x3, HID_GROUP_GENERIC, 0x1040, 0x0407);
+
+       /* Any logitech (0x046D) bluetooth device on the generic HID group */
+       HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x046D, HID_ANY_ID);
+
+       /* Any i2c device */
+       HID_DEVICE(BUS_I2C, HID_GROUP_ANY, HID_ANY_ID, HID_ANY_ID);
    } HID_BPF_CONFIG(device_ids)
 
-Where:
+As you can see, the arguments to the ``HID_DEVICE`` macro are
 
-- ``BBBB`` is the bus value (in hexadecimal or by using the ``#define`` in ``hid_bpf_helpers.h``)
-  (``3`` or ``BUS_USB`` for USB, ``0x18`` or ``BUS_I2C`` for I2C, ``0x5`` or ``BUS_BLUETOOTH`` for Bluetooth, etc...)
-- ``GGGG`` is the HID group as detected by HID (again, in hexadecimal or by using one of the ``#define``)
-- ``VVVV`` and ``PPPP`` are respectively the vendor ID and product ID (as in ``lsusb``, so hexadecimal is easier too)
+- the bus as either numerical value or one of ``BUS_USB``, ``BUS_BLUETOOTH``, ...
+- the HID group as either numerical value or one of ``HID_GROUP_GENERIC``, ...
+- the vendor ID in hexadecimal (see the ``lsusb`` output)
+- the product ID in hexadecimal (see the ``lsusb`` output)
+
+As used in the example above, ``BUS_ANY``, ``HID_GROUP_ANY`` and ``HID_ANY_ID``
+are wildcards.
 
 For the curious, there is a page on :ref:`metadata` that explains how these metadata are
 embedded in the resulting BPF object.
@@ -95,9 +111,8 @@ Just strip out the ``hid:`` prefix, extract the bus, group, vid, pid and done.
 Sharing the same BPF program for different devices
 ---------------------------------------------------
 
-The metadata supports basic globbing features: any of
-``BBBB``, ``GGGG``, ``VVVV`` or ``PPPP`` may be the catch all value ``BUS_ANY``,
-``HID_GROUP_ANY`` or ``HID_ANY_ID`` (the latter is for ``VVVV`` and ``PPPP``).
+The metadata supports basic globbing features via the special values of ``BUS_ANY``,
+``HID_GROUP_ANY`` or ``HID_ANY_ID`` (the latter is for vendor ID and product ID).
 Any device that matches all the other fields will thus match. For example
 a metadata entry of ``HID_DEVICE(BUS_USB, HID_GROUP_ANY, HID_ANY_ID, HID_ANY_ID)``
 will match any USB device.
@@ -107,7 +122,7 @@ will match any USB device.
 Run-time probe
 --------------
 
-Sometimes having just the static modalias is not enough to know if a program needs to be loaded.
+Sometimes having just the vendor/product ID is not enough to know if a program needs to be loaded.
 For example, one mouse I am doing tests with (``G10-Mechanical-Gaming-Mouse.bpf.c`` with
 ``HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x04d9, 0xa09f)``) exports 3 HID interfaces,
 but the BPF program only applies to one of those HID interfaces.
@@ -115,9 +130,33 @@ but the BPF program only applies to one of those HID interfaces.
 ``udev-hid-bpf`` provides a similar functionality as the kernel with a ``probe`` function.
 Before loading and attaching any BPF program to a given HID device, ``udev-hid-bpf`` executes the syscall ``probe`` in the ``.bpf.c`` file if there is any.
 
-The arguments of this syscall are basically the unique id of the HID device, its report descriptor and its report descriptor size.
+.. code-block:: c
+
+  SEC("syscall")
+  int probe(struct hid_bpf_probe_args *ctx)
+  {
+      /* zero if we want to bind, nonzero otherwise*/
+      ctx->retval = 0;
+
+      return 0;
+  }
+
+The arguments of this syscall are basically the unique id of the HID device, its report descriptor and its report descriptor size:
+
+
+.. code-block:: c
+
+  struct hid_bpf_probe_args {
+    unsigned int hid;
+    unsigned int rdesc_size;  /* number of valid bytes */
+    unsigned char rdesc[4096]; /* the actual report descriptor */
+    int retval;
+  };
+
 If the BPF program sets the ``ctx->retval`` to zero, the  BPF program is loaded for this device. A nonzero value (typically ``-EINVAL``)
-prevents the BPF program from loading. See the ``G10-Mechanical-Gaming-Mouse.bpf.c`` program for an example of this functionality.
+prevents the BPF program from loading. See the
+``G10-Mechanical-Gaming-Mouse.bpf.c`` program for an example of this
+functionality or the :ref:`tutorial_probe` section of the :ref:`tutorial`.
 
 Also note that ``probe`` is executed as a ``SEC("syscall")``, which means that the bpf function
 ``hid_bpf_hw_request()`` is available if you need to configure the device before customizing

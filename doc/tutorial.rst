@@ -132,6 +132,9 @@ And we can remove it again (so we can re-add it later)::
           will list all currently loaded BPF programs. Our program will be
           listed as ``ignore_button_fix_rdesc`` and/or ``ignore_button_fix_event``.
 
+
+.. _tutorial_probe:
+
 Probing
 -------
 
