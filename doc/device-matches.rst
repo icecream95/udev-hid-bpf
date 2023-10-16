@@ -1,9 +1,9 @@
 .. _matching_programs:
 
-Matching eBPF programs to a device
+Matching BPF programs to a device
 ==================================
 
-This tool supports multiple ways of matching a eBPF program to a HID device:
+This tool supports multiple ways of matching a BPF program to a HID device:
 
 Manual loading
 --------------
@@ -92,7 +92,7 @@ can be extracted from the modalias of the device as provided by the kernel::
 
 Just strip out the ``hid:`` prefix, extract the bus, group, vid, pid and done.
 
-Sharing the same eBPF program for different devices
+Sharing the same BPF program for different devices
 ---------------------------------------------------
 
 The metadata supports basic globbing features: any of
@@ -110,14 +110,14 @@ Run-time probe
 Sometimes having just the static modalias is not enough to know if a program needs to be loaded.
 For example, one mouse I am doing tests with (``G10-Mechanical-Gaming-Mouse.bpf.c`` with
 ``HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x04d9, 0xa09f)``) exports 3 HID interfaces,
-but the eBPF program only applies to one of those HID interfaces.
+but the BPF program only applies to one of those HID interfaces.
 
 ``udev-hid-bpf`` provides a similar functionality as the kernel with a ``probe`` function.
-Before loading and attaching any eBPF program to a given HID device, ``udev-hid-bpf`` executes the syscall ``probe`` in the ``.bpf.c`` file if there is any.
+Before loading and attaching any BPF program to a given HID device, ``udev-hid-bpf`` executes the syscall ``probe`` in the ``.bpf.c`` file if there is any.
 
 The arguments of this syscall are basically the unique id of the HID device, its report descriptor and its report descriptor size.
-If the eBPF program sets the ``ctx->retval`` to zero, the  eBPF program is loaded for this device. A nonzero value (typically ``-EINVAL``)
-prevents the eBPF program from loading. See the ``G10-Mechanical-Gaming-Mouse.bpf.c`` program for an example of this functionality.
+If the BPF program sets the ``ctx->retval`` to zero, the  BPF program is loaded for this device. A nonzero value (typically ``-EINVAL``)
+prevents the BPF program from loading. See the ``G10-Mechanical-Gaming-Mouse.bpf.c`` program for an example of this functionality.
 
 Also note that ``probe`` is executed as a ``SEC("syscall")``, which means that the bpf function
 ``hid_bpf_hw_request()`` is available if you need to configure the device before customizing
