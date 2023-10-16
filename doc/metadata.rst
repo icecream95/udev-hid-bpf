@@ -29,8 +29,8 @@ We can also add more than one match:
 .. code-block:: c
 
    union {
-       HID_DEVICE(BUS_USB, HID_GROUP_ANY, HID_ANY_ID, HID_ANY_ID);
-       HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_ANY, HID_ANY_ID, HID_ANY_ID);
+       HID_DEVICE(BUS_USB, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY);
+       HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY);
    } HID_BPF_CONFIG(device_ids)
 
 The above metadata will match on any USB or Bluetooth device.

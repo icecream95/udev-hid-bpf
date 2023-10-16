@@ -43,10 +43,10 @@ in ``hid_bpf_helpers.h``:
        HID_DEVICE(0x3, HID_GROUP_GENERIC, 0x1040, 0x0407);
 
        /* Any logitech (0x046D) bluetooth device on the generic HID group */
-       HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x046D, HID_ANY_ID);
+       HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x046D, HID_PID_ANY);
 
        /* Any i2c device */
-       HID_DEVICE(BUS_I2C, HID_GROUP_ANY, HID_ANY_ID, HID_ANY_ID);
+       HID_DEVICE(BUS_I2C, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY);
    } HID_BPF_CONFIG(device_ids)
 
 As you can see, the arguments to the ``HID_DEVICE`` macro are
@@ -56,8 +56,8 @@ As you can see, the arguments to the ``HID_DEVICE`` macro are
 - the vendor ID in hexadecimal (see the ``lsusb`` output)
 - the product ID in hexadecimal (see the ``lsusb`` output)
 
-As used in the example above, ``BUS_ANY``, ``HID_GROUP_ANY`` and ``HID_ANY_ID``
-are wildcards.
+As used in the example above, ``BUS_ANY``, ``HID_GROUP_ANY``, ``HID_VID_ANY``
+and ``HID_PID_ANY`` are wildcards.
 
 For the curious, there is a page on :ref:`metadata` that explains how these metadata are
 embedded in the resulting BPF object.
@@ -112,9 +112,9 @@ Sharing the same BPF program for different devices
 ---------------------------------------------------
 
 The metadata supports basic globbing features via the special values of ``BUS_ANY``,
-``HID_GROUP_ANY`` or ``HID_ANY_ID`` (the latter is for vendor ID and product ID).
+``HID_GROUP_ANY``, ``HID_VID_ANY`` or ``HID_PID_ANY``.
 Any device that matches all the other fields will thus match. For example
-a metadata entry of ``HID_DEVICE(BUS_USB, HID_GROUP_ANY, HID_ANY_ID, HID_ANY_ID)``
+a metadata entry of ``HID_DEVICE(BUS_USB, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY)``
 will match any USB device.
 
 .. _run_time_probe:

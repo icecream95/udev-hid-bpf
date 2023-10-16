@@ -59,7 +59,8 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 #define HID_GROUP_VIVALDI			0x0105
 
 /* include/linux/mod_devicetable.h defines as (~0), but that gives us negative size arrays */
-#define HID_ANY_ID				0x0000
+#define HID_VID_ANY				0x0000
+#define HID_PID_ANY				0x0000
 
 /* Helper macro to convert (foo, __LINE__)  into foo134 so we can use __LINE__ for
  * field/variable names */
