@@ -89,9 +89,9 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
  * content).
  */
 
-#define HID_DEVICE(b, g, ven, prod)					\
-	struct { \
-		__uint(name, 0);			\
+#define HID_DEVICE(b, g, ven, prod)	\
+	struct {			\
+		__uint(name, 0);	\
 		__uint(bus, (b));	\
 		__uint(group, (g));	\
 		__uint(vid, (ven));	\
