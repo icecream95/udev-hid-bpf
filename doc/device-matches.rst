@@ -35,7 +35,7 @@ in ``hid_bpf_helpers.h``:
 
 .. code-block:: c
 
-   union {
+   HID_BPF_CONFIG(
        /* A specific Logitech (0x046D) USB device on the generic HID group */
        HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0x1234);
 
@@ -47,7 +47,7 @@ in ``hid_bpf_helpers.h``:
 
        /* Any i2c device */
        HID_DEVICE(BUS_I2C, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY);
-   } HID_BPF_CONFIG(device_ids)
+   );
 
 As you can see, the arguments to the ``HID_DEVICE`` macro are
 

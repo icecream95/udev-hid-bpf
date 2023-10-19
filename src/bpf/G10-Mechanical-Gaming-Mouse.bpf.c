@@ -10,9 +10,9 @@
 #define VID_HOLTEK 0x04D9
 #define PID_G10_MECHANICAL_GAMING_MOUSE 0xA09F
 
-union {
+HID_BPF_CONFIG(
 	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_HOLTEK, PID_G10_MECHANICAL_GAMING_MOUSE);
-} HID_BPF_CONFIG(device_ids);
+);
 
 SEC("fmod_ret/hid_bpf_device_event")
 int BPF_PROG(hid_y_event, struct hid_bpf_ctx *hctx)

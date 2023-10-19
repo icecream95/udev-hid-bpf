@@ -10,9 +10,10 @@
 #define VID_HP 0x03F0
 #define PID_ELITE_PRESENTER 0x464A
 
-union {
+HID_BPF_CONFIG(
 	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, VID_HP, PID_ELITE_PRESENTER);
-} HID_BPF_CONFIG(device_ids);
+);
+
 
 SEC("fmod_ret/hid_bpf_rdesc_fixup")
 int BPF_PROG(hid_fix_rdesc, struct hid_bpf_ctx *hctx)

@@ -98,7 +98,9 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 		__uint(pid, (prod));	\
 	} COMBINE(_entry, __LINE__)
 
-#define HID_BPF_CONFIG(f) COMBINE(_, f) SEC(".hid_bpf_config")
+#define HID_BPF_CONFIG(...)  union { \
+	__VA_ARGS__ \
+} _device_ids SEC(".hid_bpf_config")
 
 
 #endif /* __HID_BPF_HELPERS_H */

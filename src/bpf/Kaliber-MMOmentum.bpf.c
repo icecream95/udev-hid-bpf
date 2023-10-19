@@ -10,9 +10,9 @@
 #define VID_IOGEAR 0x258A /* VID is shared with SinoWealth and Glorious and prob others */
 #define PID_MOMENTUM 0x0027
 
-union {
+HID_BPF_CONFIG(
 	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_IOGEAR, PID_MOMENTUM);
-} HID_BPF_CONFIG(device_ids);
+);
 
 SEC("fmod_ret/hid_bpf_rdesc_fixup")
 int BPF_PROG(hid_fix_rdesc, struct hid_bpf_ctx *hctx)
