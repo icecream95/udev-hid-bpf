@@ -37,16 +37,16 @@ in ``hid_bpf_helpers.h``:
 
    HID_BPF_CONFIG(
        /* A specific Logitech (0x046D) USB device on the generic HID group */
-       HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0x1234);
+       HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x046D, 0x1234),
 
        /* A specific Yubikey (0x1040) USB device on the generic HID group */
-       HID_DEVICE(0x3, HID_GROUP_GENERIC, 0x1040, 0x0407);
+       HID_DEVICE(0x3, HID_GROUP_GENERIC, 0x1040, 0x0407),
 
        /* Any logitech (0x046D) bluetooth device on the generic HID group */
-       HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x046D, HID_PID_ANY);
+       HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x046D, HID_PID_ANY),
 
        /* Any i2c device */
-       HID_DEVICE(BUS_I2C, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY);
+       HID_DEVICE(BUS_I2C, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY)
    );
 
 As you can see, the arguments to the ``HID_DEVICE`` macro are

@@ -14,7 +14,7 @@ The syntax is the following:
 .. code-block:: c
 
    HID_BPF_CONFIG(
-       HID_DEVICE(BBBB, GGGG, 0xVVVV, 0xPPPP);
+       HID_DEVICE(BBBB, GGGG, 0xVVVV, 0xPPPP)
    );
 
 Where:
@@ -29,8 +29,8 @@ We can also add more than one match:
 .. code-block:: c
 
    HID_BPF_CONFIG(
-       HID_DEVICE(BUS_USB, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY);
-       HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY);
+       HID_DEVICE(BUS_USB, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY),
+       HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_ANY, HID_VID_ANY, HID_PID_ANY)
    );
 
 The above metadata will match on any USB or Bluetooth device.

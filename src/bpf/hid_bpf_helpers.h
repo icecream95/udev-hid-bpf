@@ -98,9 +98,63 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 		__uint(pid, (prod));	\
 	} COMBINE(_entry, __LINE__)
 
-#define HID_BPF_CONFIG(...)  union { \
-	__VA_ARGS__ \
-} _device_ids SEC(".hid_bpf_config")
+/* Macro magic below is to make HID_BPF_CONFIG() look like a function call that
+ * we can pass multiple HID_DEVICE() invocations in.
+ *
+ * For up to 16 arguments, HID_BPF_CONFIG(one, two) resolves to
+ *
+ * union {
+ *    HID_DEVICE(...);
+ *    HID_DEVICE(...);
+ * } _device_ids SEC(".hid_bpf_config")
+ *
+ */
 
+/* Returns the number of macro arguments, this expands
+ * NARGS(a, b, c) to NTH_ARG(a, b, c, 15, 14, 13, .... 4, 3, 2, 1).
+ * NTH_ARG always returns the 16th argument which in our case is 3.
+ *
+ * If we want more than 16 values _COUNTDOWN and _NTH_ARG both need to be
+ * updated.
+ */
+#define _NARGS(...)  _NARGS1(__VA_ARGS__, _COUNTDOWN)
+#define _NARGS1(...) _NTH_ARG(__VA_ARGS__)
+
+/* Add to this if we need more than 16 args */
+#define _COUNTDOWN \
+	15, 14, 13, 12, 11, 10, 9, 8,  \
+	 7,  6,  5,  4,  3,  2, 1, 0
+
+/* Return the 16 argument passed in. See _NARGS above for usage. Note this is
+ * 1-indexed.*/
+#define _NTH_ARG( \
+	_1,  _2,  _3,  _4,  _5,  _6,  _7, _8, \
+	_9, _10, _11, _12, _13, _14, _15,\
+	 N, ...) N
+
+/* Turns EXPAND(_ARG, a, b, c) into _ARG3(a, b, c) */
+#define _EXPAND(func, ...) COMBINE(func, _NARGS(__VA_ARGS__)) (__VA_ARGS__)
+
+/* And now define all the ARG macros for each number of args we want to accept */
+#define _ARG1(_1)                                                         _1;
+#define _ARG2(_1, _2)                                                     _1; _2;
+#define _ARG3(_1, _2, _3)                                                 _1; _2; _3;
+#define _ARG4(_1, _2, _3, _4)                                             _1; _2; _3; _4;
+#define _ARG5(_1, _2, _3, _4, _5)                                         _1; _2; _3; _4; _5;
+#define _ARG6(_1, _2, _3, _4, _5, _6)                                     _1; _2; _3; _4; _5; _6;
+#define _ARG7(_1, _2, _3, _4, _5, _6, _7)                                 _1; _2; _3; _4; _5; _6; _7;
+#define _ARG8(_1, _2, _3, _4, _5, _6, _7, _8)                             _1; _2; _3; _4; _5; _6; _7; _8;
+#define _ARG9(_1, _2, _3, _4, _5, _6, _7, _8, _9)                         _1; _2; _3; _4; _5; _6; _7; _8; _9;
+#define _ARG10(_1, _2, _3, _4, _5, _6, _7, _8, _9, _a)                     _1; _2; _3; _4; _5; _6; _7; _8; _9; _a;
+#define _ARG11(_1, _2, _3, _4, _5, _6, _7, _8, _9, _a, _b)                 _1; _2; _3; _4; _5; _6; _7; _8; _9; _a; _b;
+#define _ARG12(_1, _2, _3, _4, _5, _6, _7, _8, _9, _a, _b, _c)             _1; _2; _3; _4; _5; _6; _7; _8; _9; _a; _b; _c;
+#define _ARG13(_1, _2, _3, _4, _5, _6, _7, _8, _9, _a, _b, _c, _d)         _1; _2; _3; _4; _5; _6; _7; _8; _9; _a; _b; _c; _d;
+#define _ARG14(_1, _2, _3, _4, _5, _6, _7, _8, _9, _a, _b, _c, _d, _e)     _1; _2; _3; _4; _5; _6; _7; _8; _9; _a; _b; _c; _d; _e;
+#define _ARG15(_1, _2, _3, _4, _5, _6, _7, _8, _9, _a, _b, _c, _d, _e, _f) _1; _2; _3; _4; _5; _6; _7; _8; _9; _a; _b; _c; _d; _e; _f;
+
+
+#define HID_BPF_CONFIG(...)  union { \
+	_EXPAND(_ARG, __VA_ARGS__) \
+} _device_ids SEC(".hid_bpf_config")
 
 #endif /* __HID_BPF_HELPERS_H */
