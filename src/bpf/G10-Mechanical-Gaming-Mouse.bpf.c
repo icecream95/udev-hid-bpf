@@ -7,8 +7,11 @@
 #include "hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
+#define VID_HOLTEK 0x04D9
+#define PID_G10_MECHANICAL_GAMING_MOUSE 0xA09F
+
 union {
-	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x04D9, 0xA09F);
+	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_HOLTEK, PID_G10_MECHANICAL_GAMING_MOUSE);
 } HID_BPF_CONFIG(device_ids);
 
 SEC("fmod_ret/hid_bpf_device_event")

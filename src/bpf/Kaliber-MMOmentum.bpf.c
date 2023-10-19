@@ -7,8 +7,11 @@
 #include "hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
+#define VID_IOGEAR 0x258A /* VID is shared with SinoWealth and Glorious and prob others */
+#define PID_MOMENTUM 0x0027
+
 union {
-	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x258A, 0x0027);
+	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_IOGEAR, PID_MOMENTUM);
 } HID_BPF_CONFIG(device_ids);
 
 SEC("fmod_ret/hid_bpf_rdesc_fixup")

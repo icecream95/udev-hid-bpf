@@ -7,8 +7,11 @@
 #include "hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
+#define VID_HP 0x03F0
+#define PID_ELITE_PRESENTER 0x464A
+
 union {
-	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, 0x03F0, 0x464A);
+	HID_DEVICE(BUS_BLUETOOTH, HID_GROUP_GENERIC, VID_HP, PID_ELITE_PRESENTER);
 } HID_BPF_CONFIG(device_ids);
 
 SEC("fmod_ret/hid_bpf_rdesc_fixup")

@@ -76,9 +76,12 @@ And this file contains:
   #include "hid_bpf_helpers.h"
   #include <bpf/bpf_tracing.h>
 
-   union {
-       HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x045E, 0x07A5);
-   } HID_BPF_CONFIG(device_ids)
+  #define VID_MICROSOFT 0x045E
+  #define PID_SCULPT_ERGONOMIC_MOUSE 0x07A5
+
+  HID_BPF_CONFIG(
+       HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_MICROSOFT, PID_SCULPT_ERGONOMIC_MOUSE);
+  );
 
   SEC("fmod_ret/hid_bpf_rdesc_fixup")
   int BPF_PROG(ignore_button_fix_rdesc, struct hid_bpf_ctx *hctx)
