@@ -23,9 +23,10 @@ stages:
 
 variables:
   FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
-  FEDORA_VERSION: 38
-  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel rustfmt systemd-devel zlib-devel'
-  FEDORA_TAG:  '2023-07-17.0'
+  FEDORA_VERSION: 39
+  FEDORA_RELEASE_VERSION: 37
+  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel rustfmt systemd-devel zlib-devel xz'
+  FEDORA_TAG:  '2023-11-08.0'
 
 .policy:
   retry:
@@ -92,6 +93,13 @@ fedora@container-prep:
     FDO_DISTRIBUTION_TAG: $FEDORA_TAG
 
 
+fedora-release@container-prep:
+  extends:
+    - fedora@container-prep
+  variables:
+    FDO_DISTRIBUTION_VERSION: $FEDORA_RELEASE_VERSION
+
+
 #################################################################
 #                                                               #
 #                       build stage                             #
@@ -146,6 +154,21 @@ sast:
 #                       deploy stage                            #
 #                                                               #
 #################################################################
+
+make release:
+  extends:
+    - .fedora-build@template
+  stage: deploy
+  variables:
+    FDO_DISTRIBUTION_VERSION: $FEDORA_RELEASE_VERSION
+  script:
+    - ./make_release.sh
+  artifacts:
+    paths:
+      - udev-hid-bpf*.tar*
+  dependencies:
+    - fedora-release@container-prep
+
 
 pages:
   extends:
