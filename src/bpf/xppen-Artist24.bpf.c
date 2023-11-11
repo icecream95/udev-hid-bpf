@@ -78,6 +78,19 @@ static const __u8 fixed_rdesc[] = {
 	0xc0,                          // End Collection                      106
 };
 
+#define BIT(n) (1UL << n)
+
+#define TIP_SWITCH		BIT(0)
+#define BARREL_SWITCH		BIT(1)
+#define ERASER			BIT(2)
+/* padding			BIT(3) */
+/* padding			BIT(4) */
+#define IN_RANGE		BIT(5)
+/* padding			BIT(6) */
+/* padding			BIT(7) */
+
+#define U16(index) (data[index] | (data[index + 1] << 8))
+
 SEC("fmod_ret/hid_bpf_rdesc_fixup")
 int BPF_PROG(hid_fix_rdesc_xppen_artist24, struct hid_bpf_ctx *hctx)
 {
@@ -91,7 +104,7 @@ int BPF_PROG(hid_fix_rdesc_xppen_artist24, struct hid_bpf_ctx *hctx)
 	return sizeof(fixed_rdesc);
 }
 
-static __u16 prev_tilt = 0;
+static bool prev_tip = 0;
 
 SEC("fmod_ret/hid_bpf_device_event")
 int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
@@ -102,18 +115,24 @@ int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 	if (!data)
 		return 0; /* EPERM check */
 
-	tilt = data[8] | (data[9] << 8);
+
+	tilt = U16(8);
 
 	/*
 	 * detect false releases:
-	 * - tipswitch, barrelswitch, secondarybarrelswitch,inrange are set to 0
+	 * - tipswitch, barrelswitch, secondarybarrelswitch, inrange are set to 0
 	 * - x/y tilt is set to 0
-	 * - previous x/y tilt is not 0
+	 * - pen was previously in contact (prev_tip is true)
+	 *
+	 * This means that we won't detect the false releases when the pen is in range
+	 * but not touching the surface: I don't think this one matters.
 	 */
-	if (!(data[1] & 0x3f) && !tilt && prev_tilt != tilt)
+	if ((data[1] & (TIP_SWITCH | BARREL_SWITCH | ERASER | IN_RANGE)) == 0 &&
+	    tilt == 0 &&
+	    prev_tip)
 		return -1;
 
-	prev_tilt = tilt;
+	prev_tip = data[1] & TIP_SWITCH;
 
 	return 0;
 }
