@@ -49,8 +49,8 @@ install -D -m 644 -t "$TMP_INSTALL_DIR"/etc/udev/hwdb.d "$CARGO_TARGET_DIR"//bpf
 install -D -m 755 "$SCRIPT_DIR"/release_install.sh "$TMP_INSTALL_DIR"/install.sh
 install -D -m 755 -t "$TMP_INSTALL_DIR" "$SCRIPT_DIR"/uninstall.sh
 
-VERSION=$($TMP_INSTALL_DIR/bin/udev-hid-bpf --version)
-NAME=${VERSION/ /_}
+VERSION=$(git describe --tags --dirty)
+NAME=udev-hid-bpf_${VERSION}
 RELEASE_DIR=$(dirname $TMP_INSTALL_DIR)
 
 rm -rf $RELEASE_DIR/$NAME

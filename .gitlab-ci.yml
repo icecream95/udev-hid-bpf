@@ -25,8 +25,8 @@ variables:
   FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
   FEDORA_VERSION: 39
   FEDORA_RELEASE_VERSION: 37
-  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel rustfmt systemd-devel zlib-devel xz'
-  FEDORA_TAG:  '2023-11-08.0'
+  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel'
+  FEDORA_TAG:  '2023-11-11.0'
 
 .policy:
   retry:
