@@ -121,45 +121,31 @@ int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 	if (data[1] == prev_state)
 		return 0;
 
+	prev_tip = !!(prev_state & TIP_SWITCH);
+
 	/*
 	 * Ideally we should hold the event, start a timer and deliver it
 	 * only if the timer ends, but we are not capable of that now
 	*/
-	if ((data[1] & IN_RANGE) == 0)
+	if ((data[1] & IN_RANGE) == 0) {
+		if (prev_tip)
+			return -1;
 		return 0;
+	}
 
 	changed_state = prev_state ^ data[1];
-	prev_tip = prev_state & TIP_SWITCH;
 
 	/* Store the new state for future processing */
 	prev_state = data[1];
 
 	/*
-	 * We get both a tipswitch and eraser change at the same time:
+	 * We get both a tipswitch and eraser change in the same HID report:
 	 * this is not an authorized transition and is unlikely to happen
 	 * in real life.
 	 * This is likely to be added by the firmware to emulate the
-	 * eraser mode.
+	 * eraser mode so we can skip the event.
 	 */
-	if ((changed_state & (TIP_SWITCH | ERASER)) == (TIP_SWITCH | ERASER)) { /* we get both a tipswitch and eraser change at the same time */
-		data[0] = 16; /* ignore the event, but report it through hidraw */
-		return 0;
-	}
-
-	tilt = U16(8);
-
-	/*
-	 * detect false releases:
-	 * - tipswitch, barrelswitch, secondarybarrelswitch, inrange are set to 0
-	 * - x/y tilt is set to 0
-	 * - pen was previously in contact (prev_tip is true)
-	 *
-	 * This means that we won't detect the false releases when the pen is in range
-	 * but not touching the surface: I don't think this one matters.
-	 */
-	if ((data[1] & (TIP_SWITCH | BARREL_SWITCH | ERASER | IN_RANGE)) == 0 &&
-	    tilt == 0 &&
-	    prev_tip)
+	if ((changed_state & (TIP_SWITCH | ERASER)) == (TIP_SWITCH | ERASER)) /* we get both a tipswitch and eraser change at the same time */
 		return -1;
 
 	return 0;
