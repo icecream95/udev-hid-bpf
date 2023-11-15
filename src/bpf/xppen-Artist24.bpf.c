@@ -104,17 +104,47 @@ int BPF_PROG(hid_fix_rdesc_xppen_artist24, struct hid_bpf_ctx *hctx)
 	return sizeof(fixed_rdesc);
 }
 
-static bool prev_tip = 0;
+static __u8 prev_state = 0;
 
 SEC("fmod_ret/hid_bpf_device_event")
 int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 {
 	__u8 *data = hid_bpf_get_data(hctx, 0 /* offset */, 10 /* size */);
+	__u8 changed_state;
+	bool prev_tip;
 	__u16 tilt;
 
 	if (!data)
 		return 0; /* EPERM check */
 
+	/* if the state is identical to previously, early return */
+	if (data[1] == prev_state)
+		return 0;
+
+	/*
+	 * Ideally we should hold the event, start a timer and deliver it
+	 * only if the timer ends, but we are not capable of that now
+	*/
+	if ((data[1] & IN_RANGE) == 0)
+		return 0;
+
+	changed_state = prev_state ^ data[1];
+	prev_tip = prev_state & TIP_SWITCH;
+
+	/* Store the new state for future processing */
+	prev_state = data[1];
+
+	/*
+	 * We get both a tipswitch and eraser change at the same time:
+	 * this is not an authorized transition and is unlikely to happen
+	 * in real life.
+	 * This is likely to be added by the firmware to emulate the
+	 * eraser mode.
+	 */
+	if ((changed_state & (TIP_SWITCH | ERASER)) == (TIP_SWITCH | ERASER)) { /* we get both a tipswitch and eraser change at the same time */
+		data[0] = 16; /* ignore the event, but report it through hidraw */
+		return 0;
+	}
 
 	tilt = U16(8);
 
@@ -131,8 +161,6 @@ int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 	    tilt == 0 &&
 	    prev_tip)
 		return -1;
-
-	prev_tip = data[1] & TIP_SWITCH;
 
 	return 0;
 }
