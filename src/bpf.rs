@@ -98,7 +98,7 @@ impl<'a> HidBPF<'a> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
-        let object = obj_builder.open_file(path.clone())?.load()?;
+        let mut object = obj_builder.open_file(path.clone())?.load()?;
         let object_name = path.as_path().file_stem().unwrap().to_str().unwrap();
 
         let hid_id = device.id();
@@ -194,6 +194,25 @@ impl<'a> HidBPF<'a> {
                 Ok(_) => {
                     attached = true;
                     log::debug!(target: "libbpf", "Successfully pinned prog at {}", path);
+                }
+            }
+        }
+
+        if attached {
+            /* compiler internal maps contain the name of the object and a dot */
+            for map in object
+                .maps_iter_mut()
+                .filter(|map| !map.name().contains("."))
+            {
+                let path = format!(
+                    "{}/{}",
+                    get_bpffs_path(&device.sysname(), object_name),
+                    map.name(),
+                );
+
+                if let Ok(_) = map.pin(&path) {
+                    attached = true;
+                    log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
                 }
             }
         }
