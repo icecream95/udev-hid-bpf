@@ -134,7 +134,7 @@ impl<'a> HidBPF<'a> {
             let ret_syscall = run_syscall_prog(inner.progs().attach_prog(), attach_args);
 
             if let Err(e) = ret_syscall {
-                eprintln!(
+                log::warn!(
                     "could not call attach {} to device id {}, error {}",
                     &tracing_prog.name(),
                     hid_id,
@@ -146,7 +146,7 @@ impl<'a> HidBPF<'a> {
             let args = ret_syscall.unwrap();
 
             if args.retval <= 0 {
-                eprintln!(
+                log::warn!(
                     "could not attach {} to device id {}, error {}",
                     &tracing_prog.name(),
                     hid_id,
@@ -171,7 +171,7 @@ impl<'a> HidBPF<'a> {
             );
 
             fs::create_dir_all(get_bpffs_path(&device.sysname())).unwrap_or_else(|why| {
-                eprintln!("! {:?}", why.kind());
+                log::warn!("! {:?}", why.kind());
             });
 
             match pin_hid_bpf_prog(link, path.clone()) {
@@ -180,7 +180,7 @@ impl<'a> HidBPF<'a> {
                         libbpf_rs::Error::System(errno) => errno::Errno(-errno).to_string(),
                         _ => e.to_string(),
                     };
-                    eprintln!(
+                    log::warn!(
                         "could not pin {} to device id {}, error {}",
                         &tracing_prog.name(),
                         hid_id,
