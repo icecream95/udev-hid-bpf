@@ -116,7 +116,7 @@ we can attempt to load it manually::
   DEBUG - device added 0003:045E:07A5.0001, filename: target/bpf/ignore-button.bpf.o
   DEBUG - loading BPF object at "target/bpf/ignore-button.bpf.o"
   DEBUG - successfully attached ignore_button_fix_event to device id 1
-  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0001/ignore_button_fix_event
+  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0001/ignore-button_bpf/ignore_button_fix_event
 
 Because the BPF program is "pinned" it will remain even after the loading process terminates.
 And indeed, the BPF program shows up in the bpffs::
@@ -124,7 +124,8 @@ And indeed, the BPF program shows up in the bpffs::
   $ sudo tree /sys/fs/bpf/hid/
     /sys/fs/bpf/hid/
     └── 0003_045E_07A5_0001
-        └── ignore_button_fix_event
+        └── ignore-button_bpf
+            └── ignore_button_fix_event
 
 And we can remove it again (so we can re-add it later)::
 
@@ -197,7 +198,7 @@ Passing in the other interface (with the ``0002`` suffix) works::
   DEBUG - device added 0003:045E:07A5.0002, filename: /lib/firmware/hid/bpf/ignore-button.bpf.o
   DEBUG - loading BPF object at "/lib/firmware/hid/bpf/ignore-button.bpf.o"
   DEBUG - successfully attached ignore_button_fix_event to device id 2
-  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0002/ignore_button_fix_event
+  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0002/ignore-button_bpf/ignore_button_fix_event
 
 This indicates our probe is working correctly.
 

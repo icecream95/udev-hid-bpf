@@ -15,15 +15,16 @@ pub struct HidBPF<'a> {
     inner: Option<AttachSkel<'a>>,
 }
 
-pub fn get_bpffs_path(sysname: &str) -> String {
+pub fn get_bpffs_path(sysname: &str, object: &str) -> String {
     format!(
-        "/sys/fs/bpf/hid/{}",
+        "/sys/fs/bpf/hid/{}/{}",
         sysname.replace(":", "_").replace(".", "_"),
+        object.replace(":", "_").replace(".", "_"),
     )
 }
 
 pub fn remove_bpf_objects(sysname: &str) -> std::io::Result<()> {
-    let path = get_bpffs_path(sysname);
+    let path = get_bpffs_path(sysname, "");
 
     std::fs::remove_dir_all(path).ok();
 
@@ -98,6 +99,7 @@ impl<'a> HidBPF<'a> {
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
         let object = obj_builder.open_file(path.clone())?.load()?;
+        let object_name = path.as_path().file_stem().unwrap().to_str().unwrap();
 
         let hid_id = device.id();
 
@@ -166,13 +168,15 @@ impl<'a> HidBPF<'a> {
 
             let path = format!(
                 "{}/{}",
-                get_bpffs_path(&device.sysname()),
+                get_bpffs_path(&device.sysname(), object_name),
                 tracing_prog.name(),
             );
 
-            fs::create_dir_all(get_bpffs_path(&device.sysname())).unwrap_or_else(|why| {
-                log::warn!("! {:?}", why.kind());
-            });
+            fs::create_dir_all(get_bpffs_path(&device.sysname(), object_name)).unwrap_or_else(
+                |why| {
+                    log::warn!("! {:?}", why.kind());
+                },
+            );
 
             match pin_hid_bpf_prog(link, path.clone()) {
                 Err(e) => {
