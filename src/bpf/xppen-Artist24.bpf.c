@@ -18,9 +18,9 @@ HID_BPF_CONFIG(
 
 /*
  * We need to amend the report descriptor for the following:
- * - the device reports Eraser instead of using Invert
- * - when the eraser button is pressed and the stylus is touching the tablet,
- *   the device sends Tip Switch instead of sending Eraser
+ * - the device reports Eraser instead of using Secondary Barrel Switch
+ * - the pen doesn't have a rubber tail, so basically we are removing any
+ *   eraser/invert bits
  */
 static const __u8 fixed_rdesc[] = {
 	0x05, 0x0d,                    // Usage Page (Digitizers)             0
@@ -106,6 +106,52 @@ int BPF_PROG(hid_fix_rdesc_xppen_artist24, struct hid_bpf_ctx *hctx)
 
 static __u8 prev_state = 0;
 
+/*
+ * There are a few cases where the device is sending wrong event
+ * sequences, all related to the second button (the pen doesn't
+ * have an eraser switch on the tail end):
+ *
+ *   whenever the second button gets pressed or released, an
+ *   out-of-proximity event is generated and then the firmware
+ *   compensate for the missing state (and the firmware uses
+ *   eraser for that button):
+ *
+ *   - if the pen is in range, an extra out-of-range is sent
+ *     when the second button is pressed/released:
+ *     // Pen is in range
+ *     E:                               InRange
+ *
+ *     // Second button is pressed
+ *     E:
+ *     E:                        Eraser InRange
+ *
+ *     // Second button is released
+ *     E:
+ *     E:                               InRange
+ *
+ *     This case is ignored by this filter, it's "valid"
+ *     and userspace knows how to deal with it, there are just
+ *     a few out-of-prox events generated, but the user doesn´t
+ *     see them.
+ *
+ *   - if the pen is in contact, 2 extra events are added when
+ *     the second button is pressed/released: an out of range
+ *     and an in range:
+ *
+ *     // Pen is in contact
+ *     E: TipSwitch                     InRange
+ *
+ *     // Second button is pressed
+ *     E:                                         <- false release, needs to be filtered out
+ *     E:                        Eraser InRange   <- false release, needs to be filtered out
+ *     E: TipSwitch              Eraser InRange
+ *
+ *     // Second button is released
+ *     E:                                         <- false release, needs to be filtered out
+ *     E:                               InRange   <- false release, needs to be filtered out
+ *     E: TipSwitch                     InRange
+ *
+ */
 SEC("fmod_ret/hid_bpf_device_event")
 int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 {
@@ -126,8 +172,14 @@ int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 	prev_tip = !!(prev_state & TIP_SWITCH);
 
 	/*
+	 * Illegal transition: pen is in range with the tip pressed, and
+	 * it goes into out of proximity.
+	 *
 	 * Ideally we should hold the event, start a timer and deliver it
-	 * only if the timer ends, but we are not capable of that now
+	 * only if the timer ends, but we are not capable of that now.
+	 *
+	 * And it doesn't matter because when we are in such cases, this
+	 * means we are detecting a false release.
 	*/
 	if ((current_state & IN_RANGE) == 0) {
 		if (prev_tip)
@@ -135,6 +187,10 @@ int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 		return 0;
 	}
 
+	/*
+	 * XOR to only set the bits that have changed between
+	 * previous and current state
+	 */
 	changed_state = prev_state ^ current_state;
 
 	/* Store the new state for future processing */
