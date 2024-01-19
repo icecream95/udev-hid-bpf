@@ -7,6 +7,7 @@
 
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
+#include <linux/errno.h>
 
 extern __u8 *hid_bpf_get_data(struct hid_bpf_ctx *ctx,
 			      unsigned int offset,

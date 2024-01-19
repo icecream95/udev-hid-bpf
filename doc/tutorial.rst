@@ -177,7 +177,7 @@ we need to ignore those. So our ``probe()`` changes to check exactly that:
           ctx->rdesc[3] == 0x02)   /* Mouse */
           ctx->retval = 0;
       else
-          ctx->retval = -22;
+          ctx->retval = -EINVAL;
 
       return 0;
   }

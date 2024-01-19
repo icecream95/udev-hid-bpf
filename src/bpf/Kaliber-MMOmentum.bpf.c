@@ -45,7 +45,7 @@ int probe(struct hid_bpf_probe_args *ctx)
 	/* only bind to the keyboard interface */
 	ctx->retval = ctx->rdesc_size != 213;
 	if (ctx->retval)
-		ctx->retval = -22;
+		ctx->retval = -EINVAL;
 
 	return 0;
 }

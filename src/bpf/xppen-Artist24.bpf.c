@@ -159,11 +159,11 @@ int probe(struct hid_bpf_probe_args *ctx)
 	 */
 	ctx->retval = ctx->rdesc_size != 107;
 	if (ctx->retval)
-		ctx->retval = -22;
+		ctx->retval = -EINVAL;
 
 	/* ensure the kernel isn't fixed already */
 	if (ctx->rdesc[17] != 0x45) /* Eraser */
-		ctx->retval = -22;
+		ctx->retval = -EINVAL;
 
 	return 0;
 }

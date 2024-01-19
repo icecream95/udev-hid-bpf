@@ -43,10 +43,10 @@ int probe(struct hid_bpf_probe_args *ctx)
 	 */
 	ctx->retval = ctx->rdesc_size != 71;
 	if (ctx->retval)
-		ctx->retval = -22;
+		ctx->retval = -EINVAL;
 
 	/* comment the following line to actually bind the program */
-	ctx->retval = -22;
+	ctx->retval = -EINVAL;
 
 	return 0;
 }
