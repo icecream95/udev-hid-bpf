@@ -110,15 +110,17 @@ SEC("fmod_ret/hid_bpf_device_event")
 int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 {
 	__u8 *data = hid_bpf_get_data(hctx, 0 /* offset */, 10 /* size */);
-	__u8 changed_state;
+	__u8 current_state, changed_state;
 	bool prev_tip;
 	__u16 tilt;
 
 	if (!data)
 		return 0; /* EPERM check */
 
+	current_state = data[1];
+
 	/* if the state is identical to previously, early return */
-	if (data[1] == prev_state)
+	if (current_state == prev_state)
 		return 0;
 
 	prev_tip = !!(prev_state & TIP_SWITCH);
@@ -127,16 +129,16 @@ int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 	 * Ideally we should hold the event, start a timer and deliver it
 	 * only if the timer ends, but we are not capable of that now
 	*/
-	if ((data[1] & IN_RANGE) == 0) {
+	if ((current_state & IN_RANGE) == 0) {
 		if (prev_tip)
 			return -1;
 		return 0;
 	}
 
-	changed_state = prev_state ^ data[1];
+	changed_state = prev_state ^ current_state;
 
 	/* Store the new state for future processing */
-	prev_state = data[1];
+	prev_state = current_state;
 
 	/*
 	 * We get both a tipswitch and eraser change in the same HID report:
