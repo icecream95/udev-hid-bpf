@@ -131,7 +131,7 @@ int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 	*/
 	if ((current_state & IN_RANGE) == 0) {
 		if (prev_tip)
-			return -1;
+			return HID_IGNORE_EVENT;
 		return 0;
 	}
 
@@ -148,7 +148,7 @@ int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 	 * eraser mode so we can skip the event.
 	 */
 	if ((changed_state & (TIP_SWITCH | ERASER)) == (TIP_SWITCH | ERASER)) /* we get both a tipswitch and eraser change at the same time */
-		return -1;
+		return HID_IGNORE_EVENT;
 
 	return 0;
 }
