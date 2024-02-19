@@ -5,6 +5,7 @@ endif
 sources = [
     'HP_Elite_Presenter.bpf.c',
     'Kaliber-MMOmentum.bpf.c',
+    'Wacom-ArtPen.bpf.c',
     'XBox_Elite_2.bpf.c',
     'xppen-Artist24.bpf.c',
     'xppen-ArtistPro16Gen2.bpf.c',
