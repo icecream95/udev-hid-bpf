@@ -17,7 +17,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --dry-run)
-      DRY_RUN=1
+      DRY_RUN="echo"
       shift
       ;;
     --*)
@@ -47,12 +47,9 @@ PREFIX=${1:-/usr/local}
 
 sed -e "s|/usr/local|$PREFIX|" "$SCRIPT_DIR"/99-hid-bpf.rules > "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
 
-if [[ -z "$DRY_RUN" ]];
-then
-  install -D -t "$PREFIX"/bin/ "$SCRIPT_DIR"/bin/udev-hid-bpf
-  install -D -t /lib/firmware/hid/bpf "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o
-  install -D -m 644 -t /etc/udev/rules.d "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
-  install -D -m 644 -t /etc/udev/hwdb.d "$SCRIPT_DIR"/etc/udev/hwdb.d/99-hid-bpf.hwdb
-  udevadm control --reload
-  systemd-hwdb update
-fi
+$DRY_RUN install -D -t "$PREFIX"/bin/ "$SCRIPT_DIR"/bin/udev-hid-bpf
+$DRY_RUN install -D -t /lib/firmware/hid/bpf "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o
+$DRY_RUN install -D -m 644 -t /etc/udev/rules.d "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
+$DRY_RUN install -D -m 644 -t /etc/udev/hwdb.d "$SCRIPT_DIR"/etc/udev/hwdb.d/99-hid-bpf.hwdb
+$DRY_RUN udevadm control --reload
+$DRY_RUN systemd-hwdb update

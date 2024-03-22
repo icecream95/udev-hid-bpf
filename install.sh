@@ -17,7 +17,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --dry-run)
-      DRY_RUN=1
+      DRY_RUN="echo"
       shift
       ;;
     --*)
@@ -61,12 +61,9 @@ sudo -u "$CARGO_USER" -i \
 
 sed -e "s|/usr/local|$PREFIX|" 99-hid-bpf.rules > "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.rules
 
-if [[ -z "$DRY_RUN" ]];
-then
-  install -D -t "$PREFIX"/bin/ "$TMP_INSTALL_DIR"/bin/udev-hid-bpf
-  install -D -t /lib/firmware/hid/bpf "$CARGO_TARGET_DIR"/bpf/*.bpf.o
-  install -D -m 644 -t /etc/udev/rules.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.rules
-  install -D -m 644 -t /etc/udev/hwdb.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.hwdb
-  udevadm control --reload
-  systemd-hwdb update
-fi
+$DRY_RUN install -D -t "$PREFIX"/bin/ "$TMP_INSTALL_DIR"/bin/udev-hid-bpf
+$DRY_RUN install -D -t /lib/firmware/hid/bpf "$CARGO_TARGET_DIR"/bpf/*.bpf.o
+$DRY_RUN install -D -m 644 -t /etc/udev/rules.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.rules
+$DRY_RUN install -D -m 644 -t /etc/udev/hwdb.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.hwdb
+$DRY_RUN udevadm control --reload
+$DRY_RUN systemd-hwdb update

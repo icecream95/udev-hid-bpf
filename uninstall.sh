@@ -17,7 +17,7 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --dry-run)
-      DRY_RUN=1
+      DRY_RUN="echo"
       shift
       ;;
     --*)
@@ -45,14 +45,11 @@ set -e
 
 PREFIX=${1:-/usr/local}
 
-if [[ -z "$DRY_RUN" ]];
-then
-  rm -f "$PREFIX"/bin/udev-hid-bpf
-  BPF=$(ls "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o)
-  INSTALLED_BPF=${BPF//$SCRIPT_DIR/}
-  rm -f $INSTALLED_BPF
-  rm -f /etc/udev/rules.d/99-hid-bpf.rules
-  rm -f /etc/udev/hwdb.d/99-hid-bpf.hwdb
-  udevadm control --reload
-  systemd-hwdb update
-fi
+BPF=$(ls "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o)
+INSTALLED_BPF=${BPF//$SCRIPT_DIR/}
+$DRY_RUN rm -f $INSTALLED_BPF
+$DRY_RUN rm -f "$PREFIX"/bin/udev-hid-bpf
+$DRY_RUN rm -f /etc/udev/rules.d/99-hid-bpf.rules
+$DRY_RUN rm -f /etc/udev/hwdb.d/99-hid-bpf.hwdb
+$DRY_RUN udevadm control --reload
+$DRY_RUN systemd-hwdb update
