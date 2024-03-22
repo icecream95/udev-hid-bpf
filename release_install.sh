@@ -57,7 +57,7 @@ sed -e "s|/usr/local|$PREFIX|" "$SCRIPT_DIR"/99-hid-bpf.rules > "$SCRIPT_DIR"/et
 
 echo "Using sudo to install files into $PREFIX. You may be asked for your password now"
 $DRY_RUN sudo install -D -t "$PREFIX"/bin/ "$SCRIPT_DIR"/bin/udev-hid-bpf
-$DRY_RUN sudo install -D -t /lib/firmware/hid/bpf "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o
+$DRY_RUN sudo install -D -t "$PREFIX"/lib/firmware/hid/bpf "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o
 $DRY_RUN sudo install -D -m 644 -t "$UDEVDIR"/udev/rules.d "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
 $DRY_RUN sudo install -D -m 644 -t "$UDEVDIR"/udev/hwdb.d "$SCRIPT_DIR"/etc/udev/hwdb.d/99-hid-bpf.hwdb
 $DRY_RUN sudo udevadm control --reload

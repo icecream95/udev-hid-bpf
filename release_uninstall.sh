@@ -56,7 +56,7 @@ fi
 echo "Using sudo to remove files from $PREFIX. You may be asked for your password now"
 BPF=$(ls "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o)
 INSTALLED_BPF=${BPF//$SCRIPT_DIR/}
-$DRY_RUN sudo rm -f $INSTALLED_BPF
+$DRY_RUN sudo rm -f "$PREFIX/$INSTALLED_BPF"
 $DRY_RUN sudo rm -f "$PREFIX"/bin/udev-hid-bpf
 $DRY_RUN sudo rm -f "$UDEVDIR"/udev/rules.d/99-hid-bpf.rules
 $DRY_RUN sudo rm -f "$UDEVDIR"/udev/hwdb.d/99-hid-bpf.hwdb

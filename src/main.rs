@@ -9,7 +9,8 @@ pub mod bpf;
 pub mod hidudev;
 pub mod modalias;
 
-static DEFAULT_BPF_DIRS: &[&str] = &["/lib/firmware/hid/bpf"];
+// FIXME: how can we make this configurable?
+static DEFAULT_BPF_DIRS: &[&str] = &["/usr/local/lib/firmware/hid/bpf", "/lib/firmware/hid/bpf"];
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

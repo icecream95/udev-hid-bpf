@@ -191,12 +191,12 @@ path we provided to the ``udev-hid-bpf`` tool is the Keyboard device, not the Mo
 Passing in the other interface (with the ``0002`` suffix) works::
 
   $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 ignore-button.bpf.o
-  DEBUG - device added 0003:045E:07A5.0001, filename: /lib/firmware/hid/bpf/ignore-button.bpf.o
-  DEBUG - loading BPF object at "/lib/firmware/hid/bpf/ignore-button.bpf.o"
+  DEBUG - device added 0003:045E:07A5.0001, filename: /usr/local/lib/firmware/hid/bpf/ignore-button.bpf.o
+  DEBUG - loading BPF object at "/usr/local/lib/firmware/hid/bpf/ignore-button.bpf.o"
 
   $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0002 ignore-button.bpf.o
-  DEBUG - device added 0003:045E:07A5.0002, filename: /lib/firmware/hid/bpf/ignore-button.bpf.o
-  DEBUG - loading BPF object at "/lib/firmware/hid/bpf/ignore-button.bpf.o"
+  DEBUG - device added 0003:045E:07A5.0002, filename: /usr/local/lib/firmware/hid/bpf/ignore-button.bpf.o
+  DEBUG - loading BPF object at "/usr/local/lib/firmware/hid/bpf/ignore-button.bpf.o"
   DEBUG - successfully attached ignore_button_fix_event to device id 2
   DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0002/ignore-button_bpf/ignore_button_fix_event
 
