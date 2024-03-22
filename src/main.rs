@@ -114,14 +114,13 @@ fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> std::io::Result<
         "Showing available BPF files in {}:",
         dir.as_path().to_str().unwrap()
     );
-    for entry in std::fs::read_dir(dir)? {
-        if let Ok(entry) = entry {
-            let fname = entry.file_name();
-            let name = fname.to_string_lossy();
-            if name.ends_with(".bpf.o") {
-                println!(" {name}");
-            }
-        }
+    for entry in std::fs::read_dir(dir)?
+        .flatten()
+        .filter(|f| f.metadata().unwrap().is_file())
+        .map(|e| e.path())
+        .filter(|p| p.to_str().unwrap().ends_with(".bpf.o"))
+    {
+        println!(" {}", entry.to_str().unwrap());
     }
 
     Ok(())

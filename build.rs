@@ -94,16 +94,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut modaliases = std::collections::HashMap::new();
 
     // Then compile all other .bpf.c in a .bpf.o file
-    for elem in Path::new(DIR).read_dir().unwrap() {
-        if let Ok(dir_entry) = elem {
-            let path = dir_entry.path();
-            if path.is_file()
-                && path.to_str().unwrap().ends_with(".bpf.c")
-                && path.file_name().unwrap() != ATTACH_PROG
-            {
-                build_bpf_file(&path, &target_dir, &mut modaliases)?;
-            }
-        }
+    for path in Path::new(DIR)
+        .read_dir()
+        .unwrap()
+        .flatten()
+        .filter(|f| f.metadata().unwrap().is_file())
+        .map(|e| e.path())
+        .filter(|p| p.to_str().unwrap().ends_with(".bpf.c"))
+        .filter(|p| p.file_name().unwrap() != ATTACH_PROG)
+    {
+        build_bpf_file(&path, &target_dir, &mut modaliases)?;
     }
 
     for (modalias, files) in modaliases {
