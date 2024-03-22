@@ -3,7 +3,7 @@
 SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 
 usage () {
-  echo "Usage: $(basename "$0") [-v|--verbose] [--dry-run] [PREFIX]"
+  echo "Usage: $(basename "$0") [-v|--verbose] [--dry-run] [--udevdir /etc/] [PREFIX]"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -19,6 +19,10 @@ while [[ $# -gt 0 ]]; do
     --dry-run)
       DRY_RUN="echo"
       shift
+      ;;
+    --udevdir)
+      UDEVDIR=$2
+      shift 2
       ;;
     --*)
       usage
@@ -51,6 +55,17 @@ if [[ -n "$SUDO_USER" ]]; then
 fi
 
 PREFIX=${1:-/usr/local}
+if [ -z "$UDEVDIR" ]; then
+  case ${PREFIX%/} in
+    /usr)
+      UDEVDIR="/usr/lib"
+      ;;
+    *)
+      UDEVDIR="/etc"
+      ;;
+  esac
+fi
+
 TMP_INSTALL_DIR="$CARGO_TARGET_DIR/install"
 
 sudo -u "$CARGO_USER" -i \
@@ -63,7 +78,7 @@ sed -e "s|/usr/local|$PREFIX|" 99-hid-bpf.rules > "$CARGO_TARGET_DIR"/bpf/99-hid
 
 $DRY_RUN install -D -t "$PREFIX"/bin/ "$TMP_INSTALL_DIR"/bin/udev-hid-bpf
 $DRY_RUN install -D -t /lib/firmware/hid/bpf "$CARGO_TARGET_DIR"/bpf/*.bpf.o
-$DRY_RUN install -D -m 644 -t /etc/udev/rules.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.rules
-$DRY_RUN install -D -m 644 -t /etc/udev/hwdb.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.hwdb
+$DRY_RUN install -D -m 644 -t "$UDEVDIR"/udev/rules.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.rules
+$DRY_RUN install -D -m 644 -t "$UDEVDIR"/udev/hwdb.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.hwdb
 $DRY_RUN udevadm control --reload
 $DRY_RUN systemd-hwdb update

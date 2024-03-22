@@ -3,7 +3,7 @@
 SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 
 usage () {
-  echo "Usage: $(basename "$0") [-v|--verbose] [--dry-run] [PREFIX]"
+  echo "Usage: $(basename "$0") [-v|--verbose] [--dry-run] [--udevdir /etc/] [PREFIX]"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -19,6 +19,10 @@ while [[ $# -gt 0 ]]; do
     --dry-run)
       DRY_RUN="echo"
       shift
+      ;;
+    --udevdir)
+      UDEVDIR=$2
+      shift 2
       ;;
     --*)
       usage
@@ -44,12 +48,22 @@ fi
 set -e
 
 PREFIX=${1:-/usr/local}
+if [ -z "$UDEVDIR" ]; then
+  case ${PREFIX%/} in
+    /usr)
+      UDEVDIR="/usr/lib"
+      ;;
+    *)
+      UDEVDIR="/etc"
+      ;;
+  esac
+fi
 
 sed -e "s|/usr/local|$PREFIX|" "$SCRIPT_DIR"/99-hid-bpf.rules > "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
 
 $DRY_RUN install -D -t "$PREFIX"/bin/ "$SCRIPT_DIR"/bin/udev-hid-bpf
 $DRY_RUN install -D -t /lib/firmware/hid/bpf "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o
-$DRY_RUN install -D -m 644 -t /etc/udev/rules.d "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
-$DRY_RUN install -D -m 644 -t /etc/udev/hwdb.d "$SCRIPT_DIR"/etc/udev/hwdb.d/99-hid-bpf.hwdb
+$DRY_RUN install -D -m 644 -t "$UDEVDIR"/udev/rules.d "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
+$DRY_RUN install -D -m 644 -t "$UDEVDIR"/udev/hwdb.d "$SCRIPT_DIR"/etc/udev/hwdb.d/99-hid-bpf.hwdb
 $DRY_RUN udevadm control --reload
 $DRY_RUN systemd-hwdb update
