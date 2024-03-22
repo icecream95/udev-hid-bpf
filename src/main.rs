@@ -9,7 +9,7 @@ pub mod bpf;
 pub mod hidudev;
 pub mod modalias;
 
-static DEFAULT_BPF_DIR: &str = "/lib/firmware/hid/bpf";
+static DEFAULT_BPF_DIRS: &[&str] = &["/lib/firmware/hid/bpf"];
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -62,12 +62,15 @@ enum Commands {
     ListDevices {},
 }
 
-fn default_bpf_dir() -> std::path::PathBuf {
+fn default_bpf_dirs() -> Vec<std::path::PathBuf> {
     let bpf_dir = std::path::PathBuf::from("target/bpf");
     if bpf_dir.exists() {
-        bpf_dir
+        vec![bpf_dir]
     } else {
-        std::path::PathBuf::from(DEFAULT_BPF_DIR)
+        DEFAULT_BPF_DIRS
+            .iter()
+            .map(|d| std::path::PathBuf::from(d))
+            .collect()
     }
 }
 
@@ -77,12 +80,12 @@ fn cmd_add(
     bpfdir: Option<std::path::PathBuf>,
 ) -> std::io::Result<()> {
     let dev = hidudev::HidUdev::from_syspath(syspath)?;
-    let target_bpf_dir = match bpfdir {
-        Some(bpf_dir) => bpf_dir,
-        None => default_bpf_dir(),
+    let target_bpf_dirs = match bpfdir {
+        Some(bpf_dir) => vec![bpf_dir],
+        None => default_bpf_dirs(),
     };
 
-    dev.load_bpf_from_directory(target_bpf_dir, prog)
+    dev.load_bpf_from_directories(&target_bpf_dirs, prog)
 }
 
 fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String> {
@@ -109,18 +112,23 @@ fn cmd_remove(syspath: &std::path::PathBuf) -> std::io::Result<()> {
 }
 
 fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> std::io::Result<()> {
-    let dir = bpfdir.or(Some(default_bpf_dir())).unwrap();
-    println!(
-        "Showing available BPF files in {}:",
-        dir.as_path().to_str().unwrap()
-    );
-    for entry in std::fs::read_dir(dir)?
-        .flatten()
-        .filter(|f| f.metadata().unwrap().is_file())
-        .map(|e| e.path())
-        .filter(|p| p.to_str().unwrap().ends_with(".bpf.o"))
-    {
-        println!(" {}", entry.to_str().unwrap());
+    let dirs = match bpfdir {
+        Some(bpf_dir) => vec![bpf_dir],
+        None => default_bpf_dirs(),
+    };
+    for dir in dirs {
+        println!(
+            "Showing available BPF files in {}:",
+            dir.as_path().to_str().unwrap()
+        );
+        for entry in std::fs::read_dir(dir)?
+            .flatten()
+            .filter(|f| f.metadata().unwrap().is_file())
+            .map(|e| e.path())
+            .filter(|p| p.to_str().unwrap().ends_with(".bpf.o"))
+        {
+            println!(" {}", entry.to_str().unwrap());
+        }
     }
 
     Ok(())

@@ -56,12 +56,21 @@ impl HidUdev {
         u32::from_str_radix(&hid_sys[15..], 16).unwrap()
     }
 
-    pub fn load_bpf_from_directory(
+    /// Find the given file name in the set of directories, returning a path
+    /// to the first filename found. The directories are assumed in preference
+    /// order, first match wins.
+    fn find_file(dirs: &[std::path::PathBuf], filename: &str) -> Option<std::path::PathBuf> {
+        dirs.iter()
+            .map(|d| d.join(filename))
+            .find(|path| path.is_file())
+    }
+
+    pub fn load_bpf_from_directories(
         &self,
-        bpf_dir: std::path::PathBuf,
+        bpf_dirs: &[std::path::PathBuf],
         prog: Option<String>,
     ) -> std::io::Result<()> {
-        if !bpf_dir.exists() {
+        if !bpf_dirs.iter().any(|d| d.exists()) {
             return Ok(());
         }
 
@@ -71,8 +80,8 @@ impl HidUdev {
             for property in self.udev_device.properties() {
                 log::debug!("property: {:?} = {:?}", property.name(), property.value());
                 if property.name().to_str().unwrap().starts_with("HID_BPF_") {
-                    let target_object = bpf_dir.join(property.value());
-                    if target_object.is_file() {
+                    let value = property.value().to_str().unwrap();
+                    if let Some(target_object) = HidUdev::find_file(bpf_dirs, value) {
                         log::debug!(
                             "device added {}, filename: {}",
                             self.sysname(),
@@ -82,16 +91,13 @@ impl HidUdev {
                     }
                 }
             }
-        } else {
-            let target_object = bpf_dir.join(prog.unwrap());
-            if target_object.is_file() {
-                log::debug!(
-                    "device added {}, filename: {}",
-                    self.sysname(),
-                    target_object.display(),
-                );
-                paths.push(target_object);
-            }
+        } else if let Some(target_object) = HidUdev::find_file(bpf_dirs, &prog.unwrap()) {
+            log::debug!(
+                "device added {}, filename: {}",
+                self.sysname(),
+                target_object.display(),
+            );
+            paths.push(target_object);
         }
 
         if !paths.is_empty() {
