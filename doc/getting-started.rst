@@ -32,7 +32,8 @@ Please see the `cargo documentation <https://doc.rust-lang.org/cargo/>`_ for mor
 
 Then, we can install the binary with the following command::
 
-   $ sudo ./install.sh
+   $ ./install.sh
+   # this will ask for your sudo password to install udev rules and hwdb files
 
 The above command will (re)build the tool and any BPF programs it finds in ``src/bpf/*.bpf.c``.
 It will then install

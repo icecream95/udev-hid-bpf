@@ -39,12 +39,6 @@ if [ $# -gt 1 ]; then
   exit 1
 fi
 
-if [ "$EUID" -ne 0 ]
-then
-  echo "This script needs to update global udev rules, so please run as root."
-  exit 1
-fi
-
 set -e
 
 PREFIX=${1:-/usr/local}
@@ -59,11 +53,12 @@ if [ -z "$UDEVDIR" ]; then
   esac
 fi
 
+echo "Using sudo to remove files from $PREFIX. You may be asked for your password now"
 BPF=$(ls "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o)
 INSTALLED_BPF=${BPF//$SCRIPT_DIR/}
-$DRY_RUN rm -f $INSTALLED_BPF
-$DRY_RUN rm -f "$PREFIX"/bin/udev-hid-bpf
-$DRY_RUN rm -f "$UDEVDIR"/udev/rules.d/99-hid-bpf.rules
-$DRY_RUN rm -f "$UDEVDIR"/udev/hwdb.d/99-hid-bpf.hwdb
-$DRY_RUN udevadm control --reload
-$DRY_RUN systemd-hwdb update
+$DRY_RUN sudo rm -f $INSTALLED_BPF
+$DRY_RUN sudo rm -f "$PREFIX"/bin/udev-hid-bpf
+$DRY_RUN sudo rm -f "$UDEVDIR"/udev/rules.d/99-hid-bpf.rules
+$DRY_RUN sudo rm -f "$UDEVDIR"/udev/hwdb.d/99-hid-bpf.hwdb
+$DRY_RUN sudo udevadm control --reload
+$DRY_RUN sudo systemd-hwdb update

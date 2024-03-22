@@ -12,7 +12,8 @@ You can build and install using Rust's `cargo` and our custom install script:
 $ git clone https://gitlab.freedesktop.org/libevdev/udev-hid-bpf.git
 $ cd udev-hid-bpf/
 $ cargo build
-$ sudo ./install.sh
+$ ./install.sh
+# this will ask for your sudo password to install udev rules and hwdb files
 ```
 
 Once installed, unplug/replug any supported device, and the bpf program will automatically be attached to the HID kernel device.

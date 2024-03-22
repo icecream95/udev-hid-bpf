@@ -39,12 +39,6 @@ if [ $# -gt 1 ]; then
   exit 1
 fi
 
-if [ "$EUID" -ne 0 ]
-then
-  echo "This script needs to install global udev rules, so please run as root."
-  exit 1
-fi
-
 set -e
 
 PREFIX=${1:-/usr/local}
@@ -61,9 +55,10 @@ fi
 
 sed -e "s|/usr/local|$PREFIX|" "$SCRIPT_DIR"/99-hid-bpf.rules > "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
 
-$DRY_RUN install -D -t "$PREFIX"/bin/ "$SCRIPT_DIR"/bin/udev-hid-bpf
-$DRY_RUN install -D -t /lib/firmware/hid/bpf "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o
-$DRY_RUN install -D -m 644 -t "$UDEVDIR"/udev/rules.d "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
-$DRY_RUN install -D -m 644 -t "$UDEVDIR"/udev/hwdb.d "$SCRIPT_DIR"/etc/udev/hwdb.d/99-hid-bpf.hwdb
-$DRY_RUN udevadm control --reload
-$DRY_RUN systemd-hwdb update
+echo "Using sudo to install files into $PREFIX. You may be asked for your password now"
+$DRY_RUN sudo install -D -t "$PREFIX"/bin/ "$SCRIPT_DIR"/bin/udev-hid-bpf
+$DRY_RUN sudo install -D -t /lib/firmware/hid/bpf "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o
+$DRY_RUN sudo install -D -m 644 -t "$UDEVDIR"/udev/rules.d "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
+$DRY_RUN sudo install -D -m 644 -t "$UDEVDIR"/udev/hwdb.d "$SCRIPT_DIR"/etc/udev/hwdb.d/99-hid-bpf.hwdb
+$DRY_RUN sudo udevadm control --reload
+$DRY_RUN sudo systemd-hwdb update
