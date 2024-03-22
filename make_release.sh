@@ -3,7 +3,7 @@
 SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 
 usage () {
-  echo "Usage: $(basename "$0") [-v|--verbose] [--dry-run]"
+  echo "Usage: $(basename "$0") [-v|--verbose]"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -14,10 +14,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --verbose|-v)
       set -x
-      shift
-      ;;
-    --dry-run)
-      DRY_RUN=1
       shift
       ;;
     --*)
