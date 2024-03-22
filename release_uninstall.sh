@@ -59,6 +59,6 @@ INSTALLED_BPF=${BPF//$SCRIPT_DIR/}
 $DRY_RUN sudo rm -f "$PREFIX/$INSTALLED_BPF"
 $DRY_RUN sudo rm -f "$PREFIX"/bin/udev-hid-bpf
 $DRY_RUN sudo rm -f "$UDEVDIR"/udev/rules.d/99-hid-bpf.rules
-$DRY_RUN sudo rm -f "$UDEVDIR"/udev/hwdb.d/99-hid-bpf.hwdb
+$DRY_RUN sudo rm -f "$UDEVDIR"/udev/hwdb.d/99-hid-bpf-*.hwdb
 $DRY_RUN sudo udevadm control --reload
 $DRY_RUN sudo systemd-hwdb update

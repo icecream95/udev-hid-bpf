@@ -2,9 +2,9 @@
 /* Copyright (c) 2023 Benjamin Tissoires
  */
 
-#include "vmlinux.h"
-#include "hid_bpf.h"
-#include "hid_bpf_helpers.h"
+#include "../vmlinux.h"
+#include "../hid_bpf.h"
+#include "../hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
 #define VID_UGEE 0x28BD /* VID is shared with SinoWealth and Glorious and prob others */

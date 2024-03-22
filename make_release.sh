@@ -16,6 +16,10 @@ while [[ $# -gt 0 ]]; do
       set -x
       shift
       ;;
+    --features)
+      features=$2
+      shift 2
+      ;;
     --*)
       usage
       exit 1
@@ -31,7 +35,12 @@ if [ $# -gt 1 ]; then
   usage
   exit 1
 fi
+
 set -e
+
+if [ -n "$features" ]; then
+  features="--features=$features"
+fi
 
 CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$SCRIPT_DIR/target}
 TMP_INSTALL_DIR="$CARGO_TARGET_DIR/install"
@@ -44,12 +53,12 @@ rm -rf "$CARGO_TARGET_DIR"/bpf/*.bpf.o
 touch $SCRIPT_DIR/src/bpf/
 
 PATH="$PATH:$TMP_INSTALL_DIR/bin" \
- cargo install --force --path "$SCRIPT_DIR" --root "$TMP_INSTALL_DIR" --no-track
+ cargo install --force --path "$SCRIPT_DIR" --root "$TMP_INSTALL_DIR" --no-track $features
 
 install -D -t "$TMP_INSTALL_DIR"/lib/firmware/hid/bpf "$CARGO_TARGET_DIR"/bpf/*.bpf.o
 install -D -m 644 -t "$TMP_INSTALL_DIR" "$SCRIPT_DIR"/99-hid-bpf.rules LICENSE
 mkdir -p "$TMP_INSTALL_DIR"/etc/udev/rules.d/
-install -D -m 644 -t "$TMP_INSTALL_DIR"/etc/udev/hwdb.d "$CARGO_TARGET_DIR"//bpf/99-hid-bpf.hwdb
+install -D -m 644 -t "$TMP_INSTALL_DIR"/etc/udev/hwdb.d "$CARGO_TARGET_DIR"//bpf/99-hid-bpf-*.hwdb
 install -D -m 755 "$SCRIPT_DIR"/release_install.sh "$TMP_INSTALL_DIR"/install.sh
 install -D -m 755 "$SCRIPT_DIR"/release_uninstall.sh "$TMP_INSTALL_DIR"/uninstall.sh
 

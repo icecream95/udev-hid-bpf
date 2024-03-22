@@ -3,7 +3,7 @@
 SCRIPT_DIR=$(dirname "$(realpath "${BASH_SOURCE[0]}")")
 
 usage () {
-  echo "Usage: $(basename "$0") [-v|--verbose] [--dry-run] [--udevdir /etc/] [PREFIX]"
+  echo "Usage: $(basename "$0") [-v|--verbose] [--dry-run] [--udevdir /etc/] [--features testing,userhacks,stable] [PREFIX]"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -22,6 +22,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --udevdir)
       UDEVDIR=$2
+      shift 2
+      ;;
+    --features)
+      features=$2
       shift 2
       ;;
     --*)
@@ -55,10 +59,14 @@ if [ -z "$UDEVDIR" ]; then
   esac
 fi
 
+if [ -n "$features" ]; then
+  features="--features=$features"
+fi
+
 TMP_INSTALL_DIR="$CARGO_TARGET_DIR/install"
 CARGO_TARGET_DIR="$CARGO_TARGET_DIR" \
 PATH="$PATH:$TMP_INSTALL_DIR/bin" \
-cargo install --force --path "$SCRIPT_DIR" --root "$TMP_INSTALL_DIR" --no-track
+cargo install --force --path "$SCRIPT_DIR" --root "$TMP_INSTALL_DIR" --no-track $features
 
 sed -e "s|/usr/local|$PREFIX|" 99-hid-bpf.rules > "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.rules
 
@@ -66,6 +74,6 @@ echo "Using sudo to install files into $PREFIX. You may be asked for your passwo
 $DRY_RUN sudo install -D -t "$PREFIX"/bin/ "$TMP_INSTALL_DIR"/bin/udev-hid-bpf
 $DRY_RUN sudo install -D -t "$PREFIX"/lib/firmware/hid/bpf "$CARGO_TARGET_DIR"/bpf/*.bpf.o
 $DRY_RUN sudo install -D -m 644 -t "$UDEVDIR"/udev/rules.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.rules
-$DRY_RUN sudo install -D -m 644 -t "$UDEVDIR"/udev/hwdb.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf.hwdb
+$DRY_RUN sudo install -D -m 644 -t "$UDEVDIR"/udev/hwdb.d "$CARGO_TARGET_DIR"/bpf/99-hid-bpf-*.hwdb
 $DRY_RUN sudo udevadm control --reload
 $DRY_RUN sudo systemd-hwdb update

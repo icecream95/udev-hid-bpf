@@ -155,12 +155,14 @@ install-test:
   parallel:
     matrix:
       - PREFIX: /usr/local
+        FEATURE: [ stable, testing, userhacks ]
       - PREFIX: /usr
+        FEATURE: [ testing ]
   stage: test
   script:
     - ln -s /usr/bin/true /usr/local/bin/udevadm
     - ln -s /usr/bin/true /usr/local/bin/systemd-hwdb
-    - ./install.sh --verbose $PREFIX
+    - ./install.sh --verbose --features $FEATURE $PREFIX
     - test -e $PREFIX/bin/udev-hid-bpf
     # checking for one of them should be enough
     - test -e /lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
@@ -172,7 +174,7 @@ install-test:
       fi
     - echo "$UDEVDIR"
     - test -e $UDEVDIR/udev/rules.d/99-hid-bpf.rules
-    - test -e $UDEVDIR/udev/hwdb.d/99-hid-bpf.hwdb
+    - test -e $UDEVDIR/udev/hwdb.d/99-hid-bpf-$FEATURE.hwdb
 
 #################################################################
 #                                                               #
@@ -194,12 +196,12 @@ make release:
     - ./install.sh --verbose $PREFIX
     - test -e $PREFIX/bin/udev-hid-bpf
     - test -e $PREFIX/lib/udev/rules.d/99-hid-bpf.rules
-    - test -e $PREFIX/lib/udev/hwdb.d/99-hid-bpf.hwdb
+    - test -e $PREFIX/lib/udev/hwdb.d/99-hid-bpf-testing.hwdb
     - test -e /lib/firmware/hid/bpf/HP_Elite_Presenter.bpf.o
     - ./uninstall.sh --verbose $PREFIX
     - test ! -e $PREFIX/bin/udev-hid-bpf
     - test ! -e $PREFIX/lib/udev/rules.d/99-hid-bpf.rules
-    - test ! -e $PREFIX/lib/udev/hwdb.d/99-hid-bpf.hwdb
+    - test ! -e $PREFIX/lib/udev/hwdb.d/99-hid-bpf-testing.hwdb
     - test ! -e /lib/firmware/hid/bpf/HP_Elite_Presenter.bpf.o
     - popd
   variables:

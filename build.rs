@@ -13,7 +13,7 @@ use libbpf_rs;
 use std::env;
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 const BPF_SOURCE_DIR: &str = "./src/bpf/"; // relative to our git repo root
@@ -96,26 +96,44 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(target_dir.as_path())
         .expect(format!("Can't create TARGET_DIR '{}'", TARGET_DIR).as_str());
 
-    let hwdb_file = target_dir.join("99-hid-bpf.hwdb");
-    let hwdb_fd = File::create(hwdb_file)?;
-
-    let mut modaliases = std::collections::HashMap::new();
-
-    // Then compile all other .bpf.c in a .bpf.o file
-    for path in Path::new(&bpf_src_dir)
-        .read_dir()
-        .unwrap()
-        .flatten()
-        .filter(|f| f.metadata().unwrap().is_file())
-        .map(|e| e.path())
-        .filter(|p| p.to_str().unwrap().ends_with(".bpf.c"))
-        .filter(|p| p.file_name().unwrap() != ATTACH_PROG)
-    {
-        build_bpf_file(&path, &target_dir, &mut modaliases)?;
+    let mut subdirs: Vec<&'static str> = Vec::new();
+    if cfg!(feature = "testing") {
+        subdirs.push("testing");
+    }
+    if cfg!(feature = "stable") {
+        subdirs.push("stable");
+    }
+    if cfg!(feature = "userhacks") {
+        subdirs.push("userhacks");
+    }
+    if subdirs.is_empty() {
+        println!("cargo:warning=No features selected, no BPF programs will be built");
     }
 
-    for (modalias, files) in modaliases {
-        write_hwdb_entry(modalias, files, &hwdb_fd)?;
+    // Then compile all other .bpf.c in a .bpf.o file
+    for subdir in subdirs {
+        let hwdb_name = format!("99-hid-bpf-{}.hwdb", subdir);
+        let hwdb_file = target_dir.clone().join(hwdb_name);
+        let hwdb_fd = File::create(hwdb_file)?;
+
+        let mut modaliases = std::collections::HashMap::new();
+
+        let dir = PathBuf::from(&bpf_src_dir).join(subdir);
+        if dir.exists() {
+            for path in dir
+                .read_dir()
+                .unwrap()
+                .flatten()
+                .filter(|f| f.metadata().unwrap().is_file())
+                .map(|e| e.path())
+                .filter(|p| p.to_str().unwrap().ends_with(".bpf.c"))
+            {
+                build_bpf_file(&path, &target_dir, &mut modaliases)?;
+            }
+            for (modalias, files) in modaliases {
+                write_hwdb_entry(modalias, files, &hwdb_fd)?;
+            }
+        }
     }
 
     // Create a wrapper around our bpf interface

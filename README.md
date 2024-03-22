@@ -20,6 +20,28 @@ Once installed, unplug/replug any supported device, and the bpf program will aut
 
 For details on required dependencies etc. please see [our documentation](https://libevdev.pages.freedesktop.org/udev-hid-bpf/).
 
+## Quirks, user hack, testing and stable
+
+`udev-hid-bpf` divide HID-BPF programs into two categories: quirks and user hacks. Quirks are programs that
+fix a device that objectively has a hardware or firmware bug. Examples include axis that are inverted, provide
+the wrong ranges/values or event sequences that are logically impossible.
+We expect that quirks are eventually upstreamed into the kernel.
+
+User hacks are HID-BPF programs that change a user-subjective preference on a device. Examples include swapping
+buttons for convenience or muting an axis to avoid crashes in a specific application. These programs will
+never be upstreamed as they are user and use-case specific. `udev-hid-bpf` maintains a set of user hacks
+as examples and starting point for users who want to develop their own hacks.
+
+To divide this we use the following directory structure:
+
+- `bpf/testing/` is where all new quirks should go. Once they have proven to be good enough, they should be
+   submitted to the upstream kernel.
+- `bpf/stable/` is where quirks move to once upstream has accepted them and they will be part of the next kernel release.
+   Distributions that package `udev-hid-bpf` should package these stable quirks.
+- `bpf/userhacks` is where all user hacks should go. Unlike quirks these will never move to stable.
+
+By default, only `testing` is enabled during `cargo build`. To select which one to install, use
+`cargo build --features testing,stable,userhacks` or a subset thereof.
 
 ## Adding custom files
 
