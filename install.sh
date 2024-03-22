@@ -20,12 +20,20 @@ while [[ $# -gt 0 ]]; do
       DRY_RUN=1
       shift
       ;;
-    *)
+    --*)
       usage
       exit 1
       ;;
+    *)
+      break;
+      ;;
   esac
 done
+
+if [ $# -gt 1 ]; then
+  usage
+  exit 1
+fi
 
 if [ "$EUID" -ne 0 ]
 then

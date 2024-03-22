@@ -20,6 +20,10 @@ while [[ $# -gt 0 ]]; do
       DRY_RUN=1
       shift
       ;;
+    --*)
+      usage
+      exit 1
+      ;;
     *)
       usage
       exit 1
@@ -27,6 +31,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [ $# -gt 1 ]; then
+  usage
+  exit 1
+fi
 set -e
 
 CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$SCRIPT_DIR/target}
