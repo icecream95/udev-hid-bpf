@@ -14,6 +14,7 @@ use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 const DIR: &str = "./src/bpf/";
 const ATTACH_PROG: &str = "attach.bpf.c";
@@ -50,20 +51,20 @@ fn build_bpf_file(
 }
 
 fn write_hwdb_entry(
-    mut cur_idx: u32,
     modalias: Modalias,
     files: Vec<String>,
     mut hwdb_fd: &File,
-) -> std::io::Result<u32> {
+) -> std::io::Result<()> {
+    static COUNTER: AtomicUsize = AtomicUsize::new(0);
     let hwdb_match = format!("hid-bpf:hid:{}\n", String::from(modalias));
     hwdb_fd.write_all(hwdb_match.as_bytes())?;
     for f in files {
-        hwdb_fd.write_all(format!(" HID_BPF_{:?}={}\n", cur_idx, f).as_bytes())?;
-        cur_idx += 1;
+        let count = COUNTER.fetch_add(1, Ordering::Relaxed);
+        hwdb_fd.write_all(format!(" HID_BPF_{:?}={}\n", count, f).as_bytes())?;
     }
     hwdb_fd.write_all(b"\n")?;
 
-    Ok(cur_idx)
+    Ok(())
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -105,9 +106,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    let mut idx = 0;
     for (modalias, files) in modaliases {
-        idx = write_hwdb_entry(idx, modalias, files, &hwdb_fd)?;
+        write_hwdb_entry(modalias, files, &hwdb_fd)?;
     }
 
     // Create a wrapper around our bpf interface
