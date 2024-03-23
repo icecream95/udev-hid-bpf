@@ -149,6 +149,30 @@ cargo fmt:
 sast:
   stage: test
 
+install-test:
+  extends:
+    .fedora-build@template
+  parallel:
+    matrix:
+      - PREFIX: /usr/local
+      - PREFIX: /usr
+  stage: test
+  script:
+    - ln -s /usr/bin/true /usr/local/bin/udevadm
+    - ln -s /usr/bin/true /usr/local/bin/systemd-hwdb
+    - ./install.sh --verbose $PREFIX
+    - test -e $PREFIX/bin/udev-hid-bpf
+    # checking for one of them should be enough
+    - test -e /lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+    - |
+      if [ $PREFIX = "/usr" ]; then
+        export UDEVDIR=/usr/lib
+      else
+        export UDEVDIR=/etc
+      fi
+    - echo "$UDEVDIR"
+    - test -e $UDEVDIR/udev/rules.d/99-hid-bpf.rules
+    - test -e $UDEVDIR/udev/hwdb.d/99-hid-bpf.hwdb
 
 #################################################################
 #                                                               #
@@ -160,10 +184,28 @@ make release:
   extends:
     - .fedora-build@template
   stage: deploy
+  script:
+    - ln -s /usr/bin/true /usr/local/bin/udevadm
+    - ln -s /usr/bin/true /usr/local/bin/systemd-hwdb
+    - ./make_release.sh
+    - mkdir -p tarball_dir
+    - tar xf udev-hid-bpf*.tar.xz -C tarball_dir --strip-components=1
+    - pushd tarball_dir
+    - ./install.sh --verbose $PREFIX
+    - test -e $PREFIX/bin/udev-hid-bpf
+    - test -e $PREFIX/lib/udev/rules.d/99-hid-bpf.rules
+    - test -e $PREFIX/lib/udev/hwdb.d/99-hid-bpf.hwdb
+    - test -e /lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+    - ./uninstall.sh --verbose $PREFIX
+    - test ! -e $PREFIX/bin/udev-hid-bpf
+    - test ! -e $PREFIX/lib/udev/rules.d/99-hid-bpf.rules
+    - test ! -e $PREFIX/lib/udev/hwdb.d/99-hid-bpf.hwdb
+    - test ! -e /lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+    - popd
   variables:
     FDO_DISTRIBUTION_VERSION: $FEDORA_RELEASE_VERSION
-  script:
-    - ./make_release.sh
+    PREFIX: /usr
+    GIT_DEPTH: 0
   artifacts:
     paths:
       - udev-hid-bpf*.tar*
