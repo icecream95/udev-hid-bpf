@@ -1,0 +1,9 @@
+option('udevdir',
+       type: 'string',
+       value: '/etc/udev',
+       description: 'udev base directory, default=/etc/udev')
+option('bpfs',
+       type: 'combo',
+       choices: ['testing', 'stable', 'userhacks'],
+       value: 'testing',
+       description: 'The subset of BPF programs to build')

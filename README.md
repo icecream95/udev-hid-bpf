@@ -6,13 +6,14 @@ should not be required.
 
 ## Getting started
 
-You can build and install using Rust's `cargo` and our custom install script:
+Our build system uses [meson](https://mesonbuild.com/) which in turn wraps Rust's `cargo`.
 
 ```
 $ git clone https://gitlab.freedesktop.org/libevdev/udev-hid-bpf.git
 $ cd udev-hid-bpf/
-$ cargo build
-$ ./install.sh
+$ meson setup builddir/
+$ meson compile -C builddir/
+$ meson install -C builddir
 # this will ask for your sudo password to install udev rules and hwdb files
 ```
 
@@ -40,8 +41,9 @@ To divide this we use the following directory structure:
    Distributions that package `udev-hid-bpf` should package these stable quirks.
 - `bpf/userhacks` is where all user hacks should go. Unlike quirks these will never move to stable.
 
-By default, only `testing` is enabled during `cargo build`. To select which one to install, use
-`cargo build --features testing,stable,userhacks` or a subset thereof.
+By default, only `testing` is enabled during `meson setup`. To select which one to install, run
+`meson configure -Dbpfs=testing,stable,userhacks builddir/` (or a subset
+thereof) or pass `-Dbpfs` to the initial `meson setup` call.
 
 ## Adding custom files
 

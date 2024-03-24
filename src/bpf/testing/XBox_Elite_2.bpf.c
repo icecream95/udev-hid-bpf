@@ -2,9 +2,9 @@
 /* Copyright (c) 2024 Benjamin Tissoires
  */
 
-#include "../vmlinux.h"
-#include "../hid_bpf.h"
-#include "../hid_bpf_helpers.h"
+#include "vmlinux.h"
+#include "hid_bpf.h"
+#include "hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
 #define VID_MICROSOFT 0x045e

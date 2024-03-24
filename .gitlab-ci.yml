@@ -25,8 +25,8 @@ variables:
   FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
   FEDORA_VERSION: 39
   FEDORA_RELEASE_VERSION: 37
-  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel'
-  FEDORA_TAG:  '2023-11-11.0'
+  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel meson tree'
+  FEDORA_TAG:  '2024-03-25.0'
   RUST_BACKTRACE: '1'
 
 .policy:
@@ -107,7 +107,7 @@ fedora-release@container-prep:
 #                                                               #
 #################################################################
 
-.build@template:
+.cargo-build@template:
   extends:
     - .policy
   stage: build
@@ -116,11 +116,31 @@ fedora-release@container-prep:
     - cargo test
   dependencies: []
 
+.meson-build@template:
+  extends:
+    - .policy
+  stage: build
+  script:
+    - .gitlab-ci/meson-build.sh
+  variables:
+    MESON_BUILDDIR: _build
 
-.fedora-build@template:
+
+.fedora-cargo@template:
   extends:
     - .fdo.distribution-image@fedora
-    - .build@template
+    - .cargo-build@template
+  variables:
+    FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
+    FDO_DISTRIBUTION_TAG: $FEDORA_TAG
+  dependencies:
+    - fedora@container-prep
+
+
+.fedora-meson@template:
+  extends:
+    - .fdo.distribution-image@fedora
+    - .meson-build@template
   variables:
     FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
     FDO_DISTRIBUTION_TAG: $FEDORA_TAG
@@ -130,15 +150,24 @@ fedora-release@container-prep:
 
 cargo build and test:
   extends:
-    - .fedora-build@template
+    - .fedora-cargo@template
 
 
 cargo fmt:
   extends:
-    - .fedora-build@template
+    - .fedora-cargo@template
   script:
     - cargo fmt --check
 
+
+meson build and test:
+  extends:
+    - .fedora-meson@template
+  script:
+    - .gitlab-ci/meson-build.sh --run-install
+    - tree /_inst
+  variables:
+    MESON_ARGS: --prefix=/_inst -Dudevdir=/_inst/lib/udev
 
 #################################################################
 #                                                               #
@@ -184,7 +213,7 @@ install-test:
 
 make release:
   extends:
-    - .fedora-build@template
+    - .fedora-cargo@template
   stage: deploy
   script:
     - ln -s /usr/bin/true /usr/local/bin/udevadm

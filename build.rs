@@ -30,11 +30,24 @@ fn build_bpf_file(
 
     target_object.set_extension("o");
 
-    let extra_include = env::var("EXTRA_INCLUDE").unwrap_or(String::from("."));
+    let extra_include = PathBuf::from(env::var("EXTRA_INCLUDE").unwrap_or(String::from(".")));
+    // Automatically add the bpf program's parent directory to the includes. This is needed for vmlinux.h
+    // which is one level up. If we build with meson we can pass the directory in as EXTRA_INCLUDE
+    // but with pure cargo we need to find it - so let's hack arounds this.
+    let includedirs = [
+        bpf_source.parent().unwrap().parent().unwrap(),
+        &extra_include,
+    ];
+    let includeflags: Vec<String> = includedirs
+        .iter()
+        .map(|d| format!("-I{} ", d.display()))
+        .collect();
+    let includeflags: String = includeflags.join(" ");
+
     SkeletonBuilder::new()
         .source(bpf_source)
         .obj(target_object.clone())
-        .clang_args(format!("-I{}", extra_include))
+        .clang_args(includeflags)
         .build()
         .unwrap();
 
