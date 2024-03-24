@@ -72,6 +72,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed={}", WRAPPER);
 
     let attach_prog = PathBuf::from(DIR).join(ATTACH_PROG);
+    if !attach_prog.as_path().is_file() {
+        panic!("Unable to find {}", attach_prog.display())
+    }
 
     let out = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script"))
         .join(ATTACH_PROG.replace(".bpf.c", ".skel.rs"));
