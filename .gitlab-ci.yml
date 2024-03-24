@@ -27,6 +27,7 @@ variables:
   FEDORA_RELEASE_VERSION: 37
   FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel'
   FEDORA_TAG:  '2023-11-11.0'
+  RUST_BACKTRACE: '1'
 
 .policy:
   retry:
