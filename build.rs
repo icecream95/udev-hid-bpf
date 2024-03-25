@@ -85,13 +85,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     let cargo_target_dir = env::var("CARGO_TARGET_DIR").unwrap_or(String::from("./target"));
-    let mut target_dir = PathBuf::from(cargo_target_dir);
-    target_dir.push(TARGET_DIR);
+    let target_dir = PathBuf::from(cargo_target_dir).join(TARGET_DIR);
 
     std::fs::create_dir_all(target_dir.as_path())
         .expect(format!("Can't create TARGET_DIR '{}'", TARGET_DIR).as_str());
 
-    let hwdb_file = target_dir.clone().join("99-hid-bpf.hwdb");
+    let hwdb_file = target_dir.join("99-hid-bpf.hwdb");
     let hwdb_fd = File::create(hwdb_file)?;
 
     let mut modaliases = std::collections::HashMap::new();
