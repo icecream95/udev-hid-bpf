@@ -16,7 +16,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-const DIR: &str = "./src/bpf/";
+const BPF_SOURCE_DIR: &str = "./src/bpf/"; // relative to our git repo root
 const ATTACH_PROG: &str = "attach.bpf.c";
 const WRAPPER: &str = "./src/hid_bpf_wrapper.h";
 const TARGET_DIR: &str = "bpf"; // inside $CARGO_TARGET_DIR
@@ -68,10 +68,13 @@ fn write_hwdb_entry(
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("cargo:rerun-if-changed={}", DIR);
     println!("cargo:rerun-if-changed={}", WRAPPER);
 
-    let attach_prog = PathBuf::from(DIR).join(ATTACH_PROG);
+    let source_root = env::var("BPF_SOURCE_ROOT").unwrap_or(String::from("."));
+    let bpf_src_dir = PathBuf::from(source_root).join(BPF_SOURCE_DIR);
+    println!("cargo:rerun-if-changed={}", bpf_src_dir.display());
+
+    let attach_prog = PathBuf::from(&bpf_src_dir).join(ATTACH_PROG);
     if !attach_prog.as_path().is_file() {
         panic!("Unable to find {}", attach_prog.display())
     }
@@ -96,7 +99,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut modaliases = std::collections::HashMap::new();
 
     // Then compile all other .bpf.c in a .bpf.o file
-    for path in Path::new(DIR)
+    for path in Path::new(&bpf_src_dir)
         .read_dir()
         .unwrap()
         .flatten()
