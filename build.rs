@@ -30,9 +30,11 @@ fn build_bpf_file(
 
     target_object.set_extension("o");
 
+    let extra_include = env::var("EXTRA_INCLUDE").unwrap_or(String::from("."));
     SkeletonBuilder::new()
         .source(bpf_source)
         .obj(target_object.clone())
+        .clang_args(format!("-I{}", extra_include))
         .build()
         .unwrap();
 
@@ -81,9 +83,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let out = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script"))
         .join(ATTACH_PROG.replace(".bpf.c", ".skel.rs"));
-
+    let extra_include = env::var("EXTRA_INCLUDE").unwrap_or(String::from("."));
     SkeletonBuilder::new()
         .source(attach_prog)
+        .clang_args(format!("-I{}", extra_include))
         .build_and_generate(&out)
         .unwrap();
 
