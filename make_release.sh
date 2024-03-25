@@ -51,7 +51,7 @@ install -D -m 644 -t "$TMP_INSTALL_DIR" "$SCRIPT_DIR"/99-hid-bpf.rules LICENSE
 mkdir -p "$TMP_INSTALL_DIR"/etc/udev/rules.d/
 install -D -m 644 -t "$TMP_INSTALL_DIR"/etc/udev/hwdb.d "$CARGO_TARGET_DIR"//bpf/99-hid-bpf.hwdb
 install -D -m 755 "$SCRIPT_DIR"/release_install.sh "$TMP_INSTALL_DIR"/install.sh
-install -D -m 755 -t "$TMP_INSTALL_DIR" "$SCRIPT_DIR"/uninstall.sh
+install -D -m 755 "$SCRIPT_DIR"/release_uninstall.sh "$TMP_INSTALL_DIR"/uninstall.sh
 
 VERSION=$(git describe --tags --dirty)
 NAME=udev-hid-bpf_${VERSION}
