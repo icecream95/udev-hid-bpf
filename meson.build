@@ -94,7 +94,13 @@ cargo_build = custom_target(
 subdir('bpf')
 
 udev_config = configuration_data()
-udev_config.set('BINDIR', bindir)
+# See make_release.sh - if set we leave a placeholder
+# that we can use in install_release.sh
+if get_option('placeholder-udev-rules-file')
+    udev_config.set('BINDIR', '@@BINDIR@@')
+else
+    udev_config.set('BINDIR', bindir)
+endif
 configure_file(input: '99-hid-bpf.rules.in',
                output: '@BASENAME@',
                configuration: udev_config,

@@ -7,3 +7,7 @@ option('bpfs',
        choices: ['testing', 'stable', 'userhacks'],
        value: 'testing',
        description: 'The subset of BPF programs to build')
+option('placeholder-udev-rules-file',
+       type: 'boolean',
+       value: false,
+       description: 'Do not substituate the a @BINDIR@ placeholder in the udev rule')

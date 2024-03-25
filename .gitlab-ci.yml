@@ -25,7 +25,7 @@ variables:
   FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
   FEDORA_VERSION: 39
   FEDORA_RELEASE_VERSION: 37
-  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel meson tree'
+  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel meson tree python3-pip jq'
   FEDORA_TAG:  '2024-03-25.0'
   RUST_BACKTRACE: '1'
 
@@ -189,9 +189,13 @@ make release:
     - .fedora-cargo@template
   stage: deploy
   script:
+    - python3 -m venv _venv
+    - . _venv/bin/activate
+    - pip install yq
     - ln -s /usr/bin/true /usr/local/bin/udevadm
     - ln -s /usr/bin/true /usr/local/bin/systemd-hwdb
-    - ./make_release.sh
+    # this is the default anyway but let's be explicit here
+    - ./make_release.sh --verbose --features testing
     - mkdir -p tarball_dir
     - tar xf udev-hid-bpf*.tar.xz -C tarball_dir --strip-components=1
     - pushd tarball_dir

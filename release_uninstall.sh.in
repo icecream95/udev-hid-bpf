@@ -53,12 +53,11 @@ if [ -z "$UDEVDIR" ]; then
   esac
 fi
 
-sed -e "s|/usr/local|$PREFIX|" "$SCRIPT_DIR"/99-hid-bpf.rules > "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
-
-echo "Using sudo to install files into $PREFIX. You may be asked for your password now"
-$DRY_RUN sudo install -D -t "$PREFIX"/bin/ "$SCRIPT_DIR"/bin/udev-hid-bpf
-$DRY_RUN sudo install -D -t "$PREFIX"/lib/firmware/hid/bpf "$SCRIPT_DIR"/lib/firmware/hid/bpf/*.bpf.o
-$DRY_RUN sudo install -D -m 644 -t "$UDEVDIR"/udev/rules.d "$SCRIPT_DIR"/etc/udev/rules.d/99-hid-bpf.rules
-$DRY_RUN sudo install -D -m 644 -t "$UDEVDIR"/udev/hwdb.d "$SCRIPT_DIR"/etc/udev/hwdb.d/99-hid-bpf-*.hwdb
+echo "Using sudo to remove files from $PREFIX. You may be asked for your password now"
+dryrun_sudo="$DRY_RUN sudo"
+@@UNINSTALL_COMMANDS@@
+$dryrun_sudo rm -f "$PREFIX"/bin//udev-hid-bpf
+$dryrun_sudo rm -f "$UDEVDIR"/udev/rules.d/99-hid-bpf.rules
+$dryrun_sudo rm -f "$UDEVDIR"/udev/hwdb.d/99-hid-bpf-*.hwdb
 $DRY_RUN sudo udevadm control --reload
 $DRY_RUN sudo systemd-hwdb update

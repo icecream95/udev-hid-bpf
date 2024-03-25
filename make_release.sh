@@ -39,34 +39,36 @@ fi
 set -e
 
 if [ -n "$features" ]; then
-  features="--features=$features"
+  features="-Dbpfs=$features"
 fi
 
-CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-$SCRIPT_DIR/target}
-TMP_INSTALL_DIR="$CARGO_TARGET_DIR/install"
-
-# some cleanup
-rm -rf $TMP_INSTALL_DIR
-rm -rf "$CARGO_TARGET_DIR"/bpf/*.bpf.o
-
-# force rebuild of bpf objects
-touch $SCRIPT_DIR/src/bpf/
-
-PATH="$PATH:$TMP_INSTALL_DIR/bin" \
- cargo install --force --path "$SCRIPT_DIR" --root "$TMP_INSTALL_DIR" --no-track $features
-
-install -D -t "$TMP_INSTALL_DIR"/lib/firmware/hid/bpf "$CARGO_TARGET_DIR"/bpf/*.bpf.o
-install -D -m 644 -t "$TMP_INSTALL_DIR" "$SCRIPT_DIR"/99-hid-bpf.rules LICENSE
-mkdir -p "$TMP_INSTALL_DIR"/etc/udev/rules.d/
-install -D -m 644 -t "$TMP_INSTALL_DIR"/etc/udev/hwdb.d "$CARGO_TARGET_DIR"//bpf/99-hid-bpf-*.hwdb
-install -D -m 755 "$SCRIPT_DIR"/release_install.sh "$TMP_INSTALL_DIR"/install.sh
-install -D -m 755 "$SCRIPT_DIR"/release_uninstall.sh "$TMP_INSTALL_DIR"/uninstall.sh
+TMP_INSTALL_DIR=$PWD/_inst
+BUILDDIR=_release_builddir
+meson setup \
+  -Dprefix="$TMP_INSTALL_DIR" \
+  -Dudevdir="$TMP_INSTALL_DIR/lib/udev" \
+  -Dplaceholder-udev-rules-file=true \
+  "$BUILDDIR"
+meson compile -C "$BUILDDIR"
+meson install -C "$BUILDDIR"
 
 VERSION=$(git describe --tags --dirty)
 NAME=udev-hid-bpf_${VERSION}
-RELEASE_DIR=$(dirname $TMP_INSTALL_DIR)
 
-rm -rf $RELEASE_DIR/$NAME
-mv $TMP_INSTALL_DIR $RELEASE_DIR/$NAME
+# Now get the list of installed files and generate install.sh and uninstall.sh with it
 
-tar cvaf ${NAME}.tar.xz -C $RELEASE_DIR $NAME
+installed=$(meson introspect _release_builddir --installed | yq -r ".[] | sub(\"$TMP_INSTALL_DIR/\"; \"\")")
+INSTALL_COMMANDS=""
+UNINSTALL_COMMANDS=""
+for f in $installed; do
+  if [[ "$f" == *bpf.o* ]]; then
+    INSTALL_COMMANDS="$INSTALL_COMMANDS\n\$dryrun_sudo install -D -t \"\$PREFIX/$(dirname "$f")\" \"\$SCRIPT_DIR/$f\""
+    UNINSTALL_COMMANDS="$UNINSTALL_COMMANDS\n\$dryrun_sudo rm -f \"\$PREFIX/$f\""
+  fi
+done
+
+sed -e "s|@@INSTALL_COMMANDS@@|$INSTALL_COMMANDS|" release_install.sh.in > "$TMP_INSTALL_DIR"/install.sh
+sed -e "s|@@UNINSTALL_COMMANDS@@|$UNINSTALL_COMMANDS|" release_uninstall.sh.in > "$TMP_INSTALL_DIR"/uninstall.sh
+chmod +x "$TMP_INSTALL_DIR"/install.sh "$TMP_INSTALL_DIR"/uninstall.sh
+
+tar cvaf ${NAME}.tar.xz -C "$TMP_INSTALL_DIR" --transform "s/^\./$NAME/" .
