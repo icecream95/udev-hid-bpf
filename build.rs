@@ -112,7 +112,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Then compile all other .bpf.c in a .bpf.o file
     for subdir in &["testing", "stable", "userhacks"] {
         let hwdb_name = format!("99-hid-bpf-{}.hwdb", subdir);
-        let hwdb_file = target_dir.clone().join(hwdb_name);
+        let hwdb_file = target_dir.join(hwdb_name);
         let hwdb_fd = File::create(hwdb_file)?;
 
         let mut modaliases = std::collections::HashMap::new();
