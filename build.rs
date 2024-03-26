@@ -107,7 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let target_dir = PathBuf::from(cargo_target_dir).join(TARGET_DIR);
 
     std::fs::create_dir_all(target_dir.as_path())
-        .expect(format!("Can't create TARGET_DIR '{}'", TARGET_DIR).as_str());
+        .unwrap_or_else(|_| panic!("Can't create target directory '{}'", target_dir.display()));
 
     // Then compile all other .bpf.c in a .bpf.o file
     for subdir in &["testing", "stable", "userhacks"] {
