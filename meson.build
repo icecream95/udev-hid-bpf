@@ -64,13 +64,18 @@ foreach f : bpf_sources
 endforeach
 
 # Now the cargo invocation
-cargo_env = [
-    'CARGO_HOME=@0@/cargo-home'.format(meson.project_build_root()),
-    'CARGO_TARGET_DIR=@0@'.format(meson.project_build_root()),
-    'BPF_SOURCE_ROOT=@0@'.format(meson.project_build_root()),
-    'OUT_DIR=@0@'.format(meson.project_build_root()),
-    'EXTRA_INCLUDE=@0@'.format(meson.project_source_root() / 'src' / 'bpf'),
-]
+cargo_env = {
+    'CARGO_HOME': meson.project_build_root() / 'cargo-home',
+    'CARGO_TARGET_DIR': meson.project_build_root(),
+    'BPF_SOURCE_ROOT': meson.project_build_root(),
+    'OUT_DIR': meson.project_build_root(),
+    'EXTRA_INCLUDE': meson.project_source_root() / 'src' / 'bpf',
+}
+
+cargo_env_list  = []
+foreach k,v : cargo_env
+    cargo_env_list += '@0@=@1@'.format(k, v)
+endforeach
 
 # Note: with the env set up the cp command only copies the
 # udev-hid-bpf binary, the bpf files are built in-place (i.e. builddir/bpf)
@@ -87,13 +92,15 @@ cargo_build = custom_target(
   depends: bpf_copied_sources,
   command: [
     'env',
-    cargo_env,
+    cargo_env_list,
     cargo, 'build',
     cargo_options,
     '&&',
     'cp', 'src' / rust_target / meson.project_name(), '@OUTPUT@',
   ]
 )
+
+meson.add_devenv(cargo_env)
 
 subdir('bpf')
 
