@@ -109,22 +109,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::create_dir_all(target_dir.as_path())
         .expect(format!("Can't create TARGET_DIR '{}'", TARGET_DIR).as_str());
 
-    let mut subdirs: Vec<&'static str> = Vec::new();
-    if cfg!(feature = "testing") {
-        subdirs.push("testing");
-    }
-    if cfg!(feature = "stable") {
-        subdirs.push("stable");
-    }
-    if cfg!(feature = "userhacks") {
-        subdirs.push("userhacks");
-    }
-    if subdirs.is_empty() {
-        println!("cargo:warning=No features selected, no BPF programs will be built");
-    }
-
     // Then compile all other .bpf.c in a .bpf.o file
-    for subdir in subdirs {
+    for subdir in &["testing", "stable", "userhacks"] {
         let hwdb_name = format!("99-hid-bpf-{}.hwdb", subdir);
         let hwdb_file = target_dir.clone().join(hwdb_name);
         let hwdb_fd = File::create(hwdb_file)?;

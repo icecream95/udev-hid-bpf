@@ -38,20 +38,6 @@ else
   message('Building in debug mode')
 endif
 
-features = ''
-if build_testing
-    features += 'testing,'
-endif
-if build_stable
-    features += 'stable,'
-endif
-if build_userhacks
-    features += 'userhacks,'
-endif
-if features != ''
-    cargo_options += ['--features=@0@'.format(features)]
-endif
-
 # For cargo we need to mirror much of the source tree
 fs = import('fs')
 bpf_sources = files()
