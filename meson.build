@@ -15,10 +15,14 @@ if udevdir == ''
     endif
 endif
 
+filters = get_option('bpf-filter')
+have_filters = filters != ''
+filters = filters.split(',')
+
 subset = get_option('bpfs')
-build_testing = 'testing' in subset
-build_stable = 'stable' in subset
-build_userhacks = 'userhacks' in subset
+build_testing = 'testing' in subset or have_filters
+build_stable = 'stable' in subset or have_filters
+build_userhacks = 'userhacks' in subset or have_filters
 
 cargo = find_program('cargo', required: true)
 

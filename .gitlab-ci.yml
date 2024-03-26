@@ -169,6 +169,31 @@ meson build and test:
   variables:
     MESON_ARGS: --prefix=/_inst -Dudevdir=/_inst/lib/udev
 
+
+meson filter build:
+  extends:
+    - .fedora-meson@template
+  parallel:
+    matrix:
+      - FILTER: G10
+      - FILTER: XBox
+  script:
+    - export MESON_EXTRA_ARGS="-Dbpf-filter=$FILTER"
+    - .gitlab-ci/meson-build.sh --run-install
+    - tree /_inst
+    # We only expect one file to be installed
+    - test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 1
+    - |
+      if [ "$FILTER" = "G10" ]; then
+        test -e /_inst/lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+      fi
+    - |
+      if [ "$FILTER" = "Xbox" ]; then
+        test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+      fi
+  variables:
+    MESON_ARGS: --prefix=/_inst -Dudevdir=/_inst/lib/udev
+
 #################################################################
 #                                                               #
 #                        test stage                             #

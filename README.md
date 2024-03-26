@@ -45,6 +45,11 @@ By default, only `testing` is enabled during `meson setup`. To select which one 
 `meson configure -Dbpfs=testing,stable,userhacks builddir/` (or a subset
 thereof) or pass `-Dbpfs` to the initial `meson setup` call.
 
+To build only one specific file use the `-Dfilter-bpf` option. This option takes one or more comma-separated strings,
+any `bpf.c` file that contains one of the strings will be built. For example,
+to build all BPF files with `Foo` or `Bar` in their file name use `-Dfilter-bpf=Foo,Bar`.
+Specifying a filter automatically enables all of testing, stable and userhacks.
+
 ## Adding custom files
 
 The filename of a HID-BPF program must follow the following syntax:

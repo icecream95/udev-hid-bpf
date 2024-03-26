@@ -7,6 +7,10 @@ option('bpfs',
        choices: ['testing', 'stable', 'userhacks'],
        value: 'testing',
        description: 'The subset of BPF programs to build')
+option('bpf-filter',
+       type: 'string',
+       value: '',
+       description: 'A comma-separated list of substrings to match against BPF files. Only BPF files matching the filter will be installed.')
 option('placeholder-udev-rules-file',
        type: 'boolean',
        value: false,
