@@ -212,6 +212,7 @@ fn cmd_list_devices() -> std::io::Result<()> {
 #[derive(Serialize)]
 struct InspectionDevice {
     bus: String,
+    group: String,
     vid: String,
     pid: String,
 }
@@ -235,6 +236,7 @@ fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
                     for modalias in metadata.modaliases() {
                         data.devices.push(InspectionDevice {
                             bus: format!("0x{:04X}", modalias.bus),
+                            group: format!("0x{:04X}", modalias.group),
                             vid: format!("0x{:04X}", modalias.vid),
                             pid: format!("0x{:04X}", modalias.pid),
                         });
