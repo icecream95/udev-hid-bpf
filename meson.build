@@ -16,8 +16,7 @@ if udevdir == ''
 endif
 
 filters = get_option('bpf-filter')
-have_filters = filters != ''
-filters = filters.split(',')
+have_filters = filters != []
 
 subset = get_option('bpfs')
 build_testing = 'testing' in subset or have_filters
