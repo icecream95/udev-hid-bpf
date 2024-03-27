@@ -15,7 +15,6 @@ use std::path::PathBuf;
 const BPF_SOURCE_DIR: &str = "./src/bpf/"; // relative to our git repo root
 const ATTACH_PROG: &str = "attach.bpf.c";
 const WRAPPER: &str = "./src/hid_bpf_wrapper.h";
-const TARGET_DIR: &str = "bpf"; // inside $CARGO_TARGET_DIR
 
 fn build_bpf_file(
     bpf_source: &std::path::Path,
@@ -76,13 +75,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     let cargo_target_dir = env::var("CARGO_TARGET_DIR").unwrap_or(String::from("./target"));
-    let target_dir = PathBuf::from(cargo_target_dir).join(TARGET_DIR);
-
-    std::fs::create_dir_all(target_dir.as_path())
-        .unwrap_or_else(|_| panic!("Can't create target directory '{}'", target_dir.display()));
+    let target_dir = PathBuf::from(cargo_target_dir).join(BPF_SOURCE_DIR);
 
     // Then compile all other .bpf.c in a .bpf.o file
     for subdir in &["testing", "stable", "userhacks"] {
+        let target_subdir = target_dir.join(subdir);
+        std::fs::create_dir_all(target_subdir.as_path())
+            .unwrap_or_else(|_| panic!("Can't create directory '{}'", target_subdir.display()));
 
         let dir = PathBuf::from(&bpf_src_dir).join(subdir);
         if dir.exists() {
@@ -94,7 +93,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map(|e| e.path())
                 .filter(|p| p.to_str().unwrap().ends_with(".bpf.c"))
             {
-                build_bpf_file(&path, &target_dir)?;
+                build_bpf_file(&path, &target_subdir)?;
             }
         }
     }

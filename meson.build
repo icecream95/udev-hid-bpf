@@ -40,8 +40,9 @@ endif
 # For cargo we need to mirror much of the source tree
 fs = import('fs')
 bpf_sources = files()
-bpf_copied_sources = files()
-bpf_o_files = []
+bpf_o_files_testing = []
+bpf_o_files_stable = []
+bpf_o_files_userhacks = []
 subdir('src')
 
 bpf_output_files = []
@@ -54,7 +55,7 @@ cargo_env = {
     'MESON_BUILD': '1',
     'CARGO_HOME': meson.project_build_root() / 'cargo-home',
     'CARGO_TARGET_DIR': meson.project_build_root(),
-    'BPF_SOURCE_ROOT': meson.project_build_root(),
+    'BPF_SOURCE_ROOT': meson.project_source_root(),
     'OUT_DIR': meson.project_build_root(),
     'EXTRA_INCLUDE': meson.project_source_root() / 'src' / 'bpf',
 }
@@ -75,7 +76,7 @@ cargo_build = custom_target(
   console: true,
   install: true,
   install_dir: bindir,
-  depends: bpf_copied_sources,
+  depend_files: bpf_sources,
   command: [
     'env',
     cargo_env_list,
@@ -87,8 +88,6 @@ cargo_build = custom_target(
 )
 
 meson.add_devenv(cargo_env)
-
-subdir('bpf')
 
 udev_config = configuration_data()
 # See make_release.sh - if set we leave a placeholder
@@ -104,29 +103,38 @@ configure_file(input: '99-hid-bpf.rules.in',
                install: true,
                install_dir: udevdir / 'rules.d')
 
-json_data = custom_target(
-    'extract json data',
-    depends: cargo_build,
-    output: 'bpf.json',
-    capture: true,
-    command: [
-        cargo_build,
-        'inspect',
-        bpf_o_files
-    ]
-)
+generate_hwdb_py = find_program('tools/generate-hwdb.py')
+builds = [
+    { 'enabled': build_testing, 'suffix': 'testing', 'files': bpf_o_files_testing },
+    { 'enabled': build_stable, 'suffix': 'stable', 'files': bpf_o_files_stable },
+    { 'enabled': build_userhacks, 'suffix': 'userhacks', 'files': bpf_o_files_userhacks },
+]
 
-hwdb = custom_target(
-    'hwdb files',
-    depends: json_data,
-    build_by_default: true,
-    output: '99-hid-bpf.hwdb',
-    input: json_data,
-    command: [
-        find_program('tools/generate-hwdb.py'),
-    ],
-    feed: true,
-    capture: true,
-    install: true,
-    install_dir: udevdir / 'hwdb.d',
-)
+foreach build: builds
+    if build['enabled']
+        json_data = custom_target(
+            'extract json data @0@'.format(build['suffix']),
+            depends: cargo_build,
+            output: 'bpf-@0@.json'.format(build['suffix']),
+            capture: true,
+            command: [
+                cargo_build,
+                'inspect',
+                build['files'],
+            ]
+        )
+
+        custom_target(
+            'hwdb files @0@'.format(build['suffix']),
+            depends: json_data,
+            build_by_default: true,
+            output: '99-hid-bpf-@0@.hwdb'.format(build['suffix']),
+            input: json_data,
+            command: [generate_hwdb_py],
+            feed: true,
+            capture: true,
+            install: true,
+            install_dir: udevdir / 'hwdb.d',
+        )
+    endif
+endforeach
