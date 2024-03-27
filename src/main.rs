@@ -224,7 +224,7 @@ struct InspectionData {
 }
 
 fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
-    let mut progs = Vec::new();
+    let mut objects = Vec::new();
     for path in paths {
         match libbpf_rs::btf::Btf::from_path(path) {
             Ok(btf) => {
@@ -242,7 +242,7 @@ fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
                         });
                     }
                 }
-                progs.push(data);
+                objects.push(data);
             }
             Err(e) => {
                 return Err(std::io::Error::new(
@@ -252,7 +252,7 @@ fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
             }
         }
     }
-    let json = serde_json::to_string_pretty(&progs)?;
+    let json = serde_json::to_string_pretty(&objects)?;
     println!("{}", json);
     Ok(())
 }
