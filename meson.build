@@ -74,7 +74,6 @@ cargo_build = custom_target(
   console: true,
   install: true,
   install_dir: bindir,
-  # depend_files: bpf_copied_sources,
   depends: bpf_copied_sources,
   command: [
     'env',
