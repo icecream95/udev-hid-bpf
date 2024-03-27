@@ -4,6 +4,7 @@ use clap::{Parser, Subcommand};
 use libbpf_rs;
 use log;
 use regex::Regex;
+use serde::Serialize;
 
 pub mod bpf;
 pub mod hidudev;
@@ -61,6 +62,11 @@ enum Commands {
     },
     /// List available devices
     ListDevices {},
+    /// Inspect a bpf.o file
+    Inspect {
+        /// One or more paths to a bpf.o file
+        paths: Vec<std::path::PathBuf>,
+    },
 }
 
 fn default_bpf_dirs() -> Vec<std::path::PathBuf> {
@@ -203,6 +209,52 @@ fn cmd_list_devices() -> std::io::Result<()> {
     Ok(())
 }
 
+#[derive(Serialize)]
+struct InspectionDevice {
+    bus: String,
+    vid: String,
+    pid: String,
+}
+
+#[derive(Serialize)]
+struct InspectionData {
+    name: String,
+    devices: Vec<InspectionDevice>,
+}
+
+fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
+    let mut progs = Vec::new();
+    for path in paths {
+        match libbpf_rs::btf::Btf::from_path(path) {
+            Ok(btf) => {
+                let mut data = InspectionData {
+                    name: String::from(path.file_name().unwrap().to_string_lossy()),
+                    devices: Vec::new(),
+                };
+                if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
+                    for modalias in metadata.modaliases() {
+                        data.devices.push(InspectionDevice {
+                            bus: format!("0x{:04X}", modalias.bus),
+                            vid: format!("0x{:04X}", modalias.vid),
+                            pid: format!("0x{:04X}", modalias.pid),
+                        });
+                    }
+                }
+                progs.push(data);
+            }
+            Err(e) => {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    e.to_string(),
+                ))
+            }
+        }
+    }
+    let json = serde_json::to_string_pretty(&progs)?;
+    println!("{}", json);
+    Ok(())
+}
+
 fn main() -> std::io::Result<()> {
     let cli = Cli::parse();
 
@@ -234,6 +286,7 @@ fn main() -> std::io::Result<()> {
         Commands::Remove { devpath } => cmd_remove(&devpath),
         Commands::ListBpfPrograms { bpfdir } => cmd_list_bpf_programs(bpfdir),
         Commands::ListDevices {} => cmd_list_devices(),
+        Commands::Inspect { paths } => cmd_inspect(&paths),
     }
 }
 
