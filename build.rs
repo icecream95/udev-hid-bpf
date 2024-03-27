@@ -46,12 +46,12 @@ fn build_bpf_file(
 
     SkeletonBuilder::new()
         .source(bpf_source)
-        .obj(target_object.clone())
+        .obj(&target_object)
         .clang_args(includeflags)
         .build()
         .unwrap();
 
-    let btf = libbpf_rs::btf::Btf::from_path(target_object.clone())?;
+    let btf = libbpf_rs::btf::Btf::from_path(&target_object)?;
 
     if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
         let fname = String::from(target_object.file_name().unwrap().to_str().unwrap());
