@@ -218,9 +218,22 @@ struct InspectionDevice {
 }
 
 #[derive(Serialize)]
-struct InspectionData {
+struct InspectionProgram {
     name: String,
+    section: String,
+}
+
+#[derive(Serialize)]
+struct InspectionMap {
+    name: String,
+}
+
+#[derive(Serialize)]
+struct InspectionData {
+    filename: String,
     devices: Vec<InspectionDevice>,
+    programs: Vec<InspectionProgram>,
+    maps: Vec<InspectionMap>,
 }
 
 fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
@@ -229,8 +242,10 @@ fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
         match libbpf_rs::btf::Btf::from_path(path) {
             Ok(btf) => {
                 let mut data = InspectionData {
-                    name: String::from(path.file_name().unwrap().to_string_lossy()),
+                    filename: String::from(path.file_name().unwrap().to_string_lossy()),
                     devices: Vec::new(),
+                    programs: Vec::new(),
+                    maps: Vec::new(),
                 };
                 if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
                     for modalias in metadata.modaliases() {
@@ -242,6 +257,23 @@ fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
                         });
                     }
                 }
+
+                let mut obj_builder = libbpf_rs::ObjectBuilder::default();
+                let object = obj_builder.open_file(path.clone()).unwrap();
+
+                for prog in object.progs_iter() {
+                    data.programs.push(InspectionProgram {
+                        name: prog.name().unwrap().to_string(),
+                        section: prog.section().to_string(),
+                    })
+                }
+
+                for map in object.maps_iter() {
+                    data.maps.push(InspectionMap {
+                        name: map.name().unwrap().to_string(),
+                    })
+                }
+
                 objects.push(data);
             }
             Err(e) => {
