@@ -177,18 +177,57 @@ meson filter build:
     matrix:
       - FILTER: G10
       - FILTER: XBox
+      - FILTER: G10,XBox
   script:
     - export MESON_EXTRA_ARGS="-Dbpf-filter=$FILTER"
     - .gitlab-ci/meson-build.sh --run-install
     - tree /_inst
-    # We only expect one file to be installed
-    - test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 1
     - |
       if [ "$FILTER" = "G10" ]; then
+        # We only expect one file to be installed
+        test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 1
         test -e /_inst/lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
       fi
     - |
       if [ "$FILTER" = "Xbox" ]; then
+        # We only expect one file to be installed
+        test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 1
+        test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+      fi
+    - |
+      if [ "$FILTER" = "G10,Xbox" ]; then
+        # We only expect two files to be installed
+        test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 2
+        test -e /_inst/lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+        test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+      fi
+  variables:
+    MESON_ARGS: --prefix=/_inst -Dudevdir=/_inst/lib/udev
+
+meson features build:
+  extends:
+    - .fedora-meson@template
+  parallel:
+    matrix:
+      - FEATURE: testing
+      - FEATURE: stable
+      - FEATURE: userhacks
+      - FEATURE: testing,userhacks
+  script:
+    - export MESON_EXTRA_ARGS="-Dbpfs=$FEATURE"
+    - .gitlab-ci/meson-build.sh --run-install
+    - tree /_inst
+    - |
+      if [ "$FEATURE" = "testing" ]; then
+        test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+      fi
+    - |
+      if [ "$FEATURE" = "userhacks" ]; then
+        test -e /_inst/lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+      fi
+    - |
+      if [ "$FILTER" = "testing,userhacks" ]; then
+        test -e /_inst/lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
         test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
   variables:
