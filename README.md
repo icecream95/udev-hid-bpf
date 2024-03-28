@@ -49,31 +49,3 @@ To build only one specific file use the `-Dfilter-bpf` option. This option takes
 any `bpf.c` file that contains one of the strings will be built. For example,
 to build all BPF files with `Foo` or `Bar` in their file name use `-Dfilter-bpf=Foo,Bar`.
 Specifying a filter automatically enables all of testing, stable and userhacks.
-
-## Adding custom files
-
-The filename of a HID-BPF program must follow the following syntax:
-
-```
-bBBBBgGGGGv0000VVVVp0000PPPP-some-identifier.bpf.c
-```
-
-Where:
-- `BBBB` is the bus raw value (in uppercase hexadecimal) (`0003` for USB, `0018` for I2C, `0005` for Bluetooth, etc...)
-- `GGGG` is the HID group as detected by HID (again, in uppercase hexadecimal)
-- `VVVV` and `PPPP` are respectively the vendor ID and product ID (as in `lsusb`, so uppercase hexadecimal too)
-- `some-identifier` is a string aimed at humans to identify what the program does, e.g. `correct-mouse-button`.
-
-Instead of building this name yourself, it is way more efficient to simply use the
-modalias of the device as provided by the kernel:
-```
-$> cat /sys/bus/hid/devices/0003:04D9:A09F.0009/modalias
-hid:b0003g0001v000004D9p0000A09F
-
-$> cat /sys/class/hidraw/hidraw0/device/modalias
-hid:b0003g0001v000004D9p0000A09F
-```
-
-Just strip out the `hid:` prefix and done.
-
-For details on file name and how they are matched to devices please see [our documentation](https://libevdev.pages.freedesktop.org/udev-hid-bpf/).
