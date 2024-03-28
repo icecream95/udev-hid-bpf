@@ -10,9 +10,32 @@
 #define VID_HOLTEK 0x04D9
 #define PID_G10_MECHANICAL_GAMING_MOUSE 0xA09F
 
-HID_BPF_CONFIG(
-	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_HOLTEK, PID_G10_MECHANICAL_GAMING_MOUSE)
-);
+/*
+ * This program is an example only, unless your brain can
+ * process controlling a mouse with a y axis inverted.
+ *
+ * The following device is "supported"
+ */
+// HID_BPF_CONFIG(
+// 	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_HOLTEK, PID_G10_MECHANICAL_GAMING_MOUSE)
+// );
+
+/*
+ * This is a just a proof of concept, and as such a user hack:
+ * we take one mouse, and whenever an event comes in, we invert the
+ * Y coordinate.
+ *
+ * Given that the offset within the report is hardcoded, this only
+ * works for the Holtek G10 mechanical mouse.
+ *
+ * Can be manually attached through:
+ * sudo udev-hid-bpf add /sys/bus/hid/devices/0003:04D9:A09F.NNNN mouse_invert_y.bpf.o
+ *
+ * (Replace NNNN with the correct HID ID, the first one in the list)
+ *
+ * Once you are done:
+ * sudo udev-hid-bpf remove /sys/bus/hid/devices/0003:04D9:A09F.NNNN
+ */
 
 SEC("fmod_ret/hid_bpf_device_event")
 int BPF_PROG(hid_y_event, struct hid_bpf_ctx *hctx)
@@ -44,9 +67,6 @@ int probe(struct hid_bpf_probe_args *ctx)
 	ctx->retval = ctx->rdesc_size != 71;
 	if (ctx->retval)
 		ctx->retval = -EINVAL;
-
-	/* comment the following line to actually bind the program */
-	ctx->retval = -EINVAL;
 
 	return 0;
 }

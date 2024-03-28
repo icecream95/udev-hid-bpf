@@ -3,8 +3,8 @@ if not build_userhacks
 endif
 
 sources = [
+    'mouse_invert_y.bpf.c',
     'trace_hid_events.bpf.c',
-    'G10-Mechanical-Gaming-Mouse.bpf.c'
 ]
 
 foreach bpf : sources

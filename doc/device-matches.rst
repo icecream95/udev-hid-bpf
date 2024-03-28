@@ -123,7 +123,7 @@ Run-time probe
 --------------
 
 Sometimes having just the vendor/product ID is not enough to know if a program needs to be loaded.
-For example, one mouse I am doing tests with (``G10-Mechanical-Gaming-Mouse.bpf.c`` with
+For example, one mouse I am doing tests with (``mouse_invert_y.bpf.c`` with
 ``HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, 0x04d9, 0xa09f)``) exports 3 HID interfaces,
 but the BPF program only applies to one of those HID interfaces.
 
@@ -155,7 +155,7 @@ The arguments of this syscall are basically the unique id of the HID device, its
 
 If the BPF program sets the ``ctx->retval`` to zero, the  BPF program is loaded for this device. A nonzero value (typically ``-EINVAL``)
 prevents the BPF program from loading. See the
-``G10-Mechanical-Gaming-Mouse.bpf.c`` program for an example of this
+``mouse_invert_y.bpf.c`` program for an example of this
 functionality or the :ref:`tutorial_probe` section of the :ref:`tutorial`.
 
 Also note that ``probe`` is executed as a ``SEC("syscall")``, which means that the bpf function
