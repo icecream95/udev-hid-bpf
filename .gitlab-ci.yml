@@ -175,18 +175,18 @@ meson filter build:
     - .fedora-meson@template
   parallel:
     matrix:
-      - FILTER: G10
+      - FILTER: trace
       - FILTER: XBox
-      - FILTER: G10,XBox
+      - FILTER: trace,XBox
   script:
     - export MESON_EXTRA_ARGS="-Dbpf-filter=$FILTER"
     - .gitlab-ci/meson-build.sh --run-install
     - tree /_inst
     - |
-      if [ "$FILTER" = "G10" ]; then
+      if [ "$FILTER" = "trace" ]; then
         # We only expect one file to be installed
         test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 1
-        test -e /_inst/lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+        test -e /_inst/lib/firmware/hid/bpf/trace_hid_events.bpf.o
       fi
     - |
       if [ "$FILTER" = "Xbox" ]; then
@@ -195,10 +195,10 @@ meson filter build:
         test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
     - |
-      if [ "$FILTER" = "G10,Xbox" ]; then
+      if [ "$FILTER" = "trace,Xbox" ]; then
         # We only expect two files to be installed
         test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 2
-        test -e /_inst/lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+        test -e /_inst/lib/firmware/hid/bpf/trace_hid_events.bpf.o
         test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
   variables:
@@ -223,11 +223,11 @@ meson features build:
       fi
     - |
       if [ "$FEATURE" = "userhacks" ]; then
-        test -e /_inst/lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+        test -e /_inst/lib/firmware/hid/bpf/trace_hid_events.bpf.o
       fi
     - |
       if [ "$FILTER" = "testing,userhacks" ]; then
-        test -e /_inst/lib/firmware/hid/bpf/G10-Mechanical-Gaming-Mouse.bpf.o
+        test -e /_inst/lib/firmware/hid/bpf/trace_hid_events.bpf.o
         test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
   variables:
