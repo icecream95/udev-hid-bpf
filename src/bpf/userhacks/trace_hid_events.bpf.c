@@ -7,6 +7,21 @@
 #include "hid_bpf_helpers.h"
 #include <bpf/bpf_tracing.h>
 
+
+/*
+ * this program is not bound to any device, but can be attached to any of them:
+ * it just outputs the raw events in /sys/kernel/debug/tracing/trace_pipe
+ *
+ * Manually attach the program to the device with:
+ * sudo udev-hid-bpf add /sys/bus/hid/devices/<DEVICE> trace_hid_events.bpf.o
+ *
+ * Then watch for events:
+ * sudo cat /sys/kernel/debug/tracing/trace_pipe
+ *
+ * Once you are done:
+ * sudo udev-hid-bpf remove /sys/bus/hid/devices/<DEVICE>
+ */
+
 char str[64];
 
 SEC("fmod_ret/hid_bpf_device_event")
