@@ -78,8 +78,14 @@ impl HidUdev {
 
         if prog.is_none() {
             for property in self.udev_device.properties() {
-                log::debug!("property: {:?} = {:?}", property.name(), property.value());
-                if property.name().to_str().unwrap().starts_with("HID_BPF_") {
+                let property_name = property.name().to_str().unwrap();
+
+                log::debug!("property: {:?} = {:?}", property_name, property.value());
+
+                if property_name == "HID_BPF_IGNORE_DEVICE" {
+                    return Ok(());
+                }
+                if property_name.starts_with("HID_BPF_") {
                     let value = property.value().to_str().unwrap();
                     if let Some(target_object) = HidUdev::find_file(bpf_dirs, value) {
                         log::debug!(
