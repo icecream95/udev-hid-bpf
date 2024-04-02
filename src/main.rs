@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 use clap::{Parser, Subcommand};
-use libbpf_rs;
-use log;
 use regex::Regex;
 use serde::Serialize;
 
