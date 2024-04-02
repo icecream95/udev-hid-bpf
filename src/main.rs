@@ -263,54 +263,60 @@ struct InspectionData {
     maps: Vec<InspectionMap>,
 }
 
-fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> Result<()> {
-    let mut objects = Vec::new();
+fn inspect(path: &std::path::PathBuf) -> Result<InspectionData> {
+    match libbpf_rs::btf::Btf::from_path(path) {
+        Ok(btf) => {
+            let mut data = InspectionData {
+                filename: String::from(path.file_name().unwrap().to_string_lossy()),
+                devices: Vec::new(),
+                programs: Vec::new(),
+                maps: Vec::new(),
+            };
+            if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
+                for modalias in metadata.modaliases() {
+                    data.devices.push(InspectionDevice {
+                        bus: format!("0x{:04X}", modalias.bus),
+                        group: format!("0x{:04X}", modalias.group),
+                        vid: format!("0x{:04X}", modalias.vid),
+                        pid: format!("0x{:04X}", modalias.pid),
+                    });
+                }
+            }
+            let mut obj_builder = libbpf_rs::ObjectBuilder::default();
+            let object = obj_builder.open_file(path.clone()).unwrap();
+
+            for prog in object.progs_iter() {
+                data.programs.push(InspectionProgram {
+                    name: prog.name().unwrap().to_string(),
+                    section: prog.section().to_string(),
+                })
+            }
+
+            for map in object.maps_iter() {
+                data.maps.push(InspectionMap {
+                    name: map.name().unwrap().to_string(),
+                })
+            }
+
+            Ok(data)
+        }
+        Err(e) => {
+            let message = if !path.exists() {
+                format!("Invalid bpf.o path {path:?}")
+            } else {
+                format!("Failed to read BPF from {:?}: {e}", path)
+            };
+            Err(MessageError { message })
+        }
+    }
+}
+
+fn cmd_inspect(paths: &[std::path::PathBuf]) -> Result<()> {
+    let mut objects: Vec<InspectionData> = Vec::new();
     for path in paths {
-        match libbpf_rs::btf::Btf::from_path(path) {
-            Ok(btf) => {
-                let mut data = InspectionData {
-                    filename: String::from(path.file_name().unwrap().to_string_lossy()),
-                    devices: Vec::new(),
-                    programs: Vec::new(),
-                    maps: Vec::new(),
-                };
-                if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
-                    for modalias in metadata.modaliases() {
-                        data.devices.push(InspectionDevice {
-                            bus: format!("0x{:04X}", modalias.bus),
-                            group: format!("0x{:04X}", modalias.group),
-                            vid: format!("0x{:04X}", modalias.vid),
-                            pid: format!("0x{:04X}", modalias.pid),
-                        });
-                    }
-                }
-
-                let mut obj_builder = libbpf_rs::ObjectBuilder::default();
-                let object = obj_builder.open_file(path.clone()).unwrap();
-
-                for prog in object.progs_iter() {
-                    data.programs.push(InspectionProgram {
-                        name: prog.name().unwrap().to_string(),
-                        section: prog.section().to_string(),
-                    })
-                }
-
-                for map in object.maps_iter() {
-                    data.maps.push(InspectionMap {
-                        name: map.name().unwrap().to_string(),
-                    })
-                }
-
-                objects.push(data);
-            }
-            Err(e) => {
-                let message = if !path.exists() {
-                    format!("Invalid bpf.o path {path:?}")
-                } else {
-                    format!("Failed to read BPF from {:?}: {e}", path)
-                };
-                return Err(MessageError { message });
-            }
+        match inspect(path) {
+            Ok(idata) => objects.push(idata),
+            Err(e) => return Err(e),
         }
     }
 
