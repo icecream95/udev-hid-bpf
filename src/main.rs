@@ -3,6 +3,7 @@
 use clap::{Parser, Subcommand};
 use regex::Regex;
 use serde::Serialize;
+use std::process::ExitCode;
 
 pub mod bpf;
 pub mod hidudev;
@@ -287,7 +288,7 @@ fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
     Ok(())
 }
 
-fn main() -> std::io::Result<()> {
+fn main() -> ExitCode {
     let cli = Cli::parse();
 
     libbpf_rs::set_print(Some((
@@ -309,7 +310,7 @@ fn main() -> std::io::Result<()> {
         .init()
         .unwrap();
 
-    match cli.command {
+    let rc = match cli.command {
         Commands::Add {
             devpath,
             prog,
@@ -319,6 +320,14 @@ fn main() -> std::io::Result<()> {
         Commands::ListBpfPrograms { bpfdir } => cmd_list_bpf_programs(bpfdir),
         Commands::ListDevices {} => cmd_list_devices(),
         Commands::Inspect { paths } => cmd_inspect(&paths),
+    };
+
+    match rc {
+        Ok(_) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("Error: {}", e.kind());
+            ExitCode::FAILURE
+        }
     }
 }
 
