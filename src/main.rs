@@ -138,6 +138,7 @@ fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> std::io::Result<
         }
     }
 
+    println!("Use udev-hid-bpf inspect <file> to obtain more information about a BPF object file.");
     Ok(())
 }
 
