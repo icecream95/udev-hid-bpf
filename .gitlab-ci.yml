@@ -178,6 +178,11 @@ meson build and test:
     - tree $PREFIX
   variables:
     MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev
+  artifacts:
+    paths:
+      - $MESON_BUILDDIR
+    when: on_success
+    expire_in: 1 day
 
 
 meson filter build:
@@ -251,6 +256,26 @@ meson features build:
 
 sast:
   stage: test
+
+cli install:
+  extends:
+    - .fedora-meson@template
+  dependencies:
+    - "meson build and test"
+  needs:
+    - "meson build and test"
+  parallel:
+    matrix:
+      - INSTPREFIX: $PREFIX
+      - INSTPREFIX: /foo
+        PREFIXARG: '--prefix=/foo'
+  script:
+    - cd $MESON_BUILDDIR
+    - ./udev-hid-bpf install --install-exe $PREFIXARG src/bpf/testing/HP_Elite_Presenter.bpf.o
+    - tree $INSTPREFIX
+    - test -e $INSTPREFIX/bin/udev-hid-bpf
+    - test -e /etc/udev-hid-bpf/HP_Elite_Presenter.bpf.o
+    - cat /etc/udev/rules.d/99-hid-bpf-HP_Elite_Presenter.rules
 
 #################################################################
 #                                                               #

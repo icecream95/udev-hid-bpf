@@ -123,6 +123,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         env::var("BPF_INSTALL_DIR").unwrap_or(String::from("/lib/firmare/hid/bpf"));
     println!("cargo:rustc-env=BPF_INSTALL_DIR={bpf_install_dir}");
 
+    // The fallbacks are only necessary for cargo build/cargo check, meson always sets them
+    let fallback_bindir: Result<String, std::env::VarError> = Ok(String::from("/usr/local/bin"));
+    let bindir = std::env::var("MESON_BINDIR").or(fallback_bindir).unwrap();
+    println!("cargo:rustc-env=MESON_BINDIR={bindir}");
+
     let source_root = env::var("BPF_SOURCE_ROOT").unwrap_or(String::from("."));
     let bpf_src_dir = PathBuf::from(source_root).join(BPF_SOURCE_DIR);
     println!("cargo:rerun-if-changed={}", bpf_src_dir.display());

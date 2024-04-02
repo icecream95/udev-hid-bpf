@@ -56,6 +56,7 @@ endforeach
 # Now the cargo invocation
 cargo_env = {
     'MESON_BUILD': '1',
+    'MESON_BINDIR': bindir,
     'CARGO_HOME': meson.project_build_root() / 'cargo-home',
     'CARGO_TARGET_DIR': meson.project_build_root(),
     'BPF_SOURCE_ROOT': meson.project_source_root(),
