@@ -21,18 +21,19 @@ Installation
 ------------
 
 Clone the repo, ``cd`` into it, and build the loader *and* the various example HID-BPF programs
-using the standard Rust build process::
+using a standard `meson <https://mesonbuild.com/>`_ build process::
 
    $ git clone https://gitlab.freedesktop.org/libevdev/udev-hid-bpf.git
    $ cd udev-hid-bpf/
-   $ cargo build
+   $ meson setup builddir
+   $ meson compile -C builddir
 
-The above ``cargo`` command will build the tool and any BPF programs it finds in ``src/bpf/*.bpf.c``.
-Please see the `cargo documentation <https://doc.rust-lang.org/cargo/>`_ for more details on invoking ``cargo``.
+The above ``meson`` commands will build the tool and any BPF programs it finds in ``src/bpf/*.bpf.c``.
+Please see the `meson documentation <https://mesonbuild.com/>`_ for more details on invoking ``meson``.
 
 Then, we can install the binary with the following command::
 
-   $ ./install.sh
+   $ meson install -C builddir
    # this will ask for your sudo password to install udev rules and hwdb files
 
 The above command will (re)build the tool and any BPF programs it finds in ``src/bpf/*.bpf.c``.
