@@ -78,6 +78,15 @@ check-commit:
       junit: results.xml
 
 
+python formatting:
+  extends: .fdo.ci-fairy
+  stage: prep
+  script:
+    - python3 -m venv _venv
+    - . _venv/bin/activate
+    - pip3 install ruff
+    - ruff format --check .
+
 #
 # Build distribution-specific images used by the jobs in the build stage
 #
