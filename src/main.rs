@@ -36,6 +36,29 @@ fn print_to_log(level: libbpf_rs::PrintLevel, msg: String) {
     }
 }
 
+#[derive(Debug)]
+struct MessageError {
+    message: String,
+}
+
+impl std::fmt::Display for MessageError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl From<std::io::Error> for MessageError {
+    fn from(other: std::io::Error) -> MessageError {
+        MessageError {
+            message: other.to_string(),
+        }
+    }
+}
+
+impl std::error::Error for MessageError {}
+
+type Result<T> = std::result::Result<T, MessageError>;
+
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// A new device is created
@@ -84,14 +107,14 @@ fn cmd_add(
     syspath: &std::path::PathBuf,
     prog: Option<String>,
     bpfdir: Option<std::path::PathBuf>,
-) -> std::io::Result<()> {
+) -> Result<()> {
     let dev = hidudev::HidUdev::from_syspath(syspath)?;
     let target_bpf_dirs = match bpfdir {
         Some(bpf_dir) => vec![bpf_dir],
         None => default_bpf_dirs(),
     };
 
-    dev.load_bpf_from_directories(&target_bpf_dirs, prog)
+    Ok(dev.load_bpf_from_directories(&target_bpf_dirs, prog)?)
 }
 
 fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String> {
@@ -105,18 +128,18 @@ fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String>
         .ok_or(std::io::Error::from_raw_os_error(libc::EINVAL))
 }
 
-fn cmd_remove(syspath: &std::path::PathBuf) -> std::io::Result<()> {
+fn cmd_remove(syspath: &std::path::PathBuf) -> Result<()> {
     let sysname = match hidudev::HidUdev::from_syspath(syspath) {
         Ok(dev) => dev.sysname(),
         Err(e) => match e.raw_os_error() {
             Some(libc::ENODEV) => sysname_from_syspath(syspath)?,
-            _ => return Err(e),
+            _ => return Err(e.into()),
         },
     };
-    bpf::remove_bpf_objects(&sysname)
+    Ok(bpf::remove_bpf_objects(&sysname)?)
 }
 
-fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> std::io::Result<()> {
+fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> Result<()> {
     let dirs = match bpfdir {
         Some(bpf_dir) => vec![bpf_dir],
         None => default_bpf_dirs(),
@@ -140,7 +163,7 @@ fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> std::io::Result<
     Ok(())
 }
 
-fn cmd_list_devices() -> std::io::Result<()> {
+fn cmd_list_devices() -> Result<()> {
     let re = Regex::new(r"hid:b([A-Z0-9]{4})g([A-Z0-9]{4})v0000([A-Z0-9]{4})p0000([A-Z0-9]{4})")
         .unwrap();
 
@@ -235,7 +258,7 @@ struct InspectionData {
     maps: Vec<InspectionMap>,
 }
 
-fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
+fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> Result<()> {
     let mut objects = Vec::new();
     for path in paths {
         match libbpf_rs::btf::Btf::from_path(path) {
@@ -276,16 +299,22 @@ fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> std::io::Result<()> {
                 objects.push(data);
             }
             Err(e) => {
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    e.to_string(),
-                ))
+                return Err(MessageError {
+                    message: format!("Failed to read BPF from {:?}: {e}", path),
+                })
             }
         }
     }
-    let json = serde_json::to_string_pretty(&objects)?;
-    println!("{}", json);
-    Ok(())
+
+    match serde_json::to_string_pretty(&objects) {
+        Ok(json) => {
+            println!("{}", json);
+            Ok(())
+        }
+        Err(e) => Err(MessageError {
+            message: e.to_string(),
+        }),
+    }
 }
 
 fn main() -> ExitCode {
@@ -325,7 +354,7 @@ fn main() -> ExitCode {
     match rc {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("Error: {}", e.kind());
+            eprintln!("Error: {}", e.message);
             ExitCode::FAILURE
         }
     }
