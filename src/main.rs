@@ -145,6 +145,7 @@ fn cmd_list_devices() -> std::io::Result<()> {
     let re = Regex::new(r"hid:b([A-Z0-9]{4})g([A-Z0-9]{4})v0000([A-Z0-9]{4})p0000([A-Z0-9]{4})")
         .unwrap();
 
+    println!("devices:");
     // We use this path because it looks nicer than the true device path in /sys/devices/pci...
     for entry in std::fs::read_dir("/sys/bus/hid/devices")? {
         let syspath = entry.unwrap().path();
@@ -200,10 +201,9 @@ fn cmd_list_devices() -> std::io::Result<()> {
                 _ => group,
             };
 
-            println!("{}", syspath.to_str().unwrap());
-            println!("  - name: {name}");
-            println!("  - device entry: HID_DEVICE({bus}, {group}, 0x{vid}, 0x{pid})");
-            println!("");
+            println!("  -  syspath:      \"{}\"", syspath.to_str().unwrap());
+            println!("     name:         \"{name}\"");
+            println!("     device entry: \"HID_DEVICE({bus}, {group}, 0x{vid}, 0x{pid})\"");
         }
     }
     Ok(())
