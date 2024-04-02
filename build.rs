@@ -84,6 +84,11 @@ fn write_hwdb_entry(
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("cargo:rerun-if-changed={}", WRAPPER);
+    if env::var("MESON_BUILD").is_err() {
+        println!("cargo:warning=############################################################");
+        println!("cargo:warning=      Use meson compile -C builddir instead of cargo        ");
+        println!("cargo:warning=############################################################");
+    }
 
     let source_root = env::var("BPF_SOURCE_ROOT").unwrap_or(String::from("."));
     let bpf_src_dir = PathBuf::from(source_root).join(BPF_SOURCE_DIR);
