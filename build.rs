@@ -7,14 +7,10 @@ extern crate bindgen;
 #[path = "src/modalias.rs"]
 mod modalias;
 
-use crate::modalias::Modalias;
 use libbpf_cargo::SkeletonBuilder;
 use libbpf_rs;
 use std::env;
-use std::fs::File;
-use std::io::Write;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 const BPF_SOURCE_DIR: &str = "./src/bpf/"; // relative to our git repo root
 const ATTACH_PROG: &str = "attach.bpf.c";
@@ -24,7 +20,6 @@ const TARGET_DIR: &str = "bpf"; // inside $CARGO_TARGET_DIR
 fn build_bpf_file(
     bpf_source: &std::path::Path,
     target_dir: &std::path::Path,
-    modaliases: &mut std::collections::HashMap<Modalias, Vec<String>>,
 ) -> Result<(), libbpf_rs::Error> {
     let mut target_object = target_dir.join(bpf_source.file_name().unwrap());
 
@@ -50,34 +45,6 @@ fn build_bpf_file(
         .clang_args(includeflags)
         .build()
         .unwrap();
-
-    let btf = libbpf_rs::btf::Btf::from_path(&target_object)?;
-
-    if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
-        let fname = String::from(target_object.file_name().unwrap().to_str().unwrap());
-        for modalias in metadata.modaliases() {
-            modaliases
-                .entry(modalias)
-                .or_insert(Vec::new())
-                .push(fname.clone());
-        }
-    }
-    Ok(())
-}
-
-fn write_hwdb_entry(
-    modalias: Modalias,
-    files: Vec<String>,
-    mut hwdb_fd: &File,
-) -> std::io::Result<()> {
-    static COUNTER: AtomicUsize = AtomicUsize::new(0);
-    let hwdb_match = format!("hid-bpf:hid:{}\n", String::from(modalias));
-    hwdb_fd.write_all(hwdb_match.as_bytes())?;
-    for f in files {
-        let count = COUNTER.fetch_add(1, Ordering::Relaxed);
-        hwdb_fd.write_all(format!(" HID_BPF_{:?}={}\n", count, f).as_bytes())?;
-    }
-    hwdb_fd.write_all(b"\n")?;
 
     Ok(())
 }
@@ -116,11 +83,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Then compile all other .bpf.c in a .bpf.o file
     for subdir in &["testing", "stable", "userhacks"] {
-        let hwdb_name = format!("99-hid-bpf-{}.hwdb", subdir);
-        let hwdb_file = target_dir.join(hwdb_name);
-        let hwdb_fd = File::create(hwdb_file)?;
-
-        let mut modaliases = std::collections::HashMap::new();
 
         let dir = PathBuf::from(&bpf_src_dir).join(subdir);
         if dir.exists() {
@@ -132,10 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map(|e| e.path())
                 .filter(|p| p.to_str().unwrap().ends_with(".bpf.c"))
             {
-                build_bpf_file(&path, &target_dir, &mut modaliases)?;
-            }
-            for (modalias, files) in modaliases {
-                write_hwdb_entry(modalias, files, &hwdb_fd)?;
+                build_bpf_file(&path, &target_dir)?;
             }
         }
     }

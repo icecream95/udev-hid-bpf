@@ -3,7 +3,7 @@
 # but adding a custom command here means we can install the files.
 foreach bpf : bpf_sources
     fname = fs.name(bpf)
-    custom_target('fake-@0@.o'.format(fname),
+    bpf_o_files += custom_target('fake-@0@.o'.format(fname),
         input: bpf,
         depend_files: bpf,
         depends: cargo_build,
@@ -13,34 +13,3 @@ foreach bpf : bpf_sources
         install_dir: bpfdir,
         )
 endforeach
-
-if build_testing
-    custom_target('fake-hwdb-testing',
-        depend_files: bpf_sources,
-        depends: cargo_build,
-        output: ['99-hid-bpf-testing.hwdb'],
-        command: ['true'],
-        install: true,
-        install_dir: udevdir / 'hwdb.d',
-        )
-endif
-if build_stable
-    custom_target('fake-hwdb-stable',
-        depend_files: bpf_sources,
-        depends: cargo_build,
-        output: ['99-hid-bpf-stable.hwdb'],
-        command: ['true'],
-        install: true,
-        install_dir: udevdir / 'hwdb.d',
-        )
-endif
-if build_userhacks
-    custom_target('fake-hwdb-userhacks',
-        depend_files: bpf_sources,
-        depends: cargo_build,
-        output: ['99-hid-bpf-userhacks.hwdb'],
-        command: ['true'],
-        install: true,
-        install_dir: udevdir / 'hwdb.d',
-        )
-endif

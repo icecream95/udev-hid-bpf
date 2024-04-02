@@ -58,6 +58,6 @@ dryrun_sudo="$DRY_RUN sudo"
 @@UNINSTALL_COMMANDS@@
 $dryrun_sudo rm -f "$PREFIX"/bin/udev-hid-bpf
 $dryrun_sudo rm -f "$UDEVDIR"/udev/rules.d/99-hid-bpf.rules
-$dryrun_sudo rm -f "$UDEVDIR"/udev/hwdb.d/99-hid-bpf-*.hwdb
+$dryrun_sudo rm -f "$UDEVDIR"/udev/hwdb.d/99-hid-bpf*.hwdb
 $DRY_RUN sudo udevadm control --reload
 $DRY_RUN sudo systemd-hwdb update

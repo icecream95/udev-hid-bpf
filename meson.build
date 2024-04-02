@@ -41,6 +41,7 @@ endif
 fs = import('fs')
 bpf_sources = files()
 bpf_copied_sources = files()
+bpf_o_files = []
 subdir('src')
 
 bpf_output_files = []
@@ -102,3 +103,30 @@ configure_file(input: '99-hid-bpf.rules.in',
                configuration: udev_config,
                install: true,
                install_dir: udevdir / 'rules.d')
+
+json_data = custom_target(
+    'extract json data',
+    depends: cargo_build,
+    output: 'bpf.json',
+    capture: true,
+    command: [
+        cargo_build,
+        'inspect',
+        bpf_o_files
+    ]
+)
+
+hwdb = custom_target(
+    'hwdb files',
+    depends: json_data,
+    build_by_default: true,
+    output: '99-hid-bpf.hwdb',
+    input: json_data,
+    command: [
+        find_program('tools/generate-hwdb.py'),
+    ],
+    feed: true,
+    capture: true,
+    install: true,
+    install_dir: udevdir / 'hwdb.d',
+)
