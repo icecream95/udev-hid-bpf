@@ -35,6 +35,7 @@ if get_option('buildtype') == 'release'
   rust_target = 'release'
   message('Building in release mode')
 else
+  cargo_options += [ '--all-targets' ]
   rust_target = 'debug'
   message('Building in debug mode')
 endif
