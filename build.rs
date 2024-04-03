@@ -8,7 +8,6 @@ extern crate bindgen;
 mod modalias;
 
 use libbpf_cargo::SkeletonBuilder;
-use libbpf_rs;
 use std::env;
 use std::path::PathBuf;
 

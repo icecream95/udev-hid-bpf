@@ -74,7 +74,7 @@ fn default_bpf_dirs() -> Vec<std::path::PathBuf> {
     } else {
         DEFAULT_BPF_DIRS
             .iter()
-            .map(|d| std::path::PathBuf::from(d))
+            .map(std::path::PathBuf::from)
             .collect()
     }
 }
@@ -98,10 +98,9 @@ fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String>
     let abspath = std::fs::read_link(syspath).unwrap_or(syspath.clone());
     abspath
         .file_name()
-        .map(|s| s.to_str())
-        .flatten()
+        .and_then(|s| s.to_str())
         .filter(|d| re.captures(d).is_some())
-        .map(|d| String::from(d))
+        .map(String::from)
         .ok_or(std::io::Error::from_raw_os_error(libc::EINVAL))
 }
 

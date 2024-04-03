@@ -1,7 +1,7 @@
 use libbpf_rs::btf::types as BtfTypes;
 use libbpf_rs::ReferencesType;
-use log;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq, Hash, Eq)]
 pub enum Bus {
     Any,
@@ -104,6 +104,7 @@ impl From<Bus> for String {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq, Hash, Eq)]
 pub enum Group {
     Any,
@@ -232,7 +233,7 @@ impl<'m> Metadata<'m> {
         self.types
             .iter()
             .enumerate()
-            .filter_map(|(_, e)| Modalias::from_btf_type_id(&self.btf, e))
+            .filter_map(|(_, e)| Modalias::from_btf_type_id(self.btf, e))
     }
 }
 
@@ -315,7 +316,7 @@ impl Modalias {
     }
 
     pub fn from_static_str(modalias: &'static str) -> std::io::Result<Self> {
-        Self::from_str(&modalias)
+        Self::from_str(modalias)
     }
 
     pub fn from_udev_device(udev_device: &udev::Device) -> std::io::Result<Self> {

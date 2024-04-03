@@ -18,8 +18,8 @@ pub struct HidBPF<'a> {
 pub fn get_bpffs_path(sysname: &str, object: &str) -> String {
     format!(
         "/sys/fs/bpf/hid/{}/{}",
-        sysname.replace(":", "_").replace(".", "_"),
-        object.replace(":", "_").replace(".", "_"),
+        sysname.replace([':', '.'], "_"),
+        object.replace([':', '.'], "_"),
     )
 }
 
@@ -56,7 +56,7 @@ fn pin_hid_bpf_prog(link: i32, path: String) -> Result<(), libbpf_rs::Error> {
     unsafe {
         let c_str = std::ffi::CString::new(path).unwrap();
 
-        match libbpf_sys::bpf_obj_pin(link, c_str.as_ptr() as *const i8) {
+        match libbpf_sys::bpf_obj_pin(link, c_str.as_ptr()) {
             0 => Ok(()),
             e => Err(libbpf_rs::Error::System(e)),
         }
@@ -68,7 +68,7 @@ impl hid_bpf_probe_args {
         let syspath = device.syspath();
         let rdesc = syspath + "/report_descriptor";
 
-        let mut buffer = fs::read(&rdesc).unwrap();
+        let mut buffer = fs::read(rdesc).unwrap();
         let length = buffer.len();
 
         buffer.resize(4096, 0);
@@ -202,7 +202,7 @@ impl<'a> HidBPF<'a> {
             /* compiler internal maps contain the name of the object and a dot */
             for map in object
                 .maps_iter_mut()
-                .filter(|map| !map.name().contains("."))
+                .filter(|map| !map.name().contains('.'))
             {
                 let path = format!(
                     "{}/{}",
@@ -210,7 +210,7 @@ impl<'a> HidBPF<'a> {
                     map.name(),
                 );
 
-                if let Ok(_) = map.pin(&path) {
+                if map.pin(&path).is_ok() {
                     attached = true;
                     log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
                 }
