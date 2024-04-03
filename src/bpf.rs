@@ -34,11 +34,12 @@ pub fn remove_bpf_objects(sysname: &str) -> std::io::Result<()> {
 fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_rs::Error> {
     let fd = prog.as_fd().as_raw_fd();
     let data_ptr: *const libc::c_void = &data as *const _ as *const libc::c_void;
-    let mut run_opts = libbpf_sys::bpf_test_run_opts::default();
-
-    run_opts.sz = std::mem::size_of::<libbpf_sys::bpf_test_run_opts>() as u64;
-    run_opts.ctx_in = data_ptr;
-    run_opts.ctx_size_in = std::mem::size_of::<T>() as u32;
+    let mut run_opts = libbpf_sys::bpf_test_run_opts {
+        sz: std::mem::size_of::<libbpf_sys::bpf_test_run_opts>() as u64,
+        ctx_in: data_ptr,
+        ctx_size_in: std::mem::size_of::<T>() as u32,
+        ..Default::default()
+    };
 
     let run_opts_ptr: *mut libbpf_sys::bpf_test_run_opts = &mut run_opts;
 
