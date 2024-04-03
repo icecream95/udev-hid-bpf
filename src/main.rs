@@ -92,15 +92,10 @@ enum Commands {
 }
 
 fn default_bpf_dirs() -> Vec<std::path::PathBuf> {
-    let bpf_dir = std::path::PathBuf::from("target/bpf");
-    if bpf_dir.exists() {
-        vec![bpf_dir]
-    } else {
-        DEFAULT_BPF_DIRS
-            .iter()
-            .map(std::path::PathBuf::from)
-            .collect()
-    }
+    DEFAULT_BPF_DIRS
+        .iter()
+        .map(std::path::PathBuf::from)
+        .collect()
 }
 
 fn cmd_add(
@@ -144,6 +139,21 @@ fn cmd_remove(syspath: &std::path::PathBuf) -> Result<()> {
     Ok(bpf::remove_bpf_objects(&sysname)?)
 }
 
+fn find_bpfs(dir: &std::path::PathBuf) -> Result<()> {
+    for f in std::fs::read_dir(dir)?.flatten() {
+        let metadata = f.metadata().unwrap();
+        if metadata.is_dir() {
+            find_bpfs(&f.path())?;
+        } else if metadata.is_file() {
+            let p = f.path();
+            if p.to_str().unwrap().ends_with(".bpf.o") {
+                println!(" {}", p.to_str().unwrap());
+            }
+        }
+    }
+    Ok(())
+}
+
 fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> Result<()> {
     let dirs = match bpfdir {
         Some(bpf_dir) => vec![bpf_dir],
@@ -154,14 +164,7 @@ fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> Result<()> {
             "Showing available BPF files in {}:",
             dir.as_path().to_str().unwrap()
         );
-        for entry in std::fs::read_dir(dir)?
-            .flatten()
-            .filter(|f| f.metadata().unwrap().is_file())
-            .map(|e| e.path())
-            .filter(|p| p.to_str().unwrap().ends_with(".bpf.o"))
-        {
-            println!(" {}", entry.to_str().unwrap());
-        }
+        find_bpfs(&dir)?
     }
 
     println!("Use udev-hid-bpf inspect <file> to obtain more information about a BPF object file.");
