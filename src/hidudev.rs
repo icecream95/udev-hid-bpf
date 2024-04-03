@@ -97,13 +97,23 @@ impl HidUdev {
                     }
                 }
             }
-        } else if let Some(target_object) = HidUdev::find_file(bpf_dirs, &prog.unwrap()) {
-            log::debug!(
-                "device added {}, filename: {}",
-                self.sysname(),
-                target_object.display(),
-            );
-            paths.push(target_object);
+        } else {
+            let prog = prog.unwrap();
+            let target_path = std::path::PathBuf::from(&prog);
+            let target_object = if target_path.exists() {
+                Some(target_path)
+            } else {
+                HidUdev::find_file(bpf_dirs, &prog)
+            };
+
+            if let Some(target_object) = target_object {
+                log::debug!(
+                    "device added {}, filename: {}",
+                    self.sysname(),
+                    target_object.display(),
+                );
+                paths.push(target_object);
+            }
         }
 
         if !paths.is_empty() {
