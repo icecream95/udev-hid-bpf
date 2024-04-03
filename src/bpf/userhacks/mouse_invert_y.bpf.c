@@ -16,9 +16,9 @@
  *
  * The following device is "supported"
  */
-// HID_BPF_CONFIG(
-// 	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_HOLTEK, PID_G10_MECHANICAL_GAMING_MOUSE)
-// );
+HID_BPF_CONFIG(
+	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_HOLTEK, PID_G10_MECHANICAL_GAMING_MOUSE)
+);
 
 /*
  * This is a just a proof of concept, and as such a user hack:
