@@ -25,8 +25,10 @@ build_userhacks = 'userhacks' in subset or have_filters
 
 cargo = find_program('cargo', required: true)
 
-cargo_options = [ '--manifest-path', meson.project_source_root() / 'Cargo.toml' ]
-cargo_options += [ '--target-dir', meson.project_build_root() / 'src' ]
+cargo_options = [
+    '--manifest-path', meson.project_source_root() / 'Cargo.toml',
+    '--target-dir', meson.project_build_root() / 'src',
+]
 
 if get_option('buildtype') == 'release'
   cargo_options += [ '--release' ]
