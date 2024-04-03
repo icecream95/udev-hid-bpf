@@ -62,11 +62,6 @@ cargo_env = {
     'EXTRA_INCLUDE': meson.project_source_root() / 'src' / 'bpf',
 }
 
-cargo_env_list  = []
-foreach k,v : cargo_env
-    cargo_env_list += '@0@=@1@'.format(k, v)
-endforeach
-
 # Note: with the env set up the cp command only copies the
 # udev-hid-bpf binary, the bpf files are built in-place (i.e. builddir/bpf)
 # because of the crazy build.rs script we need.
@@ -79,9 +74,8 @@ cargo_build = custom_target(
   install: true,
   install_dir: bindir,
   depend_files: bpf_sources,
+  env: cargo_env,
   command: [
-    'env',
-    cargo_env_list,
     cargo, 'build',
     cargo_options,
     '&&',
