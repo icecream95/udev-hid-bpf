@@ -39,5 +39,6 @@ if __name__ == "__main__":
     print("")
     for d in devices:
         print(f"hid-bpf:hid:b{d.bustype:04X}g{d.group:04X}v{d.vid:08X}p{d.pid:08X}")
+        print(f"  .HID_BPF=1")  # noqa: F541
         print(f"  HID_BPF_{next(counter)}={d.filename}")
         print("")
