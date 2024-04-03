@@ -84,6 +84,12 @@ cargo_build = custom_target(
   ]
 )
 
+test('cargo test',
+    cargo,
+    args: ['test'],
+    env: cargo_env
+)
+
 meson.add_devenv(cargo_env)
 
 udev_config = configuration_data()
