@@ -133,11 +133,12 @@ impl HidUdev {
 mod tests {
     use super::*;
     use crate::modalias::{Bus, Group};
+    use std::str::FromStr;
 
     #[test]
     fn test_modalias() {
         let modalias = "b0003g0001v000004D9p0000A09F";
-        let m = Modalias::from_static_str(modalias);
+        let m = Modalias::from_str(modalias);
         assert!(m.is_ok());
         let m = m.unwrap();
         assert!(m.bus == Bus::USB);

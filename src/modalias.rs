@@ -1,5 +1,6 @@
 use libbpf_rs::btf::types as BtfTypes;
 use libbpf_rs::ReferencesType;
+use std::str::FromStr;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq, Hash, Eq)]
@@ -282,7 +283,27 @@ impl Modalias {
         Some(modalias)
     }
 
-    pub fn from_str(modalias: &str) -> std::io::Result<Self> {
+    pub fn from_udev_device(udev_device: &udev::Device) -> std::io::Result<Self> {
+        let modalias = udev_device.property_value("MODALIAS");
+
+        let modalias = match modalias {
+            Some(data) => data,
+            _ => std::ffi::OsStr::new("hid:empty"), //panic!("modalias is empty"),
+        };
+
+        let modalias = match modalias.to_str() {
+            Some(data) => data,
+            _ => panic!("modalias problem"),
+        };
+
+        Modalias::from_str(modalias)
+    }
+}
+
+impl std::str::FromStr for Modalias {
+    type Err = std::io::Error;
+
+    fn from_str(modalias: &str) -> Result<Self, Self::Err> {
         /* strip out the "hid:" prefix from the modalias */
         let modalias = modalias.trim_start_matches("hid:");
 
@@ -313,26 +334,6 @@ impl Modalias {
             vid,
             pid,
         })
-    }
-
-    pub fn from_static_str(modalias: &'static str) -> std::io::Result<Self> {
-        Self::from_str(modalias)
-    }
-
-    pub fn from_udev_device(udev_device: &udev::Device) -> std::io::Result<Self> {
-        let modalias = udev_device.property_value("MODALIAS");
-
-        let modalias = match modalias {
-            Some(data) => data,
-            _ => std::ffi::OsStr::new("hid:empty"), //panic!("modalias is empty"),
-        };
-
-        let modalias = match modalias.to_str() {
-            Some(data) => data,
-            _ => panic!("modalias problem"),
-        };
-
-        Self::from_str(modalias)
     }
 }
 
