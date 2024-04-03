@@ -5,9 +5,6 @@
 #ifndef __ATTACH_H
 #define __ATTACH_H
 
-/**
- * <div rustbindgen replaces="AttachProgArgs"></div>
- */
 struct attach_prog_args {
 	int prog_fd;
 	unsigned int hid;

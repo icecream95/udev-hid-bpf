@@ -105,6 +105,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // The input header we would like to generate
         // bindings for.
         .header(WRAPPER)
+        // make struct attach_prog_args more rust-friendly
+        .raw_line("type AttachProgArgs = attach_prog_args;")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
