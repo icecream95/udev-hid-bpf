@@ -9,7 +9,7 @@ use libbpf_rs::skel::{OpenSkel, SkelBuilder};
 use std::convert::TryInto;
 use std::fs;
 use std::os::fd::{AsFd, AsRawFd};
-use std::path::PathBuf;
+use std::path::Path;
 
 pub struct HidBPF<'a> {
     inner: Option<AttachSkel<'a>>,
@@ -93,14 +93,14 @@ impl<'a> HidBPF<'a> {
 
     pub fn load_programs(
         &self,
-        path: &PathBuf,
+        path: &Path,
         device: &hidudev::HidUdev,
     ) -> Result<bool, libbpf_rs::Error> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
-        let mut object = obj_builder.open_file(path.clone())?.load()?;
-        let object_name = path.as_path().file_stem().unwrap().to_str().unwrap();
+        let mut object = obj_builder.open_file(path)?.load()?;
+        let object_name = path.file_stem().unwrap().to_str().unwrap();
 
         let hid_id = device.id();
 

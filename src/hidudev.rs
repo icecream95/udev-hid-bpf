@@ -9,8 +9,8 @@ pub struct HidUdev {
 }
 
 impl HidUdev {
-    pub fn from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<Self> {
-        let mut device = udev::Device::from_syspath(syspath.as_path())?;
+    pub fn from_syspath(syspath: &std::path::Path) -> std::io::Result<Self> {
+        let mut device = udev::Device::from_syspath(syspath)?;
         let subsystem = device.property_value("SUBSYSTEM");
 
         let is_hid_device = match subsystem {
