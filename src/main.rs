@@ -108,6 +108,11 @@ fn cmd_add(
     prog: Option<String>,
     bpfdir: Option<std::path::PathBuf>,
 ) -> Result<()> {
+    if !syspath.exists() {
+        return Err(MessageError {
+            message: format!("Invalid syspath {syspath:?}"),
+        });
+    }
     let dev = hidudev::HidUdev::from_syspath(syspath)?;
     let target_bpf_dirs = match bpfdir {
         Some(bpf_dir) => vec![bpf_dir],
@@ -299,9 +304,12 @@ fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> Result<()> {
                 objects.push(data);
             }
             Err(e) => {
-                return Err(MessageError {
-                    message: format!("Failed to read BPF from {:?}: {e}", path),
-                })
+                let message = if !path.exists() {
+                    format!("Invalid bpf.o path {path:?}")
+                } else {
+                    format!("Failed to read BPF from {:?}: {e}", path)
+                };
+                return Err(MessageError { message });
             }
         }
     }
@@ -312,7 +320,7 @@ fn cmd_inspect(paths: &Vec<std::path::PathBuf>) -> Result<()> {
             Ok(())
         }
         Err(e) => Err(MessageError {
-            message: e.to_string(),
+            message: format!("Failed to parse json: {}", e),
         }),
     }
 }
