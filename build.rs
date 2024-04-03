@@ -11,7 +11,7 @@ use libbpf_cargo::SkeletonBuilder;
 use std::env;
 use std::path::PathBuf;
 
-const BPF_SOURCE_DIR: &str = "./src/bpf/"; // relative to our git repo root
+const BPF_SOURCE_DIR: &str = "src/bpf/"; // relative to our git repo root
 const ATTACH_PROG: &str = "attach.bpf.c";
 const WRAPPER: &str = "./src/hid_bpf_wrapper.h";
 
