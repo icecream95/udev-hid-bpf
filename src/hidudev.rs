@@ -76,7 +76,23 @@ impl HidUdev {
 
         let mut paths = Vec::new();
 
-        if prog.is_none() {
+        if let Some(prog) = prog {
+            let target_path = std::path::PathBuf::from(&prog);
+            let target_object = if target_path.exists() {
+                Some(target_path)
+            } else {
+                HidUdev::find_file(bpf_dirs, &prog)
+            };
+
+            if let Some(target_object) = target_object {
+                log::debug!(
+                    "device added {}, filename: {}",
+                    self.sysname(),
+                    target_object.display(),
+                );
+                paths.push(target_object);
+            }
+        } else {
             for property in self.udev_device.properties() {
                 let property_name = property.name().to_str().unwrap();
 
@@ -96,23 +112,6 @@ impl HidUdev {
                         paths.push(target_object);
                     }
                 }
-            }
-        } else {
-            let prog = prog.unwrap();
-            let target_path = std::path::PathBuf::from(&prog);
-            let target_object = if target_path.exists() {
-                Some(target_path)
-            } else {
-                HidUdev::find_file(bpf_dirs, &prog)
-            };
-
-            if let Some(target_object) = target_object {
-                log::debug!(
-                    "device added {}, filename: {}",
-                    self.sysname(),
-                    target_object.display(),
-                );
-                paths.push(target_object);
             }
         }
 
