@@ -60,6 +60,7 @@ cargo_env = {
     'CARGO_TARGET_DIR': meson.project_build_root(),
     'BPF_SOURCE_ROOT': meson.project_source_root(),
     'EXTRA_INCLUDE': meson.project_source_root() / 'src' / 'bpf',
+    'BPF_INSTALL_DIR': bpfdir,
 }
 
 cargo_files = files(
