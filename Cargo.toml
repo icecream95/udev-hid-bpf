@@ -5,7 +5,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-libbpf-rs = "0.21"
+libbpf-rs = "0.22"
 libbpf-sys = "^1.1.0"
 udev =  { version = "^0.6.3", features = ["mio08"] }
 mio = { version = "0.8", features = ["os-ext"] }
@@ -13,14 +13,13 @@ libc = "0.2"
 clap = { version = "~4.4.18", features = ["derive"] }
 log = "0.4"
 stderrlog = "0.5"
-errno = "0.3.3"
 regex = "1.9.1"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.115"
 
 [build-dependencies]
-libbpf-rs = "0.21"
-libbpf-cargo = { version = "0.21" }
+libbpf-rs = "0.22"
+libbpf-cargo = { version = "0.22" }
 log = "0.4"
 bindgen = "0.66.1"
 regex = "1.9.1"

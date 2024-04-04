@@ -4,7 +4,6 @@ include!(concat!(env!("OUT_DIR"), "/hid_bpf_bindings.rs"));
 include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 
 use crate::hidudev;
-use errno;
 use libbpf_rs::skel::{OpenSkel, SkelBuilder};
 use std::convert::TryInto;
 use std::fs;
@@ -45,7 +44,7 @@ fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_r
 
     match unsafe { libbpf_sys::bpf_prog_test_run_opts(fd, run_opts_ptr) } {
         0 => Ok(data),
-        e => Err(libbpf_rs::Error::System(e)),
+        e => Err(libbpf_rs::Error::from_raw_os_error(e)),
     }
 }
 
@@ -59,7 +58,7 @@ fn pin_hid_bpf_prog(link: i32, path: String) -> Result<(), libbpf_rs::Error> {
 
         match libbpf_sys::bpf_obj_pin(link, c_str.as_ptr()) {
             0 => Ok(()),
-            e => Err(libbpf_rs::Error::System(e)),
+            e => Err(libbpf_rs::Error::from_raw_os_error(e)),
         }
     }
 }
@@ -153,7 +152,7 @@ impl<'a> HidBPF<'a> {
                     "could not attach {} to device id {}, error {}",
                     &tracing_prog.name(),
                     hid_id,
-                    libbpf_rs::Error::System(args.retval).to_string(),
+                    libbpf_rs::Error::from_raw_os_error(args.retval).to_string(),
                 );
                 continue;
             }
@@ -181,15 +180,11 @@ impl<'a> HidBPF<'a> {
 
             match pin_hid_bpf_prog(link, path.clone()) {
                 Err(e) => {
-                    let errstr = match e {
-                        libbpf_rs::Error::System(errno) => errno::Errno(-errno).to_string(),
-                        _ => e.to_string(),
-                    };
                     log::warn!(
                         "could not pin {} to device id {}, error {}",
                         &tracing_prog.name(),
                         hid_id,
-                        errstr,
+                        e.to_string(),
                     );
                 }
                 Ok(_) => {
