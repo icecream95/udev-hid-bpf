@@ -10,7 +10,7 @@ libbpf-sys = "^1.1.0"
 udev =  { version = "^0.6.3", features = ["mio08"] }
 mio = { version = "0.8", features = ["os-ext"] }
 libc = "0.2"
-clap = { version = "~4.4.18", features = ["derive"] }
+clap = { version = "~4.5.3", features = ["derive"] }
 log = "0.4"
 stderrlog = "0.5"
 regex = "1.9.1"
