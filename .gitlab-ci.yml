@@ -274,12 +274,12 @@ make release:
     - pushd tarball_dir
     - ./install.sh --verbose $PREFIX
     - test -e $PREFIX/bin/udev-hid-bpf
-    - test -e $PREFIX/lib/udev/rules.d/99-hid-bpf.rules
+    - test -e $PREFIX/lib/udev/rules.d/81-hid-bpf.rules
     - test -e $PREFIX/lib/udev/hwdb.d/99-hid-bpf-testing.hwdb
     - test -e /lib/firmware/hid/bpf/HP_Elite_Presenter.bpf.o
     - ./uninstall.sh --verbose $PREFIX
     - test ! -e $PREFIX/bin/udev-hid-bpf
-    - test ! -e $PREFIX/lib/udev/rules.d/99-hid-bpf.rules
+    - test ! -e $PREFIX/lib/udev/rules.d/81-hid-bpf.rules
     - test ! -e $PREFIX/lib/udev/hwdb.d/99-hid-bpf-testing.hwdb
     - test ! -e /lib/firmware/hid/bpf/HP_Elite_Presenter.bpf.o
     - popd

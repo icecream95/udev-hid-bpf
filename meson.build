@@ -111,7 +111,7 @@ if get_option('placeholder-udev-rules-file')
 else
     udev_config.set('BINDIR', bindir)
 endif
-configure_file(input: '99-hid-bpf.rules.in',
+configure_file(input: '81-hid-bpf.rules.in',
                output: '@BASENAME@',
                configuration: udev_config,
                install: true,

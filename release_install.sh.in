@@ -59,7 +59,7 @@ echo "Using sudo to install files into $PREFIX. You may be asked for your passwo
 dryrun_sudo="$DRY_RUN sudo"
 @@INSTALL_COMMANDS@@
 $dryrun_sudo install -D -t "$PREFIX"/bin/ "$SCRIPT_DIR"/bin/udev-hid-bpf
-$dryrun_sudo install -D -m 644 -t "$UDEVDIR"/udev/rules.d "$SCRIPT_DIR"/lib/udev/rules.d/99-hid-bpf.rules
+$dryrun_sudo install -D -m 644 -t "$UDEVDIR"/udev/rules.d "$SCRIPT_DIR"/lib/udev/rules.d/81-hid-bpf.rules
 $dryrun_sudo install -D -m 644 -t "$UDEVDIR"/udev/hwdb.d "$SCRIPT_DIR"/lib/udev/hwdb.d/99-hid-bpf-*.hwdb
 $dryrun_sudo udevadm control --reload
 $dryrun_sudo systemd-hwdb update
