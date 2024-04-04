@@ -98,7 +98,7 @@ fn build_bpf_wrappers(src_dir: &Path, dst_dir: &Path) {
         .raw_line("type AttachProgArgs = attach_prog_args;")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         // Finish the builder and generate the bindings.
         .generate()
         // Unwrap the Result and panic on failure.
