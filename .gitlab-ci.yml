@@ -28,6 +28,7 @@ variables:
   FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel meson tree python3-pip jq'
   FEDORA_TAG:  '2024-03-25.0'
   RUST_BACKTRACE: '1'
+  PREFIX: /_inst
 
 .policy:
   retry:
@@ -174,9 +175,9 @@ meson build and test:
     - .fedora-meson@template
   script:
     - .gitlab-ci/meson-build.sh --run-install
-    - tree /_inst
+    - tree $PREFIX
   variables:
-    MESON_ARGS: --prefix=/_inst -Dudevdir=/_inst/lib/udev
+    MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev
 
 
 meson filter build:
@@ -190,28 +191,28 @@ meson filter build:
   script:
     - export MESON_EXTRA_ARGS="-Dbpf-filter=$FILTER"
     - .gitlab-ci/meson-build.sh --run-install
-    - tree /_inst
+    - tree $PREFIX
     - |
       if [ "$FILTER" = "trace" ]; then
         # We only expect one file to be installed
-        test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 1
-        test -e /_inst/lib/firmware/hid/bpf/trace_hid_events.bpf.o
+        test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 1
+        test -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
       fi
     - |
       if [ "$FILTER" = "Xbox" ]; then
         # We only expect one file to be installed
-        test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 1
-        test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+        test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 1
+        test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
     - |
       if [ "$FILTER" = "trace,Xbox" ]; then
         # We only expect two files to be installed
-        test $(ls /_inst/lib/firmware/hid/bpf/ | wc -l) -eq 2
-        test -e /_inst/lib/firmware/hid/bpf/trace_hid_events.bpf.o
-        test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+        test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 2
+        test -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
   variables:
-    MESON_ARGS: --prefix=/_inst -Dudevdir=/_inst/lib/udev
+    MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev
 
 meson features build:
   extends:
@@ -225,22 +226,22 @@ meson features build:
   script:
     - export MESON_EXTRA_ARGS="-Dbpfs=$FEATURE"
     - .gitlab-ci/meson-build.sh --run-install
-    - tree /_inst
+    - tree $PREFIX
     - |
       if [ "$FEATURE" = "testing" ]; then
-        test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
     - |
       if [ "$FEATURE" = "userhacks" ]; then
-        test -e /_inst/lib/firmware/hid/bpf/trace_hid_events.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
       fi
     - |
       if [ "$FILTER" = "testing,userhacks" ]; then
-        test -e /_inst/lib/firmware/hid/bpf/trace_hid_events.bpf.o
-        test -e /_inst/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
   variables:
-    MESON_ARGS: --prefix=/_inst -Dudevdir=/_inst/lib/udev
+    MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev
 
 #################################################################
 #                                                               #
