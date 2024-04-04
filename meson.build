@@ -62,18 +62,28 @@ cargo_env = {
     'EXTRA_INCLUDE': meson.project_source_root() / 'src' / 'bpf',
 }
 
+cargo_files = files(
+    'Cargo.toml',
+    'build.rs',
+    'src/bpf.rs',
+    'src/hid_bpf_wrapper.h',
+    'src/hidudev.rs',
+    'src/main.rs',
+    'src/meson.build',
+    'src/modalias.rs',
+)
+
 # Note: with the env set up the cp command only copies the
 # udev-hid-bpf binary, the bpf files are built in-place (i.e. builddir/bpf)
 # because of the crazy build.rs script we need.
 cargo_build = custom_target(
   'cargo-build',
   build_by_default: true,
-  build_always_stale: true,
   output: meson.project_name(),
   console: true,
   install: true,
   install_dir: bindir,
-  depend_files: bpf_sources,
+  depend_files: bpf_sources + cargo_files,
   env: cargo_env,
   command: [
     cargo, 'build',
