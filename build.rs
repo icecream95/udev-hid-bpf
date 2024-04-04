@@ -9,7 +9,7 @@ mod modalias;
 
 use libbpf_cargo::SkeletonBuilder;
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 const BPF_SOURCE_DIR: &str = "src/bpf/"; // relative to our git repo root
 const ATTACH_PROG: &str = "attach.bpf.c";
@@ -47,43 +47,14 @@ fn build_bpf_file(
     Ok(())
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("cargo:rerun-if-changed={}", WRAPPER);
-    if env::var("MESON_BUILD").is_err() {
-        println!("cargo:warning=############################################################");
-        println!("cargo:warning=      Use meson compile -C builddir instead of cargo        ");
-        println!("cargo:warning=############################################################");
-    }
-
-    let source_root = env::var("BPF_SOURCE_ROOT").unwrap_or(String::from("."));
-    let bpf_src_dir = PathBuf::from(source_root).join(BPF_SOURCE_DIR);
-    println!("cargo:rerun-if-changed={}", bpf_src_dir.display());
-
-    let attach_prog = PathBuf::from(&bpf_src_dir).join(ATTACH_PROG);
-    if !attach_prog.as_path().is_file() {
-        panic!("Unable to find {}", attach_prog.display())
-    }
-
-    let out_dir = env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script");
-    let out_dir = PathBuf::from(out_dir);
-    let skel_file = out_dir.join(ATTACH_PROG.replace(".bpf.c", ".skel.rs"));
-    let extra_include = env::var("EXTRA_INCLUDE").unwrap_or(String::from("."));
-    SkeletonBuilder::new()
-        .source(attach_prog)
-        .clang_args(format!("-I{}", extra_include))
-        .build_and_generate(&skel_file)
-        .unwrap();
-
-    let cargo_target_dir = env::var("CARGO_TARGET_DIR").unwrap_or(String::from("./target"));
-    let target_dir = PathBuf::from(cargo_target_dir).join(BPF_SOURCE_DIR);
-
-    // Then compile all other .bpf.c in a .bpf.o file
+fn build_bpf_files(src_dir: &Path, dst_dir: &Path) -> Result<(), libbpf_rs::Error> {
+    // Compile all .bpf.c into a .bpf.o file
     for subdir in &["testing", "stable", "userhacks"] {
-        let target_subdir = target_dir.join(subdir);
-        std::fs::create_dir_all(target_subdir.as_path())
-            .unwrap_or_else(|_| panic!("Can't create directory '{}'", target_subdir.display()));
+        let dst_subdir = dst_dir.join(subdir);
+        std::fs::create_dir_all(dst_subdir.as_path())
+            .unwrap_or_else(|_| panic!("Can't create directory '{}'", dst_subdir.display()));
 
-        let dir = PathBuf::from(&bpf_src_dir).join(subdir);
+        let dir = PathBuf::from(&src_dir).join(subdir);
         if dir.exists() {
             for path in dir
                 .read_dir()
@@ -93,10 +64,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .map(|e| e.path())
                 .filter(|p| p.to_str().unwrap().ends_with(".bpf.c"))
             {
-                build_bpf_file(&path, &target_subdir)?;
+                build_bpf_file(&path, &dst_subdir)?;
             }
         }
     }
+
+    Ok(())
+}
+
+fn build_bpf_wrappers(src_dir: &Path, dst_dir: &Path) {
+    let attach_prog = PathBuf::from(&src_dir).join(ATTACH_PROG);
+    if !attach_prog.as_path().is_file() {
+        panic!("Unable to find {}", attach_prog.display())
+    }
+
+    let skel_file = dst_dir.join(ATTACH_PROG.replace(".bpf.c", ".skel.rs"));
+    let extra_include = env::var("EXTRA_INCLUDE").unwrap_or(String::from("."));
+    SkeletonBuilder::new()
+        .source(attach_prog)
+        .clang_args(format!("-I{}", extra_include))
+        .build_and_generate(&skel_file)
+        .unwrap();
 
     // Create a wrapper around our bpf interface
     // The bindgen::Builder is the main entry point
@@ -116,10 +104,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
-    // Write the bindings to the $OUT_DIR/bindings.rs file.
+    // Write the bindings to the hid_bpf_bindings.rs file.
     bindings
-        .write_to_file(out_dir.join("hid_bpf_bindings.rs"))
+        .write_to_file(dst_dir.join("hid_bpf_bindings.rs"))
         .expect("Couldn't write bindings!");
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("cargo:rerun-if-changed={}", WRAPPER);
+    if env::var("MESON_BUILD").is_err() {
+        println!("cargo:warning=############################################################");
+        println!("cargo:warning=      Use meson compile -C builddir instead of cargo        ");
+        println!("cargo:warning=############################################################");
+    }
+
+    let source_root = env::var("BPF_SOURCE_ROOT").unwrap_or(String::from("."));
+    let bpf_src_dir = PathBuf::from(source_root).join(BPF_SOURCE_DIR);
+    println!("cargo:rerun-if-changed={}", bpf_src_dir.display());
+
+    let out_dir = env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script");
+    let out_dir = PathBuf::from(out_dir);
+
+    let cargo_target_dir = env::var("CARGO_TARGET_DIR").unwrap_or(String::from("./target"));
+    let target_dir = PathBuf::from(cargo_target_dir).join(BPF_SOURCE_DIR);
+
+    build_bpf_wrappers(&bpf_src_dir, &out_dir);
+    build_bpf_files(&bpf_src_dir, &target_dir)?;
 
     Ok(())
 }
