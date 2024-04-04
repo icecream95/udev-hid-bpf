@@ -64,13 +64,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         panic!("Unable to find {}", attach_prog.display())
     }
 
-    let out = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script"))
-        .join(ATTACH_PROG.replace(".bpf.c", ".skel.rs"));
+    let out_dir = env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script");
+    let out_dir = PathBuf::from(out_dir);
+    let skel_file = out_dir.join(ATTACH_PROG.replace(".bpf.c", ".skel.rs"));
     let extra_include = env::var("EXTRA_INCLUDE").unwrap_or(String::from("."));
     SkeletonBuilder::new()
         .source(attach_prog)
         .clang_args(format!("-I{}", extra_include))
-        .build_and_generate(&out)
+        .build_and_generate(&skel_file)
         .unwrap();
 
     let cargo_target_dir = env::var("CARGO_TARGET_DIR").unwrap_or(String::from("./target"));
@@ -116,9 +117,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Unable to generate bindings");
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
-    let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     bindings
-        .write_to_file(out_path.join("hid_bpf_bindings.rs"))
+        .write_to_file(out_dir.join("hid_bpf_bindings.rs"))
         .expect("Couldn't write bindings!");
 
     Ok(())
