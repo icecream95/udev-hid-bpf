@@ -59,7 +59,6 @@ cargo_env = {
     'CARGO_HOME': meson.project_build_root() / 'cargo-home',
     'CARGO_TARGET_DIR': meson.project_build_root(),
     'BPF_SOURCE_ROOT': meson.project_source_root(),
-    'OUT_DIR': meson.project_build_root(),
     'EXTRA_INCLUDE': meson.project_source_root() / 'src' / 'bpf',
 }
 
