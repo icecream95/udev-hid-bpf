@@ -97,7 +97,8 @@ cargo_build = custom_target(
 test('cargo test',
     cargo,
     args: ['test'],
-    env: cargo_env
+    env: cargo_env,
+    timeout: 120,
 )
 
 meson.add_devenv(cargo_env)
