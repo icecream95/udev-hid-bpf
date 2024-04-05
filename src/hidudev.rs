@@ -3,6 +3,7 @@
 use crate::bpf;
 use crate::modalias::Modalias;
 use log;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 pub struct HidUdev {
@@ -78,15 +79,50 @@ impl HidUdev {
     /// Find the given file name in the set of directories, returning a path
     /// to the first filename found. The directories are assumed in preference
     /// order, first match wins.
-    fn find_file(dirs: &[std::path::PathBuf], filename: &str) -> Option<std::path::PathBuf> {
+    fn find_first_matching_file(dirs: &[PathBuf], filename: &str) -> Option<PathBuf> {
         dirs.iter()
             .map(|d| d.join(filename))
             .find(|path| path.is_file())
     }
 
+    /// Find the first matching file within the set of directories.
+    fn find_named_file(&self, filename: &String, bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
+        let target_path = PathBuf::from(filename);
+        let target_object = if target_path.exists() {
+            Some(target_path)
+        } else {
+            HidUdev::find_first_matching_file(bpf_dirs, filename)
+        };
+
+        target_object
+            .inspect(|o| log::debug!("device added {}, filename: {}", self.sysname(), o.display(),))
+            .map(|o| vec![o])
+    }
+
+    /// Search for any bpf.o in the HID_BPF_ udev properties set on this device
+    fn search_for_matching_files(&self, bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
+        let paths: Vec<PathBuf> = self
+            .hid_bpf_properties()
+            .iter()
+            .flat_map(|p| HidUdev::find_first_matching_file(bpf_dirs, p))
+            .inspect(|target_object| {
+                log::debug!(
+                    "device added {}, filename: {}",
+                    self.sysname(),
+                    target_object.display()
+                )
+            })
+            .collect();
+        if paths.is_empty() {
+            None
+        } else {
+            Some(paths)
+        }
+    }
+
     pub fn load_bpf_from_directories(
         &self,
-        bpf_dirs: &[std::path::PathBuf],
+        bpf_dirs: &[PathBuf],
         prog: Option<String>,
     ) -> std::io::Result<()> {
         if !bpf_dirs.iter().any(|d| d.exists()) {
@@ -94,47 +130,20 @@ impl HidUdev {
             return Ok(());
         }
 
-        let mut paths = Vec::new();
-
-        if let Some(prog) = prog {
-            let target_path = std::path::PathBuf::from(&prog);
-            let target_object = if target_path.exists() {
-                Some(target_path)
-            } else {
-                HidUdev::find_file(bpf_dirs, &prog)
-            };
-
-            if let Some(target_object) = target_object {
-                log::debug!(
-                    "device added {}, filename: {}",
-                    self.sysname(),
-                    target_object.display(),
-                );
-                paths.push(target_object);
+        let paths = match prog {
+            Some(prog) => self.find_named_file(&prog, bpf_dirs),
+            None => {
+                if self
+                    .udev_device
+                    .property_value("HID_BPF_IGNORE_DEVICE")
+                    .is_some()
+                {
+                    return Ok(());
+                }
+                self.search_for_matching_files(bpf_dirs)
             }
-        } else {
-            if self
-                .udev_device
-                .property_value("HID_BPF_IGNORE_DEVICE")
-                .is_some()
-            {
-                return Ok(());
-            }
-            paths = self
-                .hid_bpf_properties()
-                .iter()
-                .flat_map(|p| HidUdev::find_file(bpf_dirs, p))
-                .inspect(|target_object| {
-                    log::debug!(
-                        "device added {}, filename: {}",
-                        self.sysname(),
-                        target_object.display()
-                    )
-                })
-                .collect();
-        }
-
-        if !paths.is_empty() {
+        };
+        if let Some(paths) = paths {
             let hid_bpf_loader = bpf::HidBPF::new().unwrap();
             for path in paths {
                 if let Err(e) = hid_bpf_loader.load_programs(&path, self) {
