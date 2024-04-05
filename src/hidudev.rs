@@ -85,23 +85,29 @@ impl HidUdev {
             .find(|path| path.is_file())
     }
 
-    /// Find the first matching file within the set of directories.
-    fn find_named_file(&self, filename: &String, bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
-        let target_path = PathBuf::from(filename);
-        let target_object = if target_path.exists() {
-            Some(target_path)
+    /// For each file find the first matching file within the set of directories.
+    fn find_named_files(filenames: &[String], bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
+        let vec: Vec<PathBuf> = filenames
+            .iter()
+            .flat_map(|v| {
+                let p = PathBuf::from(v);
+                if p.exists() {
+                    Some(p)
+                } else {
+                    HidUdev::find_first_matching_file(bpf_dirs, v)
+                }
+            })
+            .collect();
+        if vec.is_empty() {
+            None
         } else {
-            HidUdev::find_first_matching_file(bpf_dirs, filename)
-        };
-
-        target_object
-            .inspect(|o| log::debug!("device added {}, filename: {}", self.sysname(), o.display(),))
-            .map(|o| vec![o])
+            Some(vec)
+        }
     }
 
-    /// Search for any bpf.o in the HID_BPF_ udev properties set on this device
+    /// Search for any file in the HID_BPF_ udev properties set on this device
     fn search_for_matching_files(&self, bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
-        let paths: Vec<PathBuf> = self
+        let paths: Vec<String> = self
             .hid_bpf_properties()
             .iter()
             .flat_map(|p| HidUdev::find_first_matching_file(bpf_dirs, p))
@@ -112,12 +118,10 @@ impl HidUdev {
                     target_object.display()
                 )
             })
+            .map(|p| String::from(p.to_string_lossy()))
             .collect();
-        if paths.is_empty() {
-            None
-        } else {
-            Some(paths)
-        }
+
+        HidUdev::find_named_files(&paths, bpf_dirs)
     }
 
     pub fn load_bpf_from_directories(
@@ -131,7 +135,7 @@ impl HidUdev {
         }
 
         let paths = match objfile {
-            Some(objfile) => self.find_named_file(&objfile, bpf_dirs),
+            Some(objfile) => HidUdev::find_named_files(&[objfile], bpf_dirs),
             None => {
                 if self
                     .udev_device
@@ -146,6 +150,7 @@ impl HidUdev {
         if let Some(paths) = paths {
             let hid_bpf_loader = bpf::HidBPF::new().unwrap();
             for path in paths {
+                log::debug!("device added {}, filename: {:?}", self.sysname(), path);
                 if let Err(e) = hid_bpf_loader.load_programs(&path, self) {
                     log::warn!("Failed to load {:?}: {:?}", path, e);
                 };
