@@ -1,7 +1,7 @@
 sources = [
-    'Logitech-MX-Master-3B-middle-button.bpf.c',
-    'mouse_invert_y.bpf.c',
-    'trace_hid_events.bpf.c',
+    '10-Logitech-MX-Master-3B-middle-button.bpf.c',
+    '10-mouse_invert_y.bpf.c',
+    '10-trace_hid_events.bpf.c',
 ]
 
 foreach bpf : sources

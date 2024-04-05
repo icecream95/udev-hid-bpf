@@ -201,20 +201,20 @@ meson filter build:
       if [ "$FILTER" = "trace" ]; then
         # We only expect one file to be installed
         test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 1
-        test -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/10-trace_hid_events.bpf.o
       fi
     - |
       if [ "$FILTER" = "Xbox" ]; then
         # We only expect one file to be installed
         test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 1
-        test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/10-XBox_Elite_2.bpf.o
       fi
     - |
       if [ "$FILTER" = "trace,Xbox" ]; then
         # We only expect two files to be installed
         test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 2
-        test -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
-        test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/10-trace_hid_events.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/10-XBox_Elite_2.bpf.o
       fi
   variables:
     MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev
@@ -233,14 +233,14 @@ meson features build:
     - tree $PREFIX
     - |
       if [ "$FEATURE" = "testing" ]; then
-        test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/10-XBox_Elite_2.bpf.o
       fi
     - |
       if [ "$FILTER" = "testing,stable" ]; then
-        test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/10-XBox_Elite_2.bpf.o
       fi
     # no userhacks files should be installed
-    - test ! -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
+    - test ! -e $PREFIX/lib/firmware/hid/bpf/10-trace_hid_events.bpf.o
   variables:
     MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev
 
@@ -267,11 +267,11 @@ cli install:
         PREFIXARG: '--prefix=/foo'
   script:
     - cd $MESON_BUILDDIR
-    - ./udev-hid-bpf install --install-exe $PREFIXARG src/bpf/testing/HP_Elite_Presenter.bpf.o
+    - ./udev-hid-bpf install --install-exe $PREFIXARG src/bpf/testing/10-HP_Elite_Presenter.bpf.o
     - tree $INSTPREFIX
     - test -e $INSTPREFIX/bin/udev-hid-bpf
-    - test -e /etc/udev-hid-bpf/HP_Elite_Presenter.bpf.o
-    - cat /etc/udev/rules.d/99-hid-bpf-HP_Elite_Presenter.rules
+    - test -e /etc/udev-hid-bpf/10-HP_Elite_Presenter.bpf.o
+    - cat /etc/udev/rules.d/99-hid-bpf-10-HP_Elite_Presenter.rules
 
 #################################################################
 #                                                               #
@@ -298,12 +298,12 @@ make release:
     - test -e $PREFIX/bin/udev-hid-bpf
     - test -e $PREFIX/lib/udev/rules.d/81-hid-bpf.rules
     - test -e $PREFIX/lib/udev/hwdb.d/81-hid-bpf-testing.hwdb
-    - test -e /lib/firmware/hid/bpf/HP_Elite_Presenter.bpf.o
+    - test -e /lib/firmware/hid/bpf/10-HP_Elite_Presenter.bpf.o
     - ./uninstall.sh --verbose $PREFIX
     - test ! -e $PREFIX/bin/udev-hid-bpf
     - test ! -e $PREFIX/lib/udev/rules.d/81-hid-bpf.rules
     - test ! -e $PREFIX/lib/udev/hwdb.d/81-hid-bpf-testing.hwdb
-    - test ! -e /lib/firmware/hid/bpf/HP_Elite_Presenter.bpf.o
+    - test ! -e /lib/firmware/hid/bpf/10-HP_Elite_Presenter.bpf.o
     - popd
   variables:
     FDO_DISTRIBUTION_VERSION: $FEDORA_RELEASE_VERSION

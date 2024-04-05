@@ -1,10 +1,10 @@
 sources = [
-    'HP_Elite_Presenter.bpf.c',
-    'Kaliber-MMOmentum.bpf.c',
-    'Wacom-ArtPen.bpf.c',
-    'XBox_Elite_2.bpf.c',
-    'xppen-Artist24.bpf.c',
-    'xppen-ArtistPro16Gen2.bpf.c',
+    '10-HP_Elite_Presenter.bpf.c',
+    '10-Kaliber-MMOmentum.bpf.c',
+    '10-Wacom-ArtPen.bpf.c',
+    '10-XBox_Elite_2.bpf.c',
+    '10-xppen-Artist24.bpf.c',
+    '10-xppen-ArtistPro16Gen2.bpf.c',
 ]
 
 foreach bpf : sources
