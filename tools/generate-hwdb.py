@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from itertools import count
 from typing import Iterable
 
+import argparse
 import json
 import sys
 
@@ -32,6 +33,9 @@ def extract(js) -> Iterable:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--prefix", default="HID_BPF_")
+    ns = parser.parse_args()
     js = json.load(sys.stdin)
     counter = count()
     devices = sorted(extract(js))
@@ -39,6 +43,6 @@ if __name__ == "__main__":
     print("")
     for d in devices:
         print(f"hid-bpf:hid:b{d.bustype:04X}g{d.group:04X}v{d.vid:08X}p{d.pid:08X}")
+        print(f"  {ns.prefix}{next(counter):03}={d.filename}")
         print(f"  .HID_BPF=1")  # noqa: F541
-        print(f"  HID_BPF_{next(counter)}={d.filename}")
         print("")
