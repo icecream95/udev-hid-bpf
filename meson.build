@@ -145,7 +145,7 @@ foreach build: builds
             'hwdb files @0@'.format(build['suffix']),
             depends: json_data,
             build_by_default: true,
-            output: '99-hid-bpf-@0@.hwdb'.format(build['suffix']),
+            output: '81-hid-bpf-@0@.hwdb'.format(build['suffix']),
             input: json_data,
             command: [
                 generate_hwdb_py,
