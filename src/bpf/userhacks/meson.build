@@ -23,7 +23,7 @@ foreach bpf : sources
         depend_files: bpf,
         output: ['@BASENAME@.o'],
         command: ['true'],
-        install: install_userhacks and filter_matches,
+        install: filter_matches,
         install_dir: bpfdir,
     )
 endforeach

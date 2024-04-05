@@ -4,7 +4,7 @@ option('udevdir',
        description: 'udev base directory, default=/etc/udev')
 option('bpfs',
        type: 'array',
-       choices: ['testing', 'stable', 'userhacks'],
+       choices: ['testing', 'stable'],
        value: ['testing'],
        description: 'The subset of BPF programs to build')
 option('bpf-filter',

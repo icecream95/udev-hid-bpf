@@ -42,7 +42,7 @@ To divide this we use the following directory structure:
 - `bpf/userhacks` is where all user hacks should go. Unlike quirks these will never move to stable.
 
 By default, only `testing` is enabled during `meson setup`. To select which one to install, run
-`meson configure -Dbpfs=testing,stable,userhacks builddir/` (or a subset
+`meson configure -Dbpfs=testing,stable builddir/` (or a subset
 thereof) or pass `-Dbpfs` to the initial `meson setup` call.
 
 To build and install only one specific file use the `-Dfilter-bpf` option. This option takes one or more comma-separated strings,

@@ -226,8 +226,7 @@ meson features build:
     matrix:
       - FEATURE: testing
       - FEATURE: stable
-      - FEATURE: userhacks
-      - FEATURE: testing,userhacks
+      - FEATURE: testing,stable
   script:
     - export MESON_EXTRA_ARGS="-Dbpfs=$FEATURE"
     - .gitlab-ci/meson-build.sh --run-install
@@ -237,11 +236,7 @@ meson features build:
         test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
     - |
-      if [ "$FEATURE" = "userhacks" ]; then
-        test -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
-      fi
-    - |
-      if [ "$FILTER" = "testing,userhacks" ]; then
+      if [ "$FILTER" = "testing,stable" ]; then
         test -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
         test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi

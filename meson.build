@@ -21,7 +21,6 @@ have_filters = filters != []
 subset = get_option('bpfs')
 install_testing = 'testing' in subset or have_filters
 install_stable = 'stable' in subset or have_filters
-install_userhacks = 'userhacks' in subset or have_filters
 
 cargo = find_program('cargo', required: true)
 
@@ -122,7 +121,6 @@ generate_hwdb_py = find_program('tools/generate-hwdb.py')
 builds = [
     { 'enabled': install_testing, 'suffix': 'testing', 'files': bpf_o_files_testing },
     { 'enabled': install_stable, 'suffix': 'stable', 'files': bpf_o_files_stable },
-    { 'enabled': install_userhacks, 'suffix': 'userhacks', 'files': bpf_o_files_userhacks },
 ]
 
 foreach build: builds
