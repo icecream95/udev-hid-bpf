@@ -19,9 +19,9 @@ filters = get_option('bpf-filter')
 have_filters = filters != []
 
 subset = get_option('bpfs')
-build_testing = 'testing' in subset or have_filters
-build_stable = 'stable' in subset or have_filters
-build_userhacks = 'userhacks' in subset or have_filters
+install_testing = 'testing' in subset or have_filters
+install_stable = 'stable' in subset or have_filters
+install_userhacks = 'userhacks' in subset or have_filters
 
 cargo = find_program('cargo', required: true)
 
@@ -120,9 +120,9 @@ configure_file(input: '81-hid-bpf.rules.in',
 
 generate_hwdb_py = find_program('tools/generate-hwdb.py')
 builds = [
-    { 'enabled': build_testing, 'suffix': 'testing', 'files': bpf_o_files_testing },
-    { 'enabled': build_stable, 'suffix': 'stable', 'files': bpf_o_files_stable },
-    { 'enabled': build_userhacks, 'suffix': 'userhacks', 'files': bpf_o_files_userhacks },
+    { 'enabled': install_testing, 'suffix': 'testing', 'files': bpf_o_files_testing },
+    { 'enabled': install_stable, 'suffix': 'stable', 'files': bpf_o_files_stable },
+    { 'enabled': install_userhacks, 'suffix': 'userhacks', 'files': bpf_o_files_userhacks },
 ]
 
 foreach build: builds

@@ -45,7 +45,11 @@ By default, only `testing` is enabled during `meson setup`. To select which one 
 `meson configure -Dbpfs=testing,stable,userhacks builddir/` (or a subset
 thereof) or pass `-Dbpfs` to the initial `meson setup` call.
 
-To build only one specific file use the `-Dfilter-bpf` option. This option takes one or more comma-separated strings,
-any `bpf.c` file that contains one of the strings will be built. For example,
-to build all BPF files with `Foo` or `Bar` in their file name use `-Dfilter-bpf=Foo,Bar`.
+To build and install only one specific file use the `-Dfilter-bpf` option. This option takes one or more comma-separated strings,
+any `bpf.c` file that contains one of the strings will be installed. For example,
+to build and install all BPF files with `Foo` or `Bar` in their file name use `-Dfilter-bpf=Foo,Bar`.
 Specifying a filter automatically enables all of testing, stable and userhacks.
+
+Note that all the `bpf.c` files that are known to meson (so registered in `src/bpf/*/meson.build`) are recompiled
+when there is a change. So for `bpf/userhacks`, in most cases, no meson option needs to be added: just recompile
+with `ninja` and then use `udev-hid-bpf install ./builddir/src/bpf/userhacks/my_awesome_hid_bpf_filter.bpf.c`.
