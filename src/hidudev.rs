@@ -3,6 +3,7 @@
 use crate::bpf;
 use crate::modalias::Modalias;
 use log;
+use std::str::FromStr;
 
 pub struct HidUdev {
     udev_device: udev::Device,
@@ -40,7 +41,19 @@ impl HidUdev {
     }
 
     pub fn modalias(&self) -> Modalias {
-        Modalias::from_udev_device(&self.udev_device).unwrap()
+        let modalias = self.udev_device.property_value("MODALIAS");
+
+        let modalias = match modalias {
+            Some(data) => data,
+            _ => std::ffi::OsStr::new("hid:empty"), //panic!("modalias is empty"),
+        };
+
+        let modalias = match modalias.to_str() {
+            Some(data) => data,
+            _ => panic!("modalias problem"),
+        };
+
+        Modalias::from_str(modalias).unwrap()
     }
 
     pub fn sysname(&self) -> String {

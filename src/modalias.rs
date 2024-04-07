@@ -1,6 +1,5 @@
 use libbpf_rs::btf::types as BtfTypes;
 use libbpf_rs::ReferencesType;
-use std::str::FromStr;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq, Hash, Eq)]
@@ -281,22 +280,6 @@ impl Modalias {
             }
         }
         Some(modalias)
-    }
-
-    pub fn from_udev_device(udev_device: &udev::Device) -> std::io::Result<Self> {
-        let modalias = udev_device.property_value("MODALIAS");
-
-        let modalias = match modalias {
-            Some(data) => data,
-            _ => std::ffi::OsStr::new("hid:empty"), //panic!("modalias is empty"),
-        };
-
-        let modalias = match modalias.to_str() {
-            Some(data) => data,
-            _ => panic!("modalias problem"),
-        };
-
-        Modalias::from_str(modalias)
     }
 }
 
