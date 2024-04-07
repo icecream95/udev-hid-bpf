@@ -3,6 +3,7 @@
 use crate::bpf;
 use crate::modalias::Modalias;
 use log;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -85,10 +86,48 @@ impl HidUdev {
             .find(|path| path.is_file())
     }
 
-    /// For each file find the first matching file within the set of directories.
-    fn find_named_files(filenames: &[String], bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
+    /// Given a set of paths that have filenames prefixed like 10-foo.bpf.o, 20-bar.bpf.o,
+    /// return a set of priority-ordered filenames, i.e.
+    /// [
+    ///   ["20-bar.bpf.o", "10-bar.bpf.o"],
+    ///   ["10-foo.bpf.o"]
+    /// ]
+    /// We can then iterate through and load whichever program is happy first.
+    fn sort_by_stem(paths: &[std::path::PathBuf]) -> Vec<Vec<PathBuf>> {
+        let mut ht: HashMap<String, Vec<PathBuf>> = HashMap::new();
+
+        for path in paths.iter() {
+            let filename = String::from(path.file_name().unwrap().to_string_lossy());
+            let stem = match filename.split_once('-') {
+                Some((_, rest)) => String::from(rest),
+                None => String::from(&filename),
+            };
+            match ht.get_mut(&stem) {
+                Some(v) => v.push(std::path::PathBuf::from(path)),
+                None => {
+                    let v = vec![std::path::PathBuf::from(path)];
+                    ht.insert(stem, v);
+                }
+            };
+        }
+
+        // The list of values is reverse-dict sorted, so 30-foo comes first before 20-foo
+        for v in ht.values_mut() {
+            v.sort_by(|p1, p2| p2.file_name().unwrap().cmp(p1.file_name().unwrap()));
+        }
+
+        // HashMap's order is unpredictable, to test this let's
+        // do a more predictable generation of values: dict sort by stem
+        let mut keys: Vec<String> = ht.keys().cloned().collect();
+        keys.sort();
+        keys.iter().map(|k| ht.remove(k).unwrap()).collect()
+    }
+
+    /// For each file find the first matching .bpf.o file within the set of directories.
+    fn find_named_objfiles(filenames: &[String], bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
         let vec: Vec<PathBuf> = filenames
             .iter()
+            .filter(|s| s.ends_with(".bpf.o"))
             .flat_map(|v| {
                 let p = PathBuf::from(v);
                 if p.exists() {
@@ -106,7 +145,7 @@ impl HidUdev {
     }
 
     /// Search for any file in the HID_BPF_ udev properties set on this device
-    fn search_for_matching_files(&self, bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
+    fn search_for_matching_objfiles(&self, bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
         let paths: Vec<String> = self
             .hid_bpf_properties()
             .iter()
@@ -121,7 +160,7 @@ impl HidUdev {
             .map(|p| String::from(p.to_string_lossy()))
             .collect();
 
-        Self::find_named_files(&paths, bpf_dirs)
+        Self::find_named_objfiles(&paths, bpf_dirs)
     }
 
     pub fn load_bpf_from_directories(
@@ -135,7 +174,7 @@ impl HidUdev {
         }
 
         let paths = match objfile {
-            Some(objfile) => Self::find_named_files(&[objfile], bpf_dirs),
+            Some(objfile) => Self::find_named_objfiles(&[objfile], bpf_dirs),
             None => {
                 if self
                     .udev_device
@@ -144,16 +183,25 @@ impl HidUdev {
                 {
                     return Ok(());
                 }
-                self.search_for_matching_files(bpf_dirs)
+                self.search_for_matching_objfiles(bpf_dirs)
             }
         };
         if let Some(paths) = paths {
             let hid_bpf_loader = bpf::HidBPF::new().unwrap();
-            for path in paths {
-                log::debug!("device added {}, filename: {:?}", self.sysname(), path);
-                if let Err(e) = hid_bpf_loader.load_programs(&path, self) {
-                    log::warn!("Failed to load {:?}: {:?}", path, e);
-                };
+            let sorted: Vec<Vec<PathBuf>> = Self::sort_by_stem(&paths);
+            // For each group in our vec of vecs, try to load them one-by-one.
+            // The first successful one terminates that group and we continue with the next.
+            for group in sorted {
+                for path in group {
+                    match hid_bpf_loader.load_programs(&path, self) {
+                        Ok(true) => {
+                            log::debug!("Successfully loaded {path:?}");
+                            break;
+                        }
+                        Ok(false) => log::warn!("Failed to load {path:?}"),
+                        Err(e) => log::warn!("Failed to load {:?}: {:?}", path, e),
+                    };
+                }
             }
         }
 
@@ -168,5 +216,125 @@ impl HidUdev {
         std::fs::remove_dir_all(path).ok();
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs::File;
+
+    #[test]
+    fn test_bpf_lookup() {
+        let tmpdir = tempfile::tempdir().unwrap();
+        let base_path = &tmpdir.path();
+        let usr_local = base_path.join("usr/local/lib/firmware");
+        let usr = base_path.join("lib/firmware");
+        std::fs::create_dir_all(&usr_local).unwrap();
+        std::fs::create_dir_all(&usr).unwrap();
+
+        let ignored1 = &usr_local.join("10-ignored.bpf.c"); // .c extension
+        let ignored2 = &usr_local.join("10-ignored.o"); // not bpf.o
+        let p1 = &usr_local.join("10-one.bpf.o");
+        let p2 = &usr.join("20-one.bpf.o");
+        let p3 = &usr_local.join("10-two.bpf.o");
+        let p4 = &usr_local.join("20-three.bpf.o");
+        let p5 = &usr.join("10-three.bpf.o");
+        let _ = &[ignored1, ignored2, p1, p2, p3, p4, p5]
+            .iter()
+            .for_each(|p| {
+                File::create(p).unwrap();
+            });
+
+        let dirs = [usr_local.clone(), usr.clone()];
+
+        let props: Vec<String> = ["10-one.bpf.o", "20-one.bpf.o", "10-two.bpf.o"]
+            .iter()
+            .map(|&s| s.into())
+            .collect();
+        let objfiles = HidUdev::find_named_objfiles(&props, &dirs);
+        assert!(objfiles.is_some());
+        let objfiles = objfiles.unwrap();
+        let expected = [
+            &usr_local.join("10-one.bpf.o"),
+            &usr.join("20-one.bpf.o"),
+            &usr_local.join("10-two.bpf.o"),
+        ];
+        objfiles
+            .iter()
+            .zip(expected)
+            .for_each(|(objfile, exp)| assert!(&objfile == &exp, "{objfile:?} == {exp:?}"));
+
+        // test that ignored is ignored
+        let props: Vec<String> = ["10-one.bpf.o", "10-ignored.bpf.c", "10-two.bpf.o"]
+            .iter()
+            .map(|&s| s.into())
+            .collect();
+        let objfiles = HidUdev::find_named_objfiles(&props, &dirs);
+        assert!(objfiles.is_some());
+        let objfiles = objfiles.unwrap();
+        let expected = [
+            &usr_local.join("10-one.bpf.o"),
+            &usr_local.join("10-two.bpf.o"),
+        ];
+        objfiles
+            .iter()
+            .zip(expected)
+            .for_each(|(objfile, exp)| assert!(&objfile == &exp, "{objfile:?} == {exp:?}"));
+
+        // and a non-existing one
+        let props: Vec<String> = ["10-one.bpf.o", "10-does-not-exist.bpf.o", "10-three.bpf.o"]
+            .iter()
+            .map(|&s| s.into())
+            .collect();
+        let objfiles = HidUdev::find_named_objfiles(&props, &dirs);
+        assert!(objfiles.is_some());
+        let objfiles = objfiles.unwrap();
+        let expected = [&usr_local.join("10-one.bpf.o"), &usr.join("10-three.bpf.o")];
+        objfiles
+            .iter()
+            .filter(|p| p.to_string_lossy().ends_with("bpf.o"))
+            .zip(expected)
+            .for_each(|(objfile, exp)| assert!(&objfile == &exp, "{objfile:?} == {exp:?}"));
+    }
+
+    #[test]
+    fn test_bpf_stem_sorting() {
+        let tmpdir = tempfile::tempdir().unwrap();
+        let base_path = &tmpdir.path();
+        let usr_local = base_path.join("usr/local/lib/firmware");
+        let usr = base_path.join("lib/firmware");
+        std::fs::create_dir_all(&usr_local).unwrap();
+        std::fs::create_dir_all(&usr).unwrap();
+
+        let files = vec![
+            usr_local.join("10-one.bpf.o"),
+            usr.join("20-one.bpf.o"),
+            usr_local.join("10-two.bpf.o"),
+            usr.join("10-three.bpf.o"),
+            usr_local.join("20-three.bpf.o"),
+            usr_local.join("30-three.bpf.o"),
+        ];
+        let _ = files.iter().for_each(|p| {
+            File::create(p).unwrap();
+        });
+
+        // The returned list is dict sorted by stem
+        let expected: Vec<Vec<PathBuf>> = vec![
+            vec![usr.join("20-one.bpf.o"), usr_local.join("10-one.bpf.o")],
+            vec![
+                usr_local.join("30-three.bpf.o"),
+                usr_local.join("20-three.bpf.o"),
+                usr.join("10-three.bpf.o"),
+            ],
+            vec![usr_local.join("10-two.bpf.o")],
+        ];
+        let stem_sorted = HidUdev::sort_by_stem(&files);
+
+        for (exp, sorted) in expected.iter().zip(stem_sorted) {
+            for (e, s) in exp.iter().zip(sorted) {
+                assert!(e == &s, "expected {e:?} == have {s:?}");
+            }
+        }
     }
 }
