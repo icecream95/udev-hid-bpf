@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
+use anyhow::{bail, ensure, Context, Result};
 use clap::{Parser, Subcommand};
 use regex::Regex;
 use serde::Serialize;
@@ -42,29 +43,6 @@ fn print_to_log(lvl: libbpf_rs::PrintLevel, msg: String) {
         libbpf_rs::PrintLevel::Warn => log::warn!(target: "libbpf", "{}", msg.trim()),
     }
 }
-
-#[derive(Debug)]
-struct MessageError {
-    message: String,
-}
-
-impl std::fmt::Display for MessageError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl From<std::io::Error> for MessageError {
-    fn from(other: std::io::Error) -> MessageError {
-        MessageError {
-            message: other.to_string(),
-        }
-    }
-}
-
-impl std::error::Error for MessageError {}
-
-type Result<T> = std::result::Result<T, MessageError>;
 
 #[derive(Subcommand, Debug)]
 enum Commands {
@@ -133,11 +111,8 @@ fn cmd_add(
     prog: Option<String>,
     bpfdir: Option<std::path::PathBuf>,
 ) -> Result<()> {
-    if !syspath.exists() {
-        return Err(MessageError {
-            message: format!("Invalid syspath {syspath:?}"),
-        });
-    }
+    ensure!(syspath.exists(), "Invalid syspath {syspath:?}");
+
     let dev = hidudev::HidUdev::from_syspath(syspath)?;
     let target_bpf_dirs = match bpfdir {
         Some(bpf_dir) => vec![bpf_dir],
@@ -170,6 +145,7 @@ fn cmd_remove(syspath: &std::path::PathBuf) -> Result<()> {
 }
 
 fn find_bpfs(dir: &std::path::PathBuf) -> Result<()> {
+    ensure!(dir.exists(), "Directory {dir:?} does not exist");
     for f in std::fs::read_dir(dir)?.flatten() {
         let metadata = f.metadata().unwrap();
         if metadata.is_dir() {
@@ -297,71 +273,55 @@ struct InspectionData {
 }
 
 fn inspect(path: &std::path::PathBuf) -> Result<InspectionData> {
-    match libbpf_rs::btf::Btf::from_path(path) {
-        Ok(btf) => {
-            let mut data = InspectionData {
-                filename: String::from(path.file_name().unwrap().to_string_lossy()),
-                devices: Vec::new(),
-                programs: Vec::new(),
-                maps: Vec::new(),
-            };
-            if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
-                for modalias in metadata.modaliases() {
-                    data.devices.push(InspectionDevice {
-                        bus: format!("0x{:04X}", modalias.bus),
-                        group: format!("0x{:04X}", modalias.group),
-                        vid: format!("0x{:04X}", modalias.vid),
-                        pid: format!("0x{:04X}", modalias.pid),
-                    });
-                }
-            }
-            let mut obj_builder = libbpf_rs::ObjectBuilder::default();
-            let object = obj_builder.open_file(path.clone()).unwrap();
+    ensure!(path.exists(), "Invalid bpf.o path {path:?}");
 
-            for prog in object.progs_iter() {
-                data.programs.push(InspectionProgram {
-                    name: prog.name().unwrap().to_string(),
-                    section: prog.section().to_string(),
-                })
-            }
-
-            for map in object.maps_iter() {
-                data.maps.push(InspectionMap {
-                    name: map.name().unwrap().to_string(),
-                })
-            }
-
-            Ok(data)
-        }
-        Err(e) => {
-            let message = if !path.exists() {
-                format!("Invalid bpf.o path {path:?}")
-            } else {
-                format!("Failed to read BPF from {:?}: {e}", path)
-            };
-            Err(MessageError { message })
+    let btf = libbpf_rs::btf::Btf::from_path(path)
+        .context(format!("Failed to read BPF from {:?}", path))?;
+    let mut data = InspectionData {
+        filename: String::from(path.file_name().unwrap().to_string_lossy()),
+        devices: Vec::new(),
+        programs: Vec::new(),
+        maps: Vec::new(),
+    };
+    if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
+        for modalias in metadata.modaliases() {
+            data.devices.push(InspectionDevice {
+                bus: format!("0x{:04X}", modalias.bus),
+                group: format!("0x{:04X}", modalias.group),
+                vid: format!("0x{:04X}", modalias.vid),
+                pid: format!("0x{:04X}", modalias.pid),
+            });
         }
     }
+    let mut obj_builder = libbpf_rs::ObjectBuilder::default();
+    let object = obj_builder.open_file(path.clone()).unwrap();
+
+    for prog in object.progs_iter() {
+        data.programs.push(InspectionProgram {
+            name: prog.name().unwrap().to_string(),
+            section: prog.section().to_string(),
+        })
+    }
+
+    for map in object.maps_iter() {
+        data.maps.push(InspectionMap {
+            name: map.name().unwrap().to_string(),
+        })
+    }
+
+    Ok(data)
 }
 
 fn cmd_inspect(paths: &[std::path::PathBuf]) -> Result<()> {
     let mut objects: Vec<InspectionData> = Vec::new();
     for path in paths {
-        match inspect(path) {
-            Ok(idata) => objects.push(idata),
-            Err(e) => return Err(e),
-        }
+        let idata = inspect(path)?;
+        objects.push(idata);
     }
 
-    match serde_json::to_string_pretty(&objects) {
-        Ok(json) => {
-            println!("{}", json);
-            Ok(())
-        }
-        Err(e) => Err(MessageError {
-            message: format!("Failed to parse json: {}", e),
-        }),
-    }
+    let json = serde_json::to_string_pretty(&objects).context("Failed to parse json")?;
+    println!("{}", json);
+    Ok(())
 }
 
 fn write_udev_rule(
@@ -424,16 +384,12 @@ fn cmd_install(
     }
 
     if !path.to_str().unwrap().ends_with(".bpf.o") {
-        return Err(MessageError {
-            message: format!("Expected a bpf.o file as argument, not {path:?}"),
-        });
+        bail!("Expected a bpf.o file as argument, not {path:?}");
     }
 
     let idata = inspect(path)?;
     if idata.devices.is_empty() {
-        return Err(MessageError {
-            message: format!("{path:?} has no HID_DEVICE entries and must be manually attached"),
-        });
+        bail!("{path:?} has no HID_DEVICE entries and must be manually attached");
     }
 
     // udevdir is hardcoded for now, very few use-cases for the rule to be elsewhere
@@ -448,11 +404,7 @@ fn cmd_install(
     let exe = bindir.join("udev-hid-bpf");
     if !exe.exists() {
         if !install_exe {
-            return Err(MessageError {
-                message: format!(
-                    "{exe:?} does not exist. Install this project first or use --install-exe"
-                ),
-            });
+            bail!("{exe:?} does not exist. Install this project first or use --install-exe");
         }
 
         println!("Installing myself as {exe:?}");
@@ -460,9 +412,7 @@ fn cmd_install(
             let myself = std::env::current_exe().unwrap();
             std::fs::create_dir_all(exe.parent().unwrap())
                 .and_then(|_| std::fs::copy(myself, &exe))
-                .map_err(|e| MessageError {
-                    message: format!("Failed to install myself as {exe:?}: {e}"),
-                })?;
+                .context("Failed to install myself as {exe:?}: {e}")?;
         }
     }
 
@@ -476,11 +426,10 @@ fn cmd_install(
 
     if !force {
         for t in [&target, &udevtarget] {
-            if t.exists() {
-                return Err(MessageError {
-                    message: format!("File {t:?} exists, remove first or use --force to overwrite"),
-                });
-            }
+            ensure!(
+                !t.exists(),
+                format!("File {t:?} exists, remove first or use --force to overwrite")
+            );
         }
     }
 
@@ -488,24 +437,15 @@ fn cmd_install(
     if !dry_run {
         std::fs::create_dir_all(target.parent().unwrap())
             .and_then(|_| std::fs::copy(path, &target))
-            .map_err(|e| MessageError {
-                message: format!("Failed to copy to {:?}: {}", target, e.kind()),
-            })?;
+            .context(format!("Failed to copy to {:?}", target))?;
     }
 
     println!("Installing udev rule as {:?}", udevtarget);
     if !dry_run {
         std::fs::create_dir_all(udevdir)?;
-        match std::fs::File::create(&udevtarget) {
-            Ok(mut rulefile) => {
-                write_udev_rule(&mut rulefile, &bindir, &target, &idata.devices)?;
-            }
-            Err(e) => {
-                return Err(MessageError {
-                    message: format!("Failed to install udev rule {:?}: {}", udevtarget, e.kind()),
-                })
-            }
-        };
+        let mut rulefile = std::fs::File::create(&udevtarget)
+            .context(format!("Failed to install udev rule {:?}", udevtarget))?;
+        write_udev_rule(&mut rulefile, &bindir, &target, &idata.devices)?;
     } else {
         println!("Printing udev rule instead of installing it:");
         println!("---");
@@ -518,7 +458,7 @@ fn cmd_install(
             .args(["control", "--reload"])
             .status()
         {
-            eprintln!("WARNING: Failed to run `udevadm control --reload`: {e}");
+            eprintln!("WARNING: Failed to run `udevadm control --reload`: {e:#}");
         }
     }
 
@@ -575,7 +515,7 @@ fn main() -> ExitCode {
     match rc {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("Error: {}", e.message);
+            eprintln!("Error: {e:#}");
             ExitCode::FAILURE
         }
     }
