@@ -41,19 +41,12 @@ impl HidUdev {
     }
 
     pub fn modalias(&self) -> Modalias {
-        let modalias = self.udev_device.property_value("MODALIAS");
-
-        let modalias = match modalias {
-            Some(data) => data,
-            _ => std::ffi::OsStr::new("hid:empty"), //panic!("modalias is empty"),
-        };
-
-        let modalias = match modalias.to_str() {
-            Some(data) => data,
-            _ => panic!("modalias problem"),
-        };
-
-        Modalias::from_str(modalias).unwrap()
+        let data = self
+            .udev_device
+            .property_value("MODALIAS")
+            .unwrap_or(std::ffi::OsStr::new("hid:empty"));
+        let data = data.to_str().expect("modalias problem");
+        Modalias::from_str(data).unwrap()
     }
 
     pub fn sysname(&self) -> String {
