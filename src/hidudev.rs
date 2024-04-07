@@ -94,7 +94,7 @@ impl HidUdev {
                 if p.exists() {
                     Some(p)
                 } else {
-                    HidUdev::find_first_matching_file(bpf_dirs, v)
+                    Self::find_first_matching_file(bpf_dirs, v)
                 }
             })
             .collect();
@@ -121,7 +121,7 @@ impl HidUdev {
             .map(|p| String::from(p.to_string_lossy()))
             .collect();
 
-        HidUdev::find_named_files(&paths, bpf_dirs)
+        Self::find_named_files(&paths, bpf_dirs)
     }
 
     pub fn load_bpf_from_directories(
@@ -135,7 +135,7 @@ impl HidUdev {
         }
 
         let paths = match objfile {
-            Some(objfile) => HidUdev::find_named_files(&[objfile], bpf_dirs),
+            Some(objfile) => Self::find_named_files(&[objfile], bpf_dirs),
             None => {
                 if self
                     .udev_device
