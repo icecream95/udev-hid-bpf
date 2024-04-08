@@ -119,16 +119,18 @@ impl HidUdev {
             {
                 return Ok(());
             }
-            for property in self.hid_bpf_properties() {
-                if let Some(target_object) = HidUdev::find_file(bpf_dirs, &property) {
+            paths = self
+                .hid_bpf_properties()
+                .iter()
+                .flat_map(|p| HidUdev::find_file(bpf_dirs, p))
+                .inspect(|target_object| {
                     log::debug!(
                         "device added {}, filename: {}",
                         self.sysname(),
-                        target_object.display(),
-                    );
-                    paths.push(target_object);
-                }
-            }
+                        target_object.display()
+                    )
+                })
+                .collect();
         }
 
         if !paths.is_empty() {
