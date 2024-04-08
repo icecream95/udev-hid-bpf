@@ -1,6 +1,7 @@
 sources = [
     '10-FR-TEC-Raptor-Mach-2.bpf.c',
     '10-HP_Elite_Presenter.bpf.c',
+    '10-Huion-Kamvas-Pro-19.bpf.c',
     '10-Kaliber-MMOmentum.bpf.c',
     '10-Wacom-ArtPen.bpf.c',
     '10-XBox_Elite_2.bpf.c',
