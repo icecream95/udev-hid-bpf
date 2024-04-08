@@ -357,3 +357,46 @@ impl From<Modalias> for String {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modalias::{Bus, Group};
+    use std::str::FromStr;
+
+    #[test]
+    fn test_modalias() {
+        let modalias = "b0003g0001v000004D9p0000A09F";
+        let m = Modalias::from_str(modalias);
+        assert!(m.is_ok());
+        let m = m.unwrap();
+        assert!(m.bus == Bus::USB);
+        assert!(m.group == Group::Generic);
+        assert!(m.vid == 0x04d9);
+        assert!(m.pid == 0xa09f);
+
+        // parsing doesn't care about uppercase hex
+        let m = Modalias::from_str(modalias.to_lowercase().as_str());
+        assert!(m.is_ok());
+        let m = m.unwrap();
+        assert!(m.bus == Bus::USB);
+        assert!(m.group == Group::Generic);
+        assert!(m.vid == 0x04d9);
+        assert!(m.pid == 0xa09f);
+
+        // 4-digit vid
+        let modalias = "b0003g0001v04D9p0000A09F";
+        let m = Modalias::from_str(modalias.to_lowercase().as_str());
+        assert!(m.is_err());
+
+        // 4-digit pid
+        let modalias = "b0003g0001v000004D9pA09F";
+        let m = Modalias::from_str(modalias.to_lowercase().as_str());
+        assert!(m.is_err());
+
+        // invalid char
+        let modalias = "b0003g0001v0000g4D9pA09F";
+        let m = Modalias::from_str(modalias.to_lowercase().as_str());
+        assert!(m.is_err());
+    }
+}
