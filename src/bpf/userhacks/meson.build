@@ -5,7 +5,7 @@ sources = [
 ]
 
 foreach bpf : sources
-    filter_matches = not have_filters
+    filter_matches = false
     if have_filters
         foreach filter : filters
             if bpf.contains(filter)
@@ -23,7 +23,7 @@ foreach bpf : sources
         depend_files: bpf,
         output: ['@BASENAME@.o'],
         command: ['true'],
-        install: filter_matches,
+        install: have_filters and filter_matches,
         install_dir: bpfdir,
     )
 endforeach

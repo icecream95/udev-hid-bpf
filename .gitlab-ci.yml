@@ -237,9 +237,10 @@ meson features build:
       fi
     - |
       if [ "$FILTER" = "testing,stable" ]; then
-        test -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
         test -e $PREFIX/lib/firmware/hid/bpf/XBox_Elite_2.bpf.o
       fi
+    # no userhacks files should be installed
+    - test ! -e $PREFIX/lib/firmware/hid/bpf/trace_hid_events.bpf.o
   variables:
     MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev
 
