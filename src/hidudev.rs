@@ -123,15 +123,15 @@ impl HidUdev {
     pub fn load_bpf_from_directories(
         &self,
         bpf_dirs: &[PathBuf],
-        prog: Option<String>,
+        objfile: Option<String>,
     ) -> std::io::Result<()> {
         if !bpf_dirs.iter().any(|d| d.exists()) {
             log::warn!("bpf directories {:?} don't exist, aborting", bpf_dirs);
             return Ok(());
         }
 
-        let paths = match prog {
-            Some(prog) => self.find_named_file(&prog, bpf_dirs),
+        let paths = match objfile {
+            Some(objfile) => self.find_named_file(&objfile, bpf_dirs),
             None => {
                 if self
                     .udev_device
