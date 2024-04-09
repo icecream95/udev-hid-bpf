@@ -51,7 +51,7 @@ enum Commands {
         /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
         devpath: std::path::PathBuf,
         /// The BPF program to load
-        prog: Option<String>,
+        objfile: Option<String>,
         /// Folder to look at for bpf objects
         #[arg(short, long)]
         bpfdir: Option<std::path::PathBuf>,
@@ -108,7 +108,7 @@ fn default_bpf_dirs() -> Vec<std::path::PathBuf> {
 
 fn cmd_add(
     syspath: &std::path::PathBuf,
-    prog: Option<String>,
+    objfile: Option<String>,
     bpfdir: Option<std::path::PathBuf>,
 ) -> Result<()> {
     ensure!(syspath.exists(), "Invalid syspath {syspath:?}");
@@ -119,7 +119,7 @@ fn cmd_add(
         None => default_bpf_dirs(),
     };
 
-    Ok(dev.load_bpf_from_directories(&target_bpf_dirs, prog)?)
+    Ok(dev.load_bpf_from_directories(&target_bpf_dirs, objfile)?)
 }
 
 fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String> {
@@ -496,9 +496,9 @@ fn main() -> ExitCode {
     let rc = match cli.command {
         Commands::Add {
             devpath,
-            prog,
+            objfile,
             bpfdir,
-        } => cmd_add(&devpath, prog, bpfdir),
+        } => cmd_add(&devpath, objfile, bpfdir),
         Commands::Remove { devpath } => cmd_remove(&devpath),
         Commands::ListBpfPrograms { bpfdir } => cmd_list_bpf_programs(bpfdir),
         Commands::ListDevices {} => cmd_list_devices(),
