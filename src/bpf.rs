@@ -202,9 +202,9 @@ impl<'a> HidBPF<'a> {
                 );
 
                 if map.pin(&path).is_ok() {
-                    attached = true;
                     log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
                 }
+                // FIXME: if attaching the map fails we need to remove the object
             }
         }
 
