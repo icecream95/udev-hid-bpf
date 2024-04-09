@@ -90,6 +90,7 @@ impl HidUdev {
         prog: Option<String>,
     ) -> std::io::Result<()> {
         if !bpf_dirs.iter().any(|d| d.exists()) {
+            log::warn!("bpf directories {:?} don't exist, aborting", bpf_dirs);
             return Ok(());
         }
 
