@@ -20,6 +20,7 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 			      enum hid_report_type type,
 			      enum hid_class_request reqtype) __ksym;
 
+#define HID_MAX_DESCRIPTOR_SIZE	4096
 #define HID_IGNORE_EVENT	-1
 
 /* extracted from <linux/input.h> */
