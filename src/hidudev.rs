@@ -174,7 +174,12 @@ impl HidUdev {
         }
 
         let paths = match objfile {
-            Some(objfile) => Self::find_named_objfiles(&[objfile], bpf_dirs),
+            Some(objfile) => {
+                Self::find_named_objfiles(&[objfile.clone()], bpf_dirs).or_else(|| {
+                    log::warn!("Unable to find BPF program: {objfile}");
+                    None
+                })
+            }
             None => {
                 if self
                     .udev_device
