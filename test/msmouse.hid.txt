@@ -1,0 +1,103 @@
+# Microsoft Microsoft Optical Mouse with Tilt Wheel
+# 0x05, 0x0c,                    // Usage Page (Consumer Devices)       0
+# 0x09, 0x01,                    // Usage (Consumer Control)            2
+# 0xa1, 0x01,                    // Collection (Application)            4
+# 0x05, 0x01,                    //  Usage Page (Generic Desktop)       6
+# 0x09, 0x02,                    //  Usage (Mouse)                      8
+# 0xa1, 0x02,                    //  Collection (Logical)               10
+# 0x85, 0x13,                    //   Report ID (19)                    12
+# 0x05, 0x0c,                    //   Usage Page (Consumer Devices)     14
+# 0x0a, 0x38, 0x02,              //   Usage (AC Pan)                    16
+# 0x95, 0x01,                    //   Report Count (1)                  19
+# 0x75, 0x08,                    //   Report Size (8)                   21
+# 0x15, 0x81,                    //   Logical Minimum (-127)            23
+# 0x25, 0x7f,                    //   Logical Maximum (127)             25
+# 0x81, 0x06,                    //   Input (Data,Var,Rel)              27
+# 0x85, 0x17,                    //   Report ID (23)                    29
+# 0x06, 0x00, 0xff,              //   Usage Page (Vendor Defined Page 1) 31
+# 0x0a, 0x06, 0xff,              //   Usage (Vendor Usage 0xff06)       34
+# 0x15, 0x00,                    //   Logical Minimum (0)               37
+# 0x25, 0x01,                    //   Logical Maximum (1)               39
+# 0x35, 0x01,                    //   Physical Minimum (1)              41
+# 0x45, 0x04,                    //   Physical Maximum (4)              43
+# 0x95, 0x01,                    //   Report Count (1)                  45
+# 0x75, 0x02,                    //   Report Size (2)                   47
+# 0xb1, 0x02,                    //   Feature (Data,Var,Abs)            49
+# 0x35, 0x00,                    //   Physical Minimum (0)              51
+# 0x45, 0x00,                    //   Physical Maximum (0)              53
+# 0xb1, 0x01,                    //   Feature (Cnst,Arr,Abs)            55
+# 0x0a, 0x04, 0xff,              //   Usage (Vendor Usage 0xff04)       57
+# 0x75, 0x01,                    //   Report Size (1)                   60
+# 0xb1, 0x02,                    //   Feature (Data,Var,Abs)            62
+# 0x75, 0x03,                    //   Report Size (3)                   64
+# 0xb1, 0x01,                    //   Feature (Cnst,Arr,Abs)            66
+# 0x85, 0x18,                    //   Report ID (24)                    68
+# 0x0a, 0x08, 0xff,              //   Usage (Vendor Usage 0xff08)       70
+# 0x75, 0x01,                    //   Report Size (1)                   73
+# 0xb1, 0x02,                    //   Feature (Data,Var,Abs)            75
+# 0x75, 0x07,                    //   Report Size (7)                   77
+# 0xb1, 0x01,                    //   Feature (Cnst,Arr,Abs)            79
+# 0xc0,                          //  End Collection                     81
+# 0xc0,                          // End Collection                      82
+# 0x05, 0x01,                    // Usage Page (Generic Desktop)        83
+# 0x09, 0x02,                    // Usage (Mouse)                       85
+# 0xa1, 0x01,                    // Collection (Application)            87
+# 0x05, 0x01,                    //  Usage Page (Generic Desktop)       89
+# 0x09, 0x02,                    //  Usage (Mouse)                      91
+# 0xa1, 0x02,                    //  Collection (Logical)               93
+# 0x85, 0x11,                    //   Report ID (17)                    95
+# 0x09, 0x01,                    //   Usage (Pointer)                   97
+# 0xa1, 0x00,                    //   Collection (Physical)             99
+# 0x05, 0x09,                    //    Usage Page (Button)              101
+# 0x19, 0x01,                    //    Usage Minimum (1)                103
+# 0x29, 0x03,                    //    Usage Maximum (3)                105
+# 0x95, 0x03,                    //    Report Count (3)                 107
+# 0x75, 0x01,                    //    Report Size (1)                  109
+# 0x25, 0x01,                    //    Logical Maximum (1)              111
+# 0x81, 0x02,                    //    Input (Data,Var,Abs)             113
+# 0x95, 0x01,                    //    Report Count (1)                 115
+# 0x81, 0x01,                    //    Input (Cnst,Arr,Abs)             117
+# 0x09, 0x05,                    //    Usage (Vendor Usage 0x05)        119
+# 0x81, 0x02,                    //    Input (Data,Var,Abs)             121
+# 0x95, 0x03,                    //    Report Count (3)                 123
+# 0x81, 0x01,                    //    Input (Cnst,Arr,Abs)             125
+# 0x05, 0x01,                    //    Usage Page (Generic Desktop)     127
+# 0x09, 0x30,                    //    Usage (X)                        129
+# 0x09, 0x31,                    //    Usage (Y)                        131
+# 0x95, 0x02,                    //    Report Count (2)                 133
+# 0x75, 0x08,                    //    Report Size (8)                  135
+# 0x15, 0x81,                    //    Logical Minimum (-127)           137
+# 0x25, 0x7f,                    //    Logical Maximum (127)            139
+# 0x81, 0x06,                    //    Input (Data,Var,Rel)             141
+# 0xa1, 0x02,                    //    Collection (Logical)             143
+# 0x85, 0x12,                    //     Report ID (18)                  145
+# 0x09, 0x48,                    //     Usage (Resolution Multiplier)   147
+# 0x95, 0x01,                    //     Report Count (1)                149
+# 0x75, 0x02,                    //     Report Size (2)                 151
+# 0x15, 0x00,                    //     Logical Minimum (0)             153
+# 0x25, 0x01,                    //     Logical Maximum (1)             155
+# 0x35, 0x01,                    //     Physical Minimum (1)            157
+# 0x45, 0x04,                    //     Physical Maximum (4)            159
+# 0xb1, 0x02,                    //     Feature (Data,Var,Abs)          161
+# 0x35, 0x00,                    //     Physical Minimum (0)            163
+# 0x45, 0x00,                    //     Physical Maximum (0)            165
+# 0x75, 0x06,                    //     Report Size (6)                 167
+# 0xb1, 0x01,                    //     Feature (Cnst,Arr,Abs)          169
+# 0x85, 0x11,                    //     Report ID (17)                  171
+# 0x09, 0x38,                    //     Usage (Wheel)                   173
+# 0x15, 0x81,                    //     Logical Minimum (-127)          175
+# 0x25, 0x7f,                    //     Logical Maximum (127)           177
+# 0x75, 0x08,                    //     Report Size (8)                 179
+# 0x81, 0x06,                    //     Input (Data,Var,Rel)            181
+# 0xc0,                          //    End Collection                   183
+# 0x05, 0x0c,                    //    Usage Page (Consumer Devices)    184
+# 0x75, 0x08,                    //    Report Size (8)                  186
+# 0x0a, 0x38, 0x02,              //    Usage (AC Pan)                   188
+# 0x81, 0x06,                    //    Input (Data,Var,Rel)             191
+# 0xc0,                          //   End Collection                    193
+# 0xc0,                          //  End Collection                     194
+# 0xc0,                          // End Collection                      195
+#
+R: 196 05 0c 09 01 a1 01 05 01 09 02 a1 02 85 13 05 0c 0a 38 02 95 01 75 08 15 81 25 7f 81 06 85 17 06 00 ff 0a 06 ff 15 00 25 01 35 01 45 04 95 01 75 02 b1 02 35 00 45 00 b1 01 0a 04 ff 75 01 b1 02 75 03 b1 01 85 18 0a 08 ff 75 01 b1 02 75 07 b1 01 c0 c0 05 01 09 02 a1 01 05 01 09 02 a1 02 85 11 09 01 a1 00 05 09 19 01 29 03 95 03 75 01 25 01 81 02 95 01 81 01 09 05 81 02 95 03 81 01 05 01 09 30 09 31 95 02 75 08 15 81 25 7f 81 06 a1 02 85 12 09 48 95 01 75 02 15 00 25 01 35 01 45 04 b1 02 35 00 45 00 75 06 b1 01 85 11 09 38 15 81 25 7f 75 08 81 06 c0 05 0c 75 08 0a 38 02 81 06 c0 c0 c0
+N: Microsoft Microsoft Optical Mouse with Tilt Wheel
+I: 3 045e 00d1
