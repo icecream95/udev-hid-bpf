@@ -1,6 +1,6 @@
 # vim: set expandtab shiftwidth=2 tabstop=8 textwidth=0 filetype=yaml:
 
-.templates_sha: &template_sha 3a2bcd49a2a6a34a5fdd35a7fc8c8f9246c0bffc
+.templates_sha: &template_sha 9568e38927f9e9c48d4f586f84a071c3a4bdcd39
 
 include:
   - project: 'freedesktop/ci-templates'
@@ -25,10 +25,35 @@ variables:
   FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
   FEDORA_VERSION: 39
   FEDORA_RELEASE_VERSION: 37
-  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel meson tree python3-pip jq'
-  FEDORA_TAG:  '2024-03-25.0'
+  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel meson tree jq python3-pip python3-click python3-rich python3-pyudev libevdev systemd-udev'
+  FEDORA_TAG:  '2024-04-10.0'
+  FDO_DISTRIBUTION_EXEC: 'pip3 install --break-system-packages git+https://gitlab.freedesktop.org/libevdev/hid-tools/'
   RUST_BACKTRACE: '1'
   PREFIX: /_inst
+  # Below is for our building of the kernel used in the b2c jobs. A separate tag
+  # so we can rebuild that container kernel independently of the rest of the CI pipeline.
+  KERNEL_BUILD_CONTAINER_TAG: '2024-04-10.3'
+  KERNEL_VERSION: '6.6'
+  KERNEL_BUILD_PACKAGES: >
+    dwarves
+    file
+    git-core
+    gcc
+    gcc-c++
+    diffutils
+    make
+    flex
+    bison
+    sparse
+    bc
+    xz
+    findutils
+    hostname
+    elfutils-libelf-devel
+    openssl-devel
+    perl-Term-ANSIColor
+    perl-Encode
+    jq
 
 .policy:
   retry:
@@ -112,13 +137,48 @@ fedora-release@container-prep:
     - fedora@container-prep
   variables:
     FDO_DISTRIBUTION_VERSION: $FEDORA_RELEASE_VERSION
+    FDO_DISTRIBUTION_EXEC: ''  # we don't need hid-tools here
 
+
+.kernel_build_variables:
+  variables:
+    FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
+    FDO_DISTRIBUTION_TAG: $KERNEL_BUILD_CONTAINER_TAG
+    FDO_DISTRIBUTION_EXEC: ''  # we don't need hid-tools here
+    FDO_REPO_SUFFIX: build-kernel
+
+.b2c_kernel_url:
+  before_script: &b2c-kernel-url
+    - export KERNEL_URL=${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/kernel-$(arch)/v$KERNEL_VERSION/bzImage
+
+# A container just for rebuilding the kernel
+# This one is rebuilt too whenever we bump the KERNEL_BUILD_CONTAINER_TAG
+kernel build container prep:
+  extends:
+    - .fdo.container-build@fedora
+    - .kernel_build_variables
+  stage: prep
+  variables:
+    GIT_STRATEGY: none
+    FDO_DISTRIBUTION_PACKAGES: $KERNEL_BUILD_PACKAGES
 
 #################################################################
 #                                                               #
 #                       build stage                             #
 #                                                               #
 #################################################################
+
+# Builds a kernel and upoads it to the project's packages
+rebuild kernel:
+  extends:
+    - .fdo.suffixed-image@fedora
+    - .kernel_build_variables
+  stage: build
+  needs:
+    - kernel build container prep
+  script:
+    - *b2c-kernel-url
+    - .gitlab-ci/kernel-build.sh
 
 .cargo-build@template:
   extends:
@@ -271,6 +331,39 @@ cli install:
     - test -e $INSTPREFIX/bin/udev-hid-bpf
     - test -e /etc/udev-hid-bpf/10-HP__Elite-Presenter.bpf.o
     - cat /etc/udev/rules.d/99-hid-bpf-10-HP__Elite-Presenter.rules
+
+b2c uhid-test:
+  extends:
+    - .fedora
+    - .policy
+    - .fdo.b2c-image@fedora
+  tags:
+    - kvm
+  stage: test
+  needs:
+    - rebuild kernel
+  parallel:
+    matrix:
+      - TEST: udev
+      - TEST: path
+  variables:
+    MESON_BUILDDIR: build_dir
+  script:
+    - *b2c-kernel-url
+    - export B2C_KERNEL=$KERNEL_URL
+    - export B2C_COMMAND="test/uhid-test.sh --verbose test-$TEST-load"
+    - /app/boot2container
+  artifacts:
+    name: "meson-logs-$CI_JOB_NAME"
+    when: always
+    expire_in: 1 week
+    paths:
+      - $MESON_BUILDDIR/meson-logs
+    reports:
+      junit: $MESON_BUILDDIR/*junit*.xml
+
+
+
 
 #################################################################
 #                                                               #
