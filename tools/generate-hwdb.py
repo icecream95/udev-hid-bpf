@@ -42,7 +42,15 @@ if __name__ == "__main__":
     print("# This file is generated and will be overwritten on updates. Do not edit")
     print("")
     for d in devices:
-        print(f"hid-bpf:hid:b{d.bustype:04X}g{d.group:04X}v{d.vid:08X}p{d.pid:08X}")
+
+        def maybe_glob(v):
+            return f"{v:04X}" if v != 0 else "*"
+
+        bustype = maybe_glob(d.bustype)
+        group = maybe_glob(d.group)
+        vid = maybe_glob(d.vid)
+        pid = maybe_glob(d.pid)
+        print(f"hid-bpf:hid:b{bustype}g{group}v0000{vid}p0000{pid}")
         print(f"  {ns.prefix}{next(counter):03}={d.filename}")
         print(f"  .HID_BPF=1")  # noqa: F541
         print("")
