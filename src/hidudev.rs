@@ -199,11 +199,10 @@ impl HidUdev {
             for group in sorted {
                 for path in group {
                     match hid_bpf_loader.load_programs(&path, self) {
-                        Ok(true) => {
+                        Ok(_) => {
                             log::debug!("Successfully loaded {path:?}");
                             break;
                         }
-                        Ok(false) => log::warn!("Failed to load {path:?}"),
                         Err(e) => log::warn!("Failed to load {:?}: {:?}", path, e),
                     };
                 }

@@ -4,6 +4,7 @@ include!(concat!(env!("OUT_DIR"), "/hid_bpf_bindings.rs"));
 include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 
 use crate::hidudev;
+use anyhow::{bail, Result};
 use libbpf_rs::skel::{OpenSkel, SkelBuilder};
 use std::convert::TryInto;
 use std::fs;
@@ -90,11 +91,7 @@ impl<'a> HidBPF<'a> {
         Ok(Self { inner })
     }
 
-    pub fn load_programs(
-        &self,
-        path: &Path,
-        device: &hidudev::HidUdev,
-    ) -> Result<bool, libbpf_rs::Error> {
+    pub fn load_programs(&self, path: &Path, device: &hidudev::HidUdev) -> Result<()> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
@@ -114,7 +111,7 @@ impl<'a> HidBPF<'a> {
             let args = run_syscall_prog(probe, args)?;
 
             if args.retval != 0 {
-                return Ok(false);
+                bail!("probe() returned {:?}", args.retval);
             }
         };
 
@@ -213,6 +210,10 @@ impl<'a> HidBPF<'a> {
             }
         }
 
-        Ok(attached)
+        if !attached {
+            bail!("Failed to attach prog");
+        } else {
+            Ok(())
+        }
     }
 }
