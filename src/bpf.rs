@@ -44,7 +44,7 @@ fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_r
 
     match unsafe { libbpf_sys::bpf_prog_test_run_opts(fd, run_opts_ptr) } {
         0 => Ok(data),
-        e => Err(libbpf_rs::Error::from_raw_os_error(e)),
+        e => Err(libbpf_rs::Error::from_raw_os_error(-e)),
     }
 }
 
@@ -58,7 +58,7 @@ fn pin_hid_bpf_prog(link: i32, path: String) -> Result<(), libbpf_rs::Error> {
 
         match libbpf_sys::bpf_obj_pin(link, c_str.as_ptr()) {
             0 => Ok(()),
-            e => Err(libbpf_rs::Error::from_raw_os_error(e)),
+            e => Err(libbpf_rs::Error::from_raw_os_error(-e)),
         }
     }
 }
@@ -152,7 +152,7 @@ impl<'a> HidBPF<'a> {
                     "could not attach {} to device id {}, error {}",
                     &tracing_prog.name(),
                     hid_id,
-                    libbpf_rs::Error::from_raw_os_error(args.retval).to_string(),
+                    libbpf_rs::Error::from_raw_os_error(-args.retval).to_string(),
                 );
                 continue;
             }
