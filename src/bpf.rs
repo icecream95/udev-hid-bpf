@@ -118,12 +118,10 @@ impl<'a> HidBPF<'a> {
         let inner = self.inner.as_ref().expect("open_and_load() never called!");
         let mut attached = false;
 
-        for prog in object.progs_iter() {
-            let tracing_prog = match prog.prog_type() {
-                libbpf_rs::ProgramType::Tracing => prog,
-                _ => continue,
-            };
-
+        for tracing_prog in object
+            .progs_iter()
+            .filter(|p| matches!(p.prog_type(), libbpf_rs::ProgramType::Tracing))
+        {
             let attach_args = AttachProgArgs {
                 prog_fd: tracing_prog.as_fd().as_raw_fd(),
                 hid: hid_id,
