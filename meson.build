@@ -108,8 +108,10 @@ udev_config = configuration_data()
 # that we can use in install_release.sh
 if get_option('placeholder-udev-rules-file')
     udev_config.set('BINDIR', '@@BINDIR@@')
+    udev_config.set('BPFDIR', '@@BPFDIR@@')
 else
     udev_config.set('BINDIR', bindir)
+    udev_config.set('BPFDIR', bpfdir)
 endif
 configure_file(input: '81-hid-bpf.rules.in',
                output: '@BASENAME@',

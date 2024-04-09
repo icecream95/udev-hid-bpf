@@ -53,7 +53,7 @@ if [ -z "$UDEVDIR" ]; then
   esac
 fi
 
-find ./ -name "*.rules" -exec sed -i "s|@@BINDIR@@|$PREFIX/bin|" {} \;
+find ./ -name "*.rules" -exec sed -i "s|@@BINDIR@@|$PREFIX/bin|;s|@@BPFDIR@@|$PREFIX/lib/firmware/hid/bpf|" {} \;
 
 echo "Using sudo to install files into $PREFIX. You may be asked for your password now"
 dryrun_sudo="$DRY_RUN sudo"
