@@ -15,10 +15,8 @@ Dependencies
 
 - ``udev`` and ``llvm``: Check the `.gitlab-ci.yml <https://gitlab.freedesktop.org/libevdev/udev-hid-bpf/-/blob/main/.gitlab-ci.yml>`_ for ``FEDORA_PACKAGES``.
 
-.. _installation:
-
-Installation
-------------
+Building all files
+------------------
 
 Clone the repo, ``cd`` into it, and build the loader *and* the various example HID-BPF programs
 using a standard `meson <https://mesonbuild.com/>`_ build process::
@@ -30,6 +28,11 @@ using a standard `meson <https://mesonbuild.com/>`_ build process::
 
 The above ``meson`` commands will build the tool and any BPF programs it finds in ``src/bpf/*.bpf.c``.
 Please see the `meson documentation <https://mesonbuild.com/>`_ for more details on invoking ``meson``.
+
+.. _installation:
+
+Install all files
+-----------------
 
 .. note:: The default meson invocation only installs the "testing" ``.bpf.o`` filse (see :ref:`here  <stable_testing_userhacks>`).
 
@@ -45,6 +48,24 @@ It will then install
 - the compiled BPF objects in ``/usr/local/lib/firmware/hid/bpf``.
 - a hwdb entry to tag matching devices in ``/etc/udev/hwdb.d/81-hid-bpf.hwdb``
 - a udev rule to trigger the tool in ``/etc/udev/rules.d/81-hid-bpf.rules``
+
+
+.. _install_specific:
+
+Install a specific ``bpf.o`` file only
+--------------------------------------
+
+In many cases a user only wants to install a single file for testing. The
+easiest approach is to use ``udev-hid-bpf`` to install it::
+
+  ./builddir/udev-hid-bpf install ./builddir/src/bpf/userhacks/my_awesome_hid_bpf_filter.bpf.o
+  # or to install udev-hid-bpf itself too
+  ./builddir/udev-hid-bpf install --install-exe ./builddir/src/bpf/userhacks/my_awesome_hid_bpf_filter.bpf.o
+
+This will install the ``.bpf.o`` file into ``/etc/udev-hid-bpf`` and also
+install a custom udev rule udev for this file. If ``--install-exe`` is given,
+``udev-hid-bpf`` will also install itself in the given prefix's bindir (``/usr/local/bin`` by default).
+
 
 Running the BPF program
 -----------------------
