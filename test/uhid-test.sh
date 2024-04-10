@@ -213,9 +213,16 @@ test_cmd_add_via_udev() {
     sudo udevadm trigger --action=add "$syspath"
     sudo udevadm test "$syspath"
 
-    sleep 0.2
+    maxwait=20
+    while [ $maxwait -gt 0 ]; do
+        if sudo test -e  "$fwpath_device"; then
+            break
+        fi
+        sleep 0.2
+        maxwait=$((maxwait - 1))
+    done
 
-    sudo tree "$fwpath" || true
+    sudo tree "$fwpath_device"
 
     if [ -n "$wait_after_load" ]; then
         echo "Ctrl+C to continue"
