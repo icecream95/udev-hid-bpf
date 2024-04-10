@@ -34,13 +34,12 @@ int BPF_PROG(hid_fix_rdesc, struct hid_bpf_ctx *hctx)
 	if (data[3] != 0x06)
 		return 0;
 
-	for (int idx = 0; idx < sizeof(offsets)/sizeof(offsets[0]); idx++) {
+	for (int idx = 0; idx < ARRAY_SIZE(offsets); idx++) {
 		u8 offset = offsets[idx];
 
 		/* if Input (Cnst,Var,Abs) , make it Input (Data,Var,Abs) */
-		if (data[offset] == 0x81 && data[offset + 1] == 0x03) {
-			data[offset +1] = 0x02;
-		}
+		if (data[offset] == 0x81 && data[offset + 1] == 0x03)
+			data[offset + 1] = 0x02;
 	}
 
 	return 0;

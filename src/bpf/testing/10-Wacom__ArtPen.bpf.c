@@ -18,7 +18,7 @@ HID_BPF_CONFIG(
 /*
  * This filter is here for the Art Pen stylus only:
  * - when used on some Wacom devices (see the list of attached PIDs), this pen
- *   reports pressure every other event.
+ *   reports pressure every other events.
  * - to solve that, given that we know that the next event will be the same as
  *   the current one, we can emulate a smoother pressure reporting by reporting
  *   the mean of the previous value and the current one.
@@ -86,7 +86,7 @@ static bool odd;
 
 static __u16 prev_pressure;
 
-static inline void* get_bits(__u8 *data, unsigned int byte_offset)
+static inline void *get_bits(__u8 *data, unsigned int byte_offset)
 {
 	return data + byte_offset;
 }
@@ -157,7 +157,7 @@ int probe(struct hid_bpf_probe_args *ctx)
 	ctx->retval = -EINVAL;
 
 	/* Match the given device with the list of known devices */
-	for (i = 0; i < sizeof(devices) / sizeof(devices[0]); i++) {
+	for (i = 0; i < ARRAY_SIZE(devices); i++) {
 		const struct wacom_params *device = &devices[i];
 
 		if (device->pid == pid && device->rdesc_len == ctx->rdesc_size) {

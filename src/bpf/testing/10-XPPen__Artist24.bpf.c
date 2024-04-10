@@ -180,7 +180,7 @@ int BPF_PROG(xppen_24_fix_eraser, struct hid_bpf_ctx *hctx)
 	 *
 	 * And it doesn't matter because when we are in such cases, this
 	 * means we are detecting a false release.
-	*/
+	 */
 	if ((current_state & IN_RANGE) == 0) {
 		if (prev_tip)
 			return HID_IGNORE_EVENT;

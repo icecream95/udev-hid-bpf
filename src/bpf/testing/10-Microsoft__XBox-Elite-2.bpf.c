@@ -107,7 +107,9 @@ int BPF_PROG(hid_fix_rdesc, struct hid_bpf_ctx *hctx)
 			     sizeof(rdesc_assign_selection)))
 		return 0;
 
-	__builtin_memcpy(data + OFFSET_ASSIGN_SELECTION, fixed_rdesc_assign_selection, sizeof(fixed_rdesc_assign_selection));
+	__builtin_memcpy(data + OFFSET_ASSIGN_SELECTION,
+			 fixed_rdesc_assign_selection,
+			 sizeof(fixed_rdesc_assign_selection));
 
 	return 0;
 }

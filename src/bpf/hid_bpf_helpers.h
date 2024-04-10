@@ -66,10 +66,13 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 #define HID_VID_ANY				0x0000
 #define HID_PID_ANY				0x0000
 
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 /* Helper macro to convert (foo, __LINE__)  into foo134 so we can use __LINE__ for
- * field/variable names */
-#define COMBINE1(X,Y) X ## Y
-#define COMBINE(X,Y) COMBINE1(X,Y)
+ * field/variable names
+ */
+#define COMBINE1(X, Y) X ## Y
+#define COMBINE(X, Y) COMBINE1(X, Y)
 
 /* Macro magic:
  * __uint(foo, 123) creates a int (*foo)[1234]
@@ -130,7 +133,8 @@ extern int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 	 7,  6,  5,  4,  3,  2, 1, 0
 
 /* Return the 16 argument passed in. See _NARGS above for usage. Note this is
- * 1-indexed.*/
+ * 1-indexed.
+ */
 #define _NTH_ARG( \
 	_1,  _2,  _3,  _4,  _5,  _6,  _7, _8, \
 	_9, _10, _11, _12, _13, _14, _15,\
