@@ -1,12 +1,12 @@
 sources = [
-    '10-FR-TEC-Raptor-Mach-2.bpf.c',
-    '10-HP_Elite_Presenter.bpf.c',
-    '10-Huion-Kamvas-Pro-19.bpf.c',
-    '10-Kaliber-MMOmentum.bpf.c',
-    '10-Wacom-ArtPen.bpf.c',
-    '10-XBox_Elite_2.bpf.c',
-    '10-xppen-Artist24.bpf.c',
-    '10-xppen-ArtistPro16Gen2.bpf.c',
+    '10-FR-TEC__Raptor-Mach-2.bpf.c',
+    '10-HP__Elite-Presenter.bpf.c',
+    '10-Huion__Kamvas-Pro-19.bpf.c',
+    '10-IOGEAR__Kaliber-MMOmentum.bpf.c',
+    '10-Microsoft__XBox-Elite-2.bpf.c',
+    '10-Wacom__ArtPen.bpf.c',
+    '10-XPPen__Artist24.bpf.c',
+    '10-XPPen__ArtistPro16Gen2.bpf.c',
 ]
 
 foreach bpf : sources
