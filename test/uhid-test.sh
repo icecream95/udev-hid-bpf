@@ -4,7 +4,7 @@
 #
 
 usage () {
-  echo "Usage: $(basename "$0") [-v|--verbose] [--wait-after-load] <test-udev-load|test-path-load>"
+  echo "Usage: $(basename "$0") [-v|--verbose] [--wait-after-load] <test-udev-load|test-path-load|test-udev-trigger>"
   echo ""
   echo "Use --wait-after-load to pause the script after loading the BPF programs"
 }
@@ -12,6 +12,7 @@ usage () {
 jobs=${FDO_CI_CONCURRENT:-0}
 
 test_udev_load=""
+test_udev_trigger=""
 test_path_load=""
 wait_after_load=""
 
@@ -33,6 +34,10 @@ while [[ $# -gt 0 ]]; do
             usage
             exit 1
             ;;
+        test-udev-trigger)
+            test_udev_trigger="1"
+            shift
+            ;;
         test-udev-load)
             test_udev_load="1"
             shift
@@ -52,7 +57,7 @@ if [ $# -gt 0 ]; then
     exit 1
 fi
 
-if [ -z "$test_path_load$test_udev_load" ]; then
+if [ -z "$test_path_load$test_udev_load$test_udev_trigger" ]; then
     usage
     exit 2
 fi
@@ -192,6 +197,8 @@ test_cmd_add_with_path() {
 }
 
 test_cmd_add_via_udev() {
+    mode="$1"
+
     fail_bpf="$MESON_BUILDDIR/src/bpf/userhacks/10-noop-probe-fail.bpf.o"
     succeed_bpf="$MESON_BUILDDIR/src/bpf/userhacks/10-noop-probe-succeed.bpf.o"
     exists_or_fail "$fail_bpf"
@@ -205,13 +212,25 @@ test_cmd_add_via_udev() {
     install --mode=644 "$fail_bpf" "$fwdir/02-three.bpf.o"
     install --mode=644 "$succeed_bpf" "$fwdir/01-three.bpf.o"
 
+    udev_rule="/etc/udev/rules.d/99-hid-bpf-REMOVEME.rules"
+
     $udev_hid_bpf inspect "$fwdir"/*{one,two,three}.bpf.o | $hwdb_tool | sudo tee $HWDB
     sudo systemd-hwdb update
-    sudo install --mode=644 "$instdir/etc/udev/rules.d/81-hid-bpf.rules" "/etc/udev/rules.d/99-hid-bpf-REMOVEME.rules"
+    sudo install --mode=644 "$instdir/etc/udev/rules.d/81-hid-bpf.rules" "$udev_rule"
+    # If we're testing the load (not the trigger), comment out the RUN line for action add
+    if [ "$mode" == "load" ]; then
+        sudo sed -i 's/.*udev-hid-bpf add.*/# \0/' "$udev_rule"
+        cat "$udev_rule"
+    fi
     sudo udevadm control --reload
 
     sudo udevadm trigger --action=add "$syspath"
     sudo udevadm test "$syspath"
+
+    # If we're testing the load (not the trigger), run it manually now
+    if [ "$mode" == "load" ]; then
+        sudo "$udev_hid_bpf" --verbose --debug add "$syspath"
+    fi
 
     maxwait=20
     while [ $maxwait -gt 0 ]; do
@@ -252,5 +271,9 @@ if [ -n "$test_path_load" ]; then
 fi
 
 if [ -n "$test_udev_load" ]; then
-    test_cmd_add_via_udev
+    test_cmd_add_via_udev "load"
+fi
+
+if [ -n "$test_udev_trigger" ]; then
+    test_cmd_add_via_udev "trigger"
 fi
