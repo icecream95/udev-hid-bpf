@@ -17,5 +17,6 @@ dependencies.
    getting-started
    tutorial
    filename-conventions
+   stable-testing-userhacks
    device-matches
    metadata

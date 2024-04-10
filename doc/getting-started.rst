@@ -31,6 +31,8 @@ using a standard `meson <https://mesonbuild.com/>`_ build process::
 The above ``meson`` commands will build the tool and any BPF programs it finds in ``src/bpf/*.bpf.c``.
 Please see the `meson documentation <https://mesonbuild.com/>`_ for more details on invoking ``meson``.
 
+.. note:: The default meson invocation only installs the "testing" ``.bpf.o`` filse (see :ref:`here  <stable_testing_userhacks>`).
+
 Then, we can install the binary with the following command::
 
    $ meson install -C builddir
