@@ -39,6 +39,11 @@ variables:
   # cancel run when a newer version is pushed to the branch
   interruptible: true
 
+.fedora:
+  variables:
+    FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
+    FDO_DISTRIBUTION_PACKAGES: $FEDORA_PACKAGES
+    FDO_DISTRIBUTION_TAG: $FEDORA_TAG
 
 #################################################################
 #                                                               #
@@ -94,14 +99,12 @@ python formatting:
 
 fedora@container-prep:
   extends:
+    - .fedora
     - .fdo.container-build@fedora
     - .policy
   stage: prep
   variables:
     GIT_STRATEGY: none
-    FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
-    FDO_DISTRIBUTION_PACKAGES: $FEDORA_PACKAGES
-    FDO_DISTRIBUTION_TAG: $FEDORA_TAG
 
 
 fedora-release@container-prep:
@@ -138,22 +141,18 @@ fedora-release@container-prep:
 
 .fedora-cargo@template:
   extends:
+    - .fedora
     - .fdo.distribution-image@fedora
     - .cargo-build@template
-  variables:
-    FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
-    FDO_DISTRIBUTION_TAG: $FEDORA_TAG
   dependencies:
     - fedora@container-prep
 
 
 .fedora-meson@template:
   extends:
+    - .fedora
     - .fdo.distribution-image@fedora
     - .meson-build@template
-  variables:
-    FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
-    FDO_DISTRIBUTION_TAG: $FEDORA_TAG
   dependencies:
     - fedora@container-prep
 
