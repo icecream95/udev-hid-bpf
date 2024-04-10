@@ -121,25 +121,6 @@ int BPF_PROG(xppen_16_fix_eraser, struct hid_bpf_ctx *hctx)
 	return 0;
 }
 
-SEC("syscall")
-int probe(struct hid_bpf_probe_args *ctx)
-{
-	/*
-	 * The device exports 3 interfaces.
-	 */
-	ctx->retval = ctx->rdesc_size != 113;
-	if (ctx->retval)
-		ctx->retval = -EINVAL;
-
-	/* ensure the kernel isn't fixed already */
-	if (ctx->rdesc[17] != 0x45) /* Eraser */
-		ctx->retval = -EINVAL;
-
-	return 0;
-}
-
-char _license[] SEC("license") = "GPL";
-
 // Static coordinate offset table based on positive only angles
 // Two tables are needed, because the logical coordinates are scaled
 //
@@ -238,3 +219,22 @@ int BPF_PROG(xppen_16_fix_angle_offset, struct hid_bpf_ctx *hctx)
 
 	return 0;
 }
+
+SEC("syscall")
+int probe(struct hid_bpf_probe_args *ctx)
+{
+	/*
+	 * The device exports 3 interfaces.
+	 */
+	ctx->retval = ctx->rdesc_size != 113;
+	if (ctx->retval)
+		ctx->retval = -EINVAL;
+
+	/* ensure the kernel isn't fixed already */
+	if (ctx->rdesc[17] != 0x45) /* Eraser */
+		ctx->retval = -EINVAL;
+
+	return 0;
+}
+
+char _license[] SEC("license") = "GPL";
