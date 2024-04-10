@@ -16,5 +16,6 @@ dependencies.
 
    getting-started
    tutorial
+   filename-conventions
    device-matches
    metadata
