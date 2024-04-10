@@ -237,6 +237,10 @@ test_cmd_add_via_udev() {
     bpf_is_not_loaded "02-three.bpf.o"
 }
 
+if [ -e "/sys/fs/bpf/" ]; then
+    sudo mount bpffs -t bpf /sys/fs/bpf/
+fi
+
 if [ -n "$test_path_load" ]; then
     test_cmd_add_with_path
 fi
