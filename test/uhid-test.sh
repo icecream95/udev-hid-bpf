@@ -192,7 +192,6 @@ test_cmd_add_with_path() {
 }
 
 test_cmd_add_via_udev() {
-    #userhacks_fwdir="$MESON_BUILDDIR/src/bpf/userhacks/"
     fail_bpf="$MESON_BUILDDIR/src/bpf/userhacks/10-noop-probe-fail.bpf.o"
     succeed_bpf="$MESON_BUILDDIR/src/bpf/userhacks/10-noop-probe-succeed.bpf.o"
     exists_or_fail "$fail_bpf"
