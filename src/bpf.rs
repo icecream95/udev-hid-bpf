@@ -6,6 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 use crate::hidudev;
 use anyhow::{bail, Context, Result};
 use libbpf_rs::skel::{OpenSkel, SkelBuilder};
+use libbpf_rs::{Object, Program};
 use std::convert::TryInto;
 use std::fs;
 use std::os::fd::{AsFd, AsRawFd};
@@ -115,6 +116,66 @@ impl<'a> HidBPF<'a> {
         Ok(Self { inner })
     }
 
+    fn load_prog(&self, prog: &Program, hid_id: u32, bpffs_path: &str) -> Result<()> {
+        let inner = self.inner.as_ref().expect("open_and_load() never called!");
+        let attach_args = AttachProgArgs {
+            prog_fd: prog.as_fd().as_raw_fd(),
+            hid: hid_id,
+            retval: -1,
+        };
+
+        let link = run_syscall_prog_attach(inner.progs().attach_prog(), attach_args)
+            .context(format!("failed the syscall for {}", prog.name()))?;
+
+        log::debug!(
+            target: "libbpf",
+            "successfully attached {} to device id {}",
+            &prog.name(),
+            hid_id,
+        );
+
+        let path = format!("{}/{}", bpffs_path, prog.name(),);
+
+        fs::create_dir_all(bpffs_path).unwrap_or_else(|why| {
+            log::warn!("! {:?}", why.kind());
+        });
+
+        pin_hid_bpf_prog(link, &path).context(format!(
+            "could not pin {} to device id {}",
+            &prog.name(),
+            hid_id
+        ))?;
+
+        log::debug!(target: "libbpf", "Successfully pinned prog at {}", path);
+
+        Ok(())
+    }
+
+    fn load_progs(
+        &self,
+        object: &Object,
+        object_name: &str,
+        hid_id: u32,
+        bpffs_path: &str,
+    ) -> Result<()> {
+        let attached = object
+            .progs_iter()
+            .filter(|p| matches!(p.prog_type(), libbpf_rs::ProgramType::Tracing))
+            .map(|p| self.load_prog(p, hid_id, bpffs_path))
+            .inspect(|r| {
+                if let Err(e) = r {
+                    log::warn!("failed to attach to device id {}: {:#}", hid_id, e,);
+                }
+            })
+            .any(|r| r.is_ok());
+
+        if attached {
+            Ok(())
+        } else {
+            bail!("Failed to attach object {object_name}");
+        }
+    }
+
     pub fn load_programs(&self, path: &Path, device: &hidudev::HidUdev) -> Result<()> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
@@ -135,81 +196,21 @@ impl<'a> HidBPF<'a> {
         };
 
         let bpffs_path = get_bpffs_path(&device.sysname(), object_name);
-        let inner = self.inner.as_ref().expect("open_and_load() never called!");
-        let mut attached = false;
+        self.load_progs(&object, object_name, hid_id, &bpffs_path)?;
 
-        for tracing_prog in object
-            .progs_iter()
-            .filter(|p| matches!(p.prog_type(), libbpf_rs::ProgramType::Tracing))
+        // compiler internal maps contain the name of the object and a dot
+        for map in object
+            .maps_iter_mut()
+            .filter(|map| !map.name().contains('.'))
         {
-            let attach_args = AttachProgArgs {
-                prog_fd: tracing_prog.as_fd().as_raw_fd(),
-                hid: hid_id,
-                retval: -1,
-            };
+            let path = format!("{}/{}", &bpffs_path, map.name(),);
 
-            let ret_syscall = run_syscall_prog_attach(inner.progs().attach_prog(), attach_args);
-
-            if let Err(e) = ret_syscall {
-                log::warn!(
-                    "could not call attach {} to device id {}, error {}",
-                    &tracing_prog.name(),
-                    hid_id,
-                    e.to_string(),
-                );
-                continue;
+            if map.pin(&path).is_ok() {
+                log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
             }
-
-            let link = ret_syscall.unwrap();
-
-            log::debug!(
-                target: "libbpf",
-                "successfully attached {} to device id {}",
-                &tracing_prog.name(),
-                hid_id,
-            );
-
-            let path = format!("{}/{}", &bpffs_path, tracing_prog.name(),);
-
-            fs::create_dir_all(&bpffs_path).unwrap_or_else(|why| {
-                log::warn!("! {:?}", why.kind());
-            });
-
-            match pin_hid_bpf_prog(link, &path) {
-                Err(e) => {
-                    log::warn!(
-                        "could not pin {} to device id {}, error {}",
-                        &tracing_prog.name(),
-                        hid_id,
-                        e.to_string(),
-                    );
-                }
-                Ok(_) => {
-                    attached = true;
-                    log::debug!(target: "libbpf", "Successfully pinned prog at {}", path);
-                }
-            }
+            // FIXME: if attaching the map fails we need to remove the object
         }
 
-        if attached {
-            /* compiler internal maps contain the name of the object and a dot */
-            for map in object
-                .maps_iter_mut()
-                .filter(|map| !map.name().contains('.'))
-            {
-                let path = format!("{}/{}", bpffs_path, map.name(),);
-
-                if map.pin(&path).is_ok() {
-                    log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
-                }
-                // FIXME: if attaching the map fails we need to remove the object
-            }
-        }
-
-        if !attached {
-            bail!("Failed to attach prog");
-        } else {
-            Ok(())
-        }
+        Ok(())
     }
 }
