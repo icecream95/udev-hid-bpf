@@ -142,31 +142,50 @@ fn cmd_remove(syspath: &std::path::PathBuf) -> Result<()> {
     Ok(bpf::remove_bpf_objects(&sysname)?)
 }
 
-fn find_bpfs(dir: &std::path::PathBuf) -> Result<()> {
-    ensure!(dir.exists(), "Directory {dir:?} does not exist");
-    for f in std::fs::read_dir(dir)?.flatten() {
-        let metadata = f.metadata().unwrap();
-        if metadata.is_dir() {
-            find_bpfs(&f.path())?;
-        } else if metadata.is_file() {
-            let p = f.path();
-            if p.to_str().unwrap().ends_with(".bpf.o") {
-                println!(" {}", p.to_str().unwrap());
-            }
+fn find_bpfs(dir: &std::path::PathBuf) -> Result<Vec<std::path::PathBuf>> {
+    ensure!(dir.exists(), "File or directory {dir:?} does not exist");
+
+    let metadata = dir.metadata().unwrap();
+    let result = if metadata.is_file() {
+        if dir.to_str().unwrap().ends_with(".bpf.o") {
+            return Ok(vec![dir.into()]);
         }
-    }
-    Ok(())
+        bail!("Not a bpf.o file");
+    } else {
+        std::fs::read_dir(dir)?
+            .flatten()
+            .flat_map(|f| find_bpfs(&f.path()))
+            .flatten()
+            .collect()
+    };
+
+    Ok(result)
 }
 
 fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> Result<()> {
     let dirs: Vec<std::path::PathBuf> = bpfdir.into_iter().chain(default_bpf_dirs()).collect();
-    for dir in dirs {
-        println!(
-            "Showing available BPF files in {}:",
-            dir.as_path().to_str().unwrap()
-        );
-        find_bpfs(&dir).ok();
-    }
+    let files = dirs
+        .iter()
+        .map(move |dir| (dir, find_bpfs(dir)))
+        .filter(|t| matches!(t, (_, Ok(_))))
+        .inspect(|t| {
+            let (dir, files) = t;
+            if !files.as_ref().unwrap().is_empty() {
+                println!(
+                    "Showing available BPF files in {}:",
+                    dir.as_path().to_str().unwrap()
+                );
+                files
+                    .iter()
+                    .flatten()
+                    .for_each(|f| println!(" {}", f.to_str().unwrap()));
+            }
+        })
+        .flat_map(move |t| t.1.into_iter())
+        .flatten()
+        .collect::<Vec<std::path::PathBuf>>();
+
+    ensure!(!files.is_empty(), "no BPF object file found in {dirs:?}");
 
     println!("Use udev-hid-bpf inspect <file> to obtain more information about a BPF object file.");
     Ok(())
