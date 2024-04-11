@@ -53,7 +53,7 @@ fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_r
 * We have to rewrite our own `pin()` because we must be pinning the link
 * provided by HID-BPF, not the Program object nor a normal libbpf_rs::Link
 */
-fn pin_hid_bpf_prog(link: i32, path: String) -> Result<(), libbpf_rs::Error> {
+fn pin_hid_bpf_prog(link: i32, path: &str) -> Result<(), libbpf_rs::Error> {
     unsafe {
         let c_str = std::ffi::CString::new(path).unwrap();
 
@@ -168,7 +168,7 @@ impl<'a> HidBPF<'a> {
                 log::warn!("! {:?}", why.kind());
             });
 
-            match pin_hid_bpf_prog(link, path.clone()) {
+            match pin_hid_bpf_prog(link, &path) {
                 Err(e) => {
                     log::warn!(
                         "could not pin {} to device id {}, error {}",
