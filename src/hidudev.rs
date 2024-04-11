@@ -176,11 +176,6 @@ impl HidUdev {
         bpf_dirs: &[PathBuf],
         objfile: Option<String>,
     ) -> std::io::Result<()> {
-        if !bpf_dirs.iter().any(|d| d.exists()) {
-            log::warn!("bpf directories {:?} don't exist, aborting", bpf_dirs);
-            return Ok(());
-        }
-
         let paths = match objfile {
             Some(objfile) => {
                 Self::find_named_objfiles(&[objfile.clone()], bpf_dirs).or_else(|| {
@@ -189,6 +184,10 @@ impl HidUdev {
                 })
             }
             None => {
+                if !bpf_dirs.iter().any(|d| d.exists()) {
+                    log::warn!("bpf directories {:?} don't exist, aborting", bpf_dirs);
+                    return Ok(());
+                }
                 if self
                     .udev_device
                     .property_value("HID_BPF_IGNORE_DEVICE")
