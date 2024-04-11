@@ -413,6 +413,8 @@ pages:
     - .fdo.ci-fairy
   stage: deploy
   script:
+    - python3 -m venv _venv
+    - . _venv/bin/activate
     - pip3 install sphinx sphinx-rtd-theme myst-parser
     - sphinx-build -b html doc public
   artifacts:
