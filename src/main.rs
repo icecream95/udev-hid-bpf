@@ -11,7 +11,7 @@ pub mod bpf;
 pub mod hidudev;
 pub mod modalias;
 
-static DEFAULT_BPF_DIRS: &[&str] = &[env!("BPF_INSTALL_DIR")];
+static DEFAULT_BPF_DIRS: &str = env!("BPF_LOOKUP_DIRS");
 static BINDIR: &str = env!("MESON_BINDIR");
 
 #[derive(Parser, Debug)]
@@ -101,7 +101,7 @@ enum Commands {
 
 fn default_bpf_dirs() -> Vec<std::path::PathBuf> {
     DEFAULT_BPF_DIRS
-        .iter()
+        .split(':')
         .map(std::path::PathBuf::from)
         .collect()
 }
@@ -114,10 +114,8 @@ fn cmd_add(
     ensure!(syspath.exists(), "Invalid syspath {syspath:?}");
 
     let dev = hidudev::HidUdev::from_syspath(syspath)?;
-    let target_bpf_dirs = match bpfdir {
-        Some(bpf_dir) => vec![bpf_dir],
-        None => default_bpf_dirs(),
-    };
+    let target_bpf_dirs: Vec<std::path::PathBuf> =
+        bpfdir.into_iter().chain(default_bpf_dirs()).collect();
 
     Ok(dev.load_bpf_from_directories(&target_bpf_dirs, objfile)?)
 }
@@ -161,16 +159,13 @@ fn find_bpfs(dir: &std::path::PathBuf) -> Result<()> {
 }
 
 fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> Result<()> {
-    let dirs = match bpfdir {
-        Some(bpf_dir) => vec![bpf_dir],
-        None => default_bpf_dirs(),
-    };
+    let dirs: Vec<std::path::PathBuf> = bpfdir.into_iter().chain(default_bpf_dirs()).collect();
     for dir in dirs {
         println!(
             "Showing available BPF files in {}:",
             dir.as_path().to_str().unwrap()
         );
-        find_bpfs(&dir)?
+        find_bpfs(&dir).ok();
     }
 
     println!("Use udev-hid-bpf inspect <file> to obtain more information about a BPF object file.");

@@ -4,6 +4,18 @@ prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
 bpfdir = prefix / 'lib' / 'firmware' / 'hid' / 'bpf'
 
+lookup_bpfdirs = []
+dirs = get_option('bpfdirs')
+if dirs.length() == 0
+    dirs = ['PREFIXED_BPFDIR']
+endif
+foreach d: dirs
+    d = d.replace('PREFIXED_BPFDIR', bpfdir)
+    if not lookup_bpfdirs.contains(d)
+        lookup_bpfdirs += [d]
+    endif
+endforeach
+
 pkgconfig = import('pkgconfig')
 udevdir = get_option('udevdir')
 if udevdir == ''
@@ -61,6 +73,7 @@ cargo_env = {
     'BPF_SOURCE_ROOT': meson.project_source_root(),
     'EXTRA_INCLUDE': meson.project_source_root() / 'src' / 'bpf',
     'BPF_INSTALL_DIR': bpfdir,
+    'BPF_LOOKUP_DIRS': lookup_bpfdirs,
 }
 
 cargo_files = files(
@@ -108,10 +121,8 @@ udev_config = configuration_data()
 # that we can use in install_release.sh
 if get_option('placeholder-udev-rules-file')
     udev_config.set('BINDIR', '@@BINDIR@@')
-    udev_config.set('BPFDIR', '@@BPFDIR@@')
 else
     udev_config.set('BINDIR', bindir)
-    udev_config.set('BPFDIR', bpfdir)
 endif
 configure_file(input: '81-hid-bpf.rules.in',
                output: '@BASENAME@',

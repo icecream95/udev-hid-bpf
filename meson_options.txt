@@ -15,3 +15,7 @@ option('placeholder-udev-rules-file',
        type: 'boolean',
        value: false,
        description: 'Do not substituate the a @BINDIR@ placeholder in the udev rule')
+option('bpfdirs',
+       type: 'array',
+       value: ['PREFIXED_BPFDIR', '/usr/local/lib/firmware/hid/bpf', '/usr/lib/firmware/hid/bpf', '/lib/firmware/hid/bpf'],
+       description: 'A list of prefixes to load bpf.o files from, in order of preference. The special value PREFIX_BPFDIR resolves to PREFIX/lib/firmware. If empty, only the PREFIX_BPFDIR value is used.')

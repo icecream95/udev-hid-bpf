@@ -118,11 +118,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("cargo:warning=############################################################");
     }
 
-    // cargo install will break but meh
-    let bpf_install_dir =
-        env::var("BPF_INSTALL_DIR").unwrap_or(String::from("/lib/firmare/hid/bpf"));
-    println!("cargo:rustc-env=BPF_INSTALL_DIR={bpf_install_dir}");
-
     // The fallbacks are only necessary for cargo build/cargo check, meson always sets them
     let fallback_bindir: Result<String, std::env::VarError> = Ok(String::from("/usr/local/bin"));
     let bindir = std::env::var("MESON_BINDIR").or(fallback_bindir).unwrap();
@@ -131,6 +126,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source_root = env::var("BPF_SOURCE_ROOT").unwrap_or(String::from("."));
     let bpf_src_dir = PathBuf::from(source_root).join(BPF_SOURCE_DIR);
     println!("cargo:rerun-if-changed={}", bpf_src_dir.display());
+
+    let bpf_lookup_dirs =
+        env::var("BPF_LOOKUP_DIRS").unwrap_or(String::from("/usr/local/lib/firmware/hid/bpf"));
+    println!("cargo:rustc-env=BPF_LOOKUP_DIRS={bpf_lookup_dirs}");
 
     let out_dir = env::var_os("OUT_DIR").expect("OUT_DIR must be set in build script");
     let out_dir = PathBuf::from(out_dir);
