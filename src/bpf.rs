@@ -115,6 +115,7 @@ impl<'a> HidBPF<'a> {
             }
         };
 
+        let bpffs_path = get_bpffs_path(&device.sysname(), object_name);
         let inner = self.inner.as_ref().expect("open_and_load() never called!");
         let mut attached = false;
 
@@ -161,17 +162,11 @@ impl<'a> HidBPF<'a> {
                 hid_id,
             );
 
-            let path = format!(
-                "{}/{}",
-                get_bpffs_path(&device.sysname(), object_name),
-                tracing_prog.name(),
-            );
+            let path = format!("{}/{}", &bpffs_path, tracing_prog.name(),);
 
-            fs::create_dir_all(get_bpffs_path(&device.sysname(), object_name)).unwrap_or_else(
-                |why| {
-                    log::warn!("! {:?}", why.kind());
-                },
-            );
+            fs::create_dir_all(&bpffs_path).unwrap_or_else(|why| {
+                log::warn!("! {:?}", why.kind());
+            });
 
             match pin_hid_bpf_prog(link, path.clone()) {
                 Err(e) => {
@@ -195,11 +190,7 @@ impl<'a> HidBPF<'a> {
                 .maps_iter_mut()
                 .filter(|map| !map.name().contains('.'))
             {
-                let path = format!(
-                    "{}/{}",
-                    get_bpffs_path(&device.sysname(), object_name),
-                    map.name(),
-                );
+                let path = format!("{}/{}", bpffs_path, map.name(),);
 
                 if map.pin(&path).is_ok() {
                     log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
