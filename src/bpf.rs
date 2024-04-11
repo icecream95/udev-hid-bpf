@@ -176,6 +176,23 @@ impl<'a> HidBPF<'a> {
         }
     }
 
+    fn pin_maps(&self, object: &mut Object, bpffs_path: &String) -> Result<()> {
+        // compiler internal maps contain the name of the object and a dot
+        for map in object
+            .maps_iter_mut()
+            .filter(|map| !map.name().contains('.'))
+        {
+            let path = format!("{}/{}", bpffs_path, map.name(),);
+
+            if map.pin(&path).is_ok() {
+                log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
+            }
+            // FIXME: if attaching the map fails we need to remove the object
+        }
+
+        Ok(())
+    }
+
     pub fn load_programs(&self, path: &Path, device: &hidudev::HidUdev) -> Result<()> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
@@ -197,19 +214,7 @@ impl<'a> HidBPF<'a> {
 
         let bpffs_path = get_bpffs_path(&device.sysname(), object_name);
         self.load_progs(&object, object_name, hid_id, &bpffs_path)?;
-
-        // compiler internal maps contain the name of the object and a dot
-        for map in object
-            .maps_iter_mut()
-            .filter(|map| !map.name().contains('.'))
-        {
-            let path = format!("{}/{}", &bpffs_path, map.name(),);
-
-            if map.pin(&path).is_ok() {
-                log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
-            }
-            // FIXME: if attaching the map fails we need to remove the object
-        }
+        self.pin_maps(&mut object, &bpffs_path)?;
 
         Ok(())
     }
