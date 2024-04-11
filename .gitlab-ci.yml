@@ -351,7 +351,7 @@ b2c uhid-test:
   script:
     - *b2c-kernel-url
     - export B2C_KERNEL=$KERNEL_URL
-    - export B2C_COMMAND="test/uhid-test.sh --verbose test-$TEST-load"
+    - export B2C_COMMAND=".gitlab-ci/start-in-systemd.sh $TEST"
     - /app/boot2container
   artifacts:
     name: "meson-logs-$CI_JOB_NAME"
