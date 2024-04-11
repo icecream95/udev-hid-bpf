@@ -4,7 +4,7 @@ include!(concat!(env!("OUT_DIR"), "/hid_bpf_bindings.rs"));
 include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 
 use crate::hidudev;
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use libbpf_rs::skel::{OpenSkel, SkelBuilder};
 use std::convert::TryInto;
 use std::fs;
@@ -31,7 +31,7 @@ pub fn remove_bpf_objects(sysname: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_rs::Error> {
+fn run_syscall_prog_generic<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_rs::Error> {
     let fd = prog.as_fd().as_raw_fd();
     let data_ptr: *const libc::c_void = &data as *const _ as *const libc::c_void;
     let mut run_opts = libbpf_sys::bpf_test_run_opts {
@@ -46,6 +46,30 @@ fn run_syscall_prog<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_r
     match unsafe { libbpf_sys::bpf_prog_test_run_opts(fd, run_opts_ptr) } {
         0 => Ok(data),
         e => Err(libbpf_rs::Error::from_raw_os_error(-e)),
+    }
+}
+
+fn run_syscall_prog_attach(
+    prog: &libbpf_rs::Program,
+    attach_args: AttachProgArgs,
+) -> Result<i32, libbpf_rs::Error> {
+    let args = run_syscall_prog_generic(prog, attach_args)?;
+    if args.retval < 0 {
+        Err(libbpf_rs::Error::from_raw_os_error(-args.retval))
+    } else {
+        Ok(args.retval)
+    }
+}
+
+fn run_syscall_prog_probe(
+    prog: &libbpf_rs::Program,
+    probe_args: hid_bpf_probe_args,
+) -> Result<i32, libbpf_rs::Error> {
+    let args = run_syscall_prog_generic(prog, probe_args)?;
+    if args.retval != 0 {
+        Err(libbpf_rs::Error::from_raw_os_error(-args.retval))
+    } else {
+        Ok(args.retval)
     }
 }
 
@@ -107,12 +131,7 @@ impl<'a> HidBPF<'a> {
          */
         if let Some(probe) = object.prog("probe") {
             let args = hid_bpf_probe_args::from(device);
-
-            let args = run_syscall_prog(probe, args)?;
-
-            if args.retval != 0 {
-                bail!("probe() returned {:?}", args.retval);
-            }
+            run_syscall_prog_probe(probe, args).context("probe() failed")?;
         };
 
         let bpffs_path = get_bpffs_path(&device.sysname(), object_name);
@@ -129,7 +148,7 @@ impl<'a> HidBPF<'a> {
                 retval: -1,
             };
 
-            let ret_syscall = run_syscall_prog(inner.progs().attach_prog(), attach_args);
+            let ret_syscall = run_syscall_prog_attach(inner.progs().attach_prog(), attach_args);
 
             if let Err(e) = ret_syscall {
                 log::warn!(
@@ -141,19 +160,7 @@ impl<'a> HidBPF<'a> {
                 continue;
             }
 
-            let args = ret_syscall.unwrap();
-
-            if args.retval <= 0 {
-                log::warn!(
-                    "could not attach {} to device id {}, error {}",
-                    &tracing_prog.name(),
-                    hid_id,
-                    libbpf_rs::Error::from_raw_os_error(-args.retval).to_string(),
-                );
-                continue;
-            }
-
-            let link = args.retval;
+            let link = ret_syscall.unwrap();
 
             log::debug!(
                 target: "libbpf",
