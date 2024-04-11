@@ -116,7 +116,7 @@ impl<'a> HidBPF<'a> {
         Ok(Self { inner })
     }
 
-    fn load_prog(&self, prog: &Program, hid_id: u32, bpffs_path: &str) -> Result<()> {
+    fn load_prog(&self, prog: &Program, hid_id: u32, bpffs_path: &str) -> Result<String> {
         let inner = self.inner.as_ref().expect("open_and_load() never called!");
         let attach_args = AttachProgArgs {
             prog_fd: prog.as_fd().as_raw_fd(),
@@ -148,7 +148,7 @@ impl<'a> HidBPF<'a> {
 
         log::debug!(target: "libbpf", "Successfully pinned prog at {}", path);
 
-        Ok(())
+        Ok(path)
     }
 
     fn load_progs(
@@ -157,8 +157,8 @@ impl<'a> HidBPF<'a> {
         object_name: &str,
         hid_id: u32,
         bpffs_path: &str,
-    ) -> Result<()> {
-        let attached = object
+    ) -> Result<Vec<String>> {
+        let attached: Vec<String> = object
             .progs_iter()
             .filter(|p| matches!(p.prog_type(), libbpf_rs::ProgramType::Tracing))
             .map(|p| self.load_prog(p, hid_id, bpffs_path))
@@ -167,13 +167,13 @@ impl<'a> HidBPF<'a> {
                     log::warn!("failed to attach to device id {}: {:#}", hid_id, e,);
                 }
             })
-            .any(|r| r.is_ok());
+            .flatten()
+            .collect();
 
-        if attached {
-            Ok(())
-        } else {
+        if attached.is_empty() {
             bail!("Failed to attach object {object_name}");
         }
+        Ok(attached)
     }
 
     fn pin_maps(&self, object: &mut Object, bpffs_path: &String) -> Result<()> {
