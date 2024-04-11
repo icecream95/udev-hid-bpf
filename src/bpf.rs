@@ -184,10 +184,9 @@ impl<'a> HidBPF<'a> {
         {
             let path = format!("{}/{}", bpffs_path, map.name(),);
 
-            if map.pin(&path).is_ok() {
-                log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
-            }
-            // FIXME: if attaching the map fails we need to remove the object
+            map.pin(&path)
+                .context(format!("Failed to pin map at {}", path))?;
+            log::debug!(target: "libbpf", "Successfully pinned map at {}", path);
         }
 
         Ok(())
@@ -214,7 +213,10 @@ impl<'a> HidBPF<'a> {
 
         let bpffs_path = get_bpffs_path(&device.sysname(), object_name);
         self.load_progs(&object, object_name, hid_id, &bpffs_path)?;
-        self.pin_maps(&mut object, &bpffs_path)?;
+        if let Err(e) = self.pin_maps(&mut object, &bpffs_path) {
+            let _ = std::fs::remove_dir_all(bpffs_path);
+            bail!(e);
+        };
 
         Ok(())
     }
