@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.79"
 libbpf-rs = "0.22"
-libbpf-sys = "^1.1.0"
+libbpf-sys = "1.1.0"
 udev =  { version = "0.7.0", features = ["mio08"] }
 mio = { version = "0.8", features = ["os-ext"] }
 libc = "0.2"
@@ -27,4 +27,4 @@ libbpf-cargo = { version = "0.22" }
 log = "0.4"
 bindgen = "0.69.4"
 regex = "1.9.1"
-udev =  { version = "^0.7.0", features = ["mio08"] }
+udev =  { version = "0.7.0", features = ["mio08"] }
