@@ -11,20 +11,23 @@ Manual loading
 Users can manually attach a HID-BPF program to a device::
 
    $ sudo udev-hid-bpf add /sys/bus/hid/devices/0003:05F3:0405 trace_hid_events.bpf.o
+   $ sudo udev-hid-bpf add /sys/bus/hid/devices/0003:05F3:0405 /path/to/my-hack.bpf.o
 
-Note that the filename doesn't contain the full path. The list of available
+Note that the filename does not need to be a full path. The list of available
 programs can be shown with::
 
    $ udev-hid-bpf list-bpf-programs
 
 .. note:: If invoked from the git repository, this will show the BPF programs
-          in the build directory. Otherwise, it shows the installed programs.
+          in the currently configured lookup directories. Use
+          ``udev-hid-bpf list-bpf-programs --bpfdir builddir`` to list the
+          programs in the builddir.
 
 
 Metadata in the HID-BPF sources (modalias matches)
 --------------------------------------------------
 
-Each program can tell which devices it is supposed to be bound to.
+Each HID-BPF program can tell which devices it is supposed to be bound to.
 If those metadata are given, udev will automatically bind the HID-BPF
 program to the device on plug.
 
@@ -62,8 +65,8 @@ and ``HID_PID_ANY`` are wildcards.
 For the curious, there is a page on :ref:`metadata` that explains how these metadata are
 embedded in the resulting BPF object.
 
-Instead of building this metadata yourself, it is way more efficient to use the
-``udev-hid-bpf list-devices`` command provided in this repository::
+The easiest way to obtain the metadata is to use the
+``udev-hid-bpf list-devices`` command::
 
    $ udev-hid-bpf list-devices
    /sys/bus/hid/devices/0003:045E:07A5.0001

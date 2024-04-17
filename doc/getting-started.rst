@@ -34,9 +34,9 @@ Please see the `meson documentation <https://mesonbuild.com/>`_ for more details
 Install all files
 -----------------
 
-.. note:: The default meson invocation only installs the "testing" ``.bpf.o`` filse (see :ref:`here  <stable_testing_userhacks>`).
+.. note:: The default meson invocation only installs the "testing" ``.bpf.o`` files (see :ref:`here  <stable_testing_userhacks>`).
 
-Then, we can install the binary with the following command::
+We can install the binary with the following command::
 
    $ meson install -C builddir
    # this will ask for your sudo password to install udev rules and hwdb files
@@ -49,6 +49,7 @@ It will then install
 - a hwdb entry to tag matching devices in ``/etc/udev/hwdb.d/81-hid-bpf.hwdb``
 - a udev rule to trigger the tool in ``/etc/udev/rules.d/81-hid-bpf.rules``
 
+Passing the `--prefix` option to `meson setup` will of course change the above paths.
 
 .. _install_specific:
 
@@ -58,13 +59,13 @@ Install a specific ``bpf.o`` file only
 In many cases a user only wants to install a single file for testing. The
 easiest approach is to use ``udev-hid-bpf`` to install it::
 
-  ./builddir/udev-hid-bpf install ./builddir/src/bpf/userhacks/my_awesome_hid_bpf_filter.bpf.o
+  $ ./builddir/udev-hid-bpf install ./builddir/src/bpf/userhacks/my_awesome_hid_bpf_filter.bpf.o
   # or to install udev-hid-bpf itself too
-  ./builddir/udev-hid-bpf install --install-exe ./builddir/src/bpf/userhacks/my_awesome_hid_bpf_filter.bpf.o
+  $ ./builddir/udev-hid-bpf install --install-exe ./builddir/src/bpf/userhacks/my_awesome_hid_bpf_filter.bpf.o
 
-This will install the ``.bpf.o`` file into ``/etc/udev-hid-bpf`` and also
+This will install the ``.bpf.o`` file into ``/etc/udev-hid-bpf/`` and also
 install a custom udev rule udev for this file. If ``--install-exe`` is given,
-``udev-hid-bpf`` will also install itself in the given prefix's bindir (``/usr/local/bin`` by default).
+``udev-hid-bpf`` will also install itself in the given prefix's bindir (``/usr/local/bin`` by default) if required.
 
 
 Running the BPF program

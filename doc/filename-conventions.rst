@@ -5,8 +5,12 @@ Filename conventions
 
 
 ``udev-hid-bpf`` uses this filename convention for all ``.bpf.o`` files it
-provides: ``10-vendor__product.bpf.o``. Vendor and product represent the
-specific device's vendor and product and ``10`` is the version number.
+provides::
+
+    10-vendor__product.bpf.o
+
+Vendor and product represent the specific device's vendor and product and
+``10`` is the version number.
 
 .. note:: The versionless "stem" of the file, ``foo__bar.bpf`` is used as
           identifier by the kernel to spot duplicates.
@@ -54,5 +58,5 @@ files easy to find by humans but stills specific enough that we can distinguish
 which device these apply to.
 
 Note that these rules are just guidelines, there are ``.bpf.o`` files that will
-apply to multiple devices anyway so the naming will always be an approximation
+apply to multiple devices so the naming will always be an approximation
 only.
