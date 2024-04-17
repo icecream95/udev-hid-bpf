@@ -99,8 +99,8 @@ impl HidUdev {
         for path in paths.iter() {
             let filename = String::from(path.file_name().unwrap().to_string_lossy());
             let stem = match filename.split_once('-') {
-                Some((_, rest)) => String::from(rest),
-                None => String::from(&filename),
+                Some((_, rest)) => String::from(rest).to_lowercase(),
+                None => String::from(&filename).to_lowercase(),
             };
             match ht.get_mut(&stem) {
                 Some(v) => v.push(std::path::PathBuf::from(path)),
@@ -113,7 +113,15 @@ impl HidUdev {
 
         // The list of values is reverse-dict sorted, so 30-foo comes first before 20-foo
         for v in ht.values_mut() {
-            v.sort_by(|p1, p2| p2.file_name().unwrap().cmp(p1.file_name().unwrap()));
+            v.sort_by(|p1, p2| {
+                let p1: String = p1.file_name().unwrap().to_string_lossy().into();
+                let p2: String = p2.file_name().unwrap().to_string_lossy().into();
+
+                let p1 = p1.to_lowercase();
+                let p2 = p2.to_lowercase();
+
+                p2.cmp(&p1)
+            });
         }
 
         // HashMap's order is unpredictable, to test this let's
@@ -313,11 +321,11 @@ mod tests {
 
         let files = vec![
             usr_local.join("10-one.bpf.o"),
-            usr.join("20-one.bpf.o"),
+            usr.join("20-ONE.bpf.o"),
             usr_local.join("10-two.bpf.o"),
             usr.join("10-three.bpf.o"),
             usr_local.join("20-three.bpf.o"),
-            usr_local.join("30-three.bpf.o"),
+            usr_local.join("30-THREE.bpf.o"),
         ];
         let _ = files.iter().for_each(|p| {
             File::create(p).unwrap();
@@ -325,9 +333,9 @@ mod tests {
 
         // The returned list is dict sorted by stem
         let expected: Vec<Vec<PathBuf>> = vec![
-            vec![usr.join("20-one.bpf.o"), usr_local.join("10-one.bpf.o")],
+            vec![usr.join("20-ONE.bpf.o"), usr_local.join("10-one.bpf.o")],
             vec![
-                usr_local.join("30-three.bpf.o"),
+                usr_local.join("30-THREE.bpf.o"),
                 usr_local.join("20-three.bpf.o"),
                 usr.join("10-three.bpf.o"),
             ],
