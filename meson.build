@@ -1,4 +1,5 @@
-project('udev-hid-bpf', 'rust')
+project('udev-hid-bpf', 'rust',
+        version: '1.0.0-20240417') # Update Cargo.toml too!
 
 prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
