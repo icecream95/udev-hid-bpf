@@ -4,6 +4,7 @@ project('udev-hid-bpf', 'rust',
 prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
 bpfdir = prefix / 'lib' / 'firmware' / 'hid' / 'bpf'
+man1dir  = prefix / get_option('mandir') / 'man1'
 
 lookup_bpfdirs = []
 dirs = get_option('bpfdirs')
@@ -172,3 +173,10 @@ foreach build: builds
         )
     endif
 endforeach
+
+man_config = configuration_data()
+man_config.set('VERSION', meson.project_version())
+configure_file(input: 'udev-hid-bpf.man',
+               output : '@BASENAME@.1',
+               configuration : man_config,
+               install_dir : man1dir)

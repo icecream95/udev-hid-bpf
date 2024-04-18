@@ -1,0 +1,80 @@
+.TH udev-hid-bpf "1" "" "udev-hid-bpf @VERSION@" "udev-hid-bpf Manual"
+.SH NAME
+udev\-hid\-bpf - loader tool for HID eBPF programs
+.SH SYNOPSIS
+.B udev\-hid\-bpf [\-\-help|\-\-version] \fI<command>\fR \fI[args]\fR
+.SH DESCRIPTION
+.PP
+.B udev\-hid\-bpf
+is a loader and general utility tool for HID eBPF programs.
+Typically it is invoked by udev to load and unload HID eBPF programs
+that match a given device but it provides commands to ease development
+of new eBPF programs and install specific eBPF programs that are
+not installed by default.
+.SH OPTIONS
+.TP
+.B \-\-help
+Print help and exit
+.TP
+.B \-\-verbose
+Enable verbose output for the given command
+.TP
+.B \-\-version
+Print version and exit
+.SH COMMANDS
+.TP
+.B add [\-\-bpfdir \fI/path/to/directory\fR] \fIdevice\fR [\fI/path/to/program.bpf.o\fR]
+Invoked by udev when a device is added. This command loads all matching
+HID eBPF programs for this device or if a program is given just that one
+program.  The list of matching eBPF programs is stored in the udev hwdb.
+.IP
+The set of directories to search for eBPF programs is built-in but can be
+adjusted with the \fI\-\-bpfdir\fR option.
+.IP
+The device must be specified as a syspath.
+.TP
+.B remove \fIdevice\fR
+Invoked by udev when a device is remove. This command removes all
+HID eBPF programs for this device.
+.IP
+The device must be specified as a syspath.
+.TP
+.B list\-bpf\-programs [\-\-bpfdir \fI/path/to/directory\fR]
+List available HID eBPF programs in the (built-in) default lookup
+directories or the given directory.
+.TP
+.B list\-devices
+List available HID devices.
+.TP
+.B inspect \fIpath/to/program.bpf.o\fR
+Inspect the given eBPF program.
+.TP
+.B install [options] \fIpath/to/program.bpf.o\fR
+Install the given eBPF program into /etc/udev-hid-bpf with
+a corresponding udev rule in /etc/udev/rules.d. This command
+should be used for testing a single eBPF program or where
+a full install of udev\-hid\-bpf is not suitable.
+.IP
+The following options are available for the
+.B \-\-install
+command:
+.RS 8
+.TP
+.B \-\-dry-run
+Do everything except actually creating directories and installing target files
+.TP
+.B \-\-install-exe
+Also install the
+.B udev\-hid\-bpf
+executable in \fI$prefix/bin\fR. If the executable already exists at that path
+this option does nothing.
+.TP
+.B \-\-force
+Overwrite existing files with the same name
+.TP
+.B \-\-prefix \fI/usr/local\fR
+Install into the given prefix. Defaults to the built-in prefix.
+.RE
+.SH SEE ALSO
+udev\-hid\-bpf's online documentation
+.I https://libevdev.pages.freedesktop.org/udev-hid-bpf/
