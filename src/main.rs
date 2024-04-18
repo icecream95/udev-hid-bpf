@@ -74,7 +74,9 @@ enum Commands {
         /// One or more paths to a bpf.o file
         paths: Vec<std::path::PathBuf>,
     },
-    /// Install one bpf.o file into /etc/udev-hid-bpf/ with a corresponding udev rule
+    /// Install one bpf.o file.
+    ///
+    /// The file is installed into /etc/udev-hid-bpf/ with a corresponding udev rule
     /// in /etc/udev/rules.d/. This command should be used for testing a single bpf.o file
     /// and/or in the case where a proper install of udev-hid-bpf is not otherwise suitable.
     ///
