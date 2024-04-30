@@ -154,7 +154,7 @@ foreach build: builds
 
         # T, S, or U
         suffix = build['suffix'].substring(0, 1).to_upper()
-        prefix = 'HID_BPF_@0@_'.format(suffix)
+        prop_prefix = 'HID_BPF_@0@_'.format(suffix)
 
         custom_target(
             'hwdb files @0@'.format(build['suffix']),
@@ -164,7 +164,7 @@ foreach build: builds
             input: json_data,
             command: [
                 generate_hwdb_py,
-                '--prefix', prefix,
+                '--prefix', prop_prefix,
             ],
             feed: true,
             capture: true,
