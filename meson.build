@@ -185,3 +185,9 @@ uname = find_program('uname')
 kernel_version = run_command(uname, '-r', capture: true).stdout()
 
 summary({'kernel version': kernel_version}, section: 'Host machine')
+summary({'udevdir': udevdir,
+         'prefix': prefix,
+         'bindir': bindir,
+         'bpfdir': bpfdir,
+         'bpf lookup dirs': lookup_bpfdirs,
+         }, section: 'Directories')
