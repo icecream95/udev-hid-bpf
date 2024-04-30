@@ -180,3 +180,8 @@ configure_file(input: 'udev-hid-bpf.man',
                output : '@BASENAME@.1',
                configuration : man_config,
                install_dir : man1dir)
+
+uname = find_program('uname')
+kernel_version = run_command(uname, '-r', capture: true).stdout()
+
+summary({'kernel version': kernel_version}, section: 'Host machine')
