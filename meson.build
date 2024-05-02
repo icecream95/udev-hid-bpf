@@ -181,8 +181,17 @@ configure_file(input: 'udev-hid-bpf.man',
                configuration : man_config,
                install_dir : man1dir)
 
-uname = find_program('uname')
-kernel_version = run_command(uname, '-r', capture: true).stdout()
+kernel_version = 'unknown'
+uname = find_program('uname', required: false)
+if uname.found()
+    uname_result = run_command(uname, '-r', check: false, capture: true)
+    if uname_result.returncode() == 0
+        kernel_version = uname_result.stdout().strip()
+        if kernel_version.version_compare('< 6.3')
+            warning('kernel version is @0@ but we require 6.3 or later.'.format(kernel_version))
+        endif
+    endif
+endif
 
 summary({'kernel version': kernel_version}, section: 'Host machine')
 summary({'udevdir': udevdir,
