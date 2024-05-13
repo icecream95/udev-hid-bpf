@@ -48,6 +48,7 @@ meson setup \
   -Dprefix="$TMP_INSTALL_DIR" \
   -Dudevdir="$TMP_INSTALL_DIR/lib/udev" \
   -Dplaceholder-udev-rules-file=true \
+  $features \
   "$BUILDDIR"
 meson compile -C "$BUILDDIR"
 meson install -C "$BUILDDIR"

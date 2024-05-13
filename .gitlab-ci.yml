@@ -383,8 +383,7 @@ make release:
     - pip install yq
     - ln -s /usr/bin/true /usr/local/bin/udevadm
     - ln -s /usr/bin/true /usr/local/bin/systemd-hwdb
-    # this is the default anyway but let's be explicit here
-    - ./make_release.sh --verbose --features testing
+    - ./make_release.sh --verbose --features testing,stable
     - mkdir -p tarball_dir
     - tar xf udev-hid-bpf*.tar.xz -C tarball_dir --strip-components=1
     - pushd tarball_dir
