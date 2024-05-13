@@ -250,7 +250,7 @@ report descriptor, much in the same way as we manipulated the HID report above:
 .. code-block:: c
 
   SEC("fmod_ret/hid_bpf_rdesc_fixup")
-  int BPF_PROG(ignore_button_fix_rdesc, struct hid_bpf_ctx *hctx)
+  int BPF_PROG(ignore_button_fix_rdesc, struct hid_bpf_ctx *hid_ctx)
   {
       const int expected_length = 223;
       if (hid_ctx->size != expected_length)
