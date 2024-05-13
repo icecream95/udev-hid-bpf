@@ -292,7 +292,7 @@ meson features build:
     - tree $PREFIX
     - |
       if [ "$FEATURE" = "testing" ]; then
-        test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
+        test ! -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
       fi
     - |
       if [ "$FILTER" = "testing,stable" ]; then
@@ -326,7 +326,7 @@ cli install:
         PREFIXARG: '--prefix=/foo'
   script:
     - cd $MESON_BUILDDIR
-    - ./udev-hid-bpf install --install-exe $PREFIXARG src/bpf/testing/10-HP__Elite-Presenter.bpf.o
+    - ./udev-hid-bpf install --install-exe $PREFIXARG src/bpf/stable/10-HP__Elite-Presenter.bpf.o
     - tree $INSTPREFIX
     - test -e $INSTPREFIX/bin/udev-hid-bpf
     - test -e /etc/udev-hid-bpf/10-HP__Elite-Presenter.bpf.o
