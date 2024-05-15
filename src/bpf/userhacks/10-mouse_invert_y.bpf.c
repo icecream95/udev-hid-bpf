@@ -37,7 +37,7 @@ HID_BPF_CONFIG(
  * sudo udev-hid-bpf remove /sys/bus/hid/devices/0003:04D9:A09F.NNNN
  */
 
-SEC("fmod_ret/hid_bpf_device_event")
+SEC(HID_BPF_DEVICE_EVENT)
 int BPF_PROG(hid_y_event, struct hid_bpf_ctx *hctx)
 {
 	s16 y;

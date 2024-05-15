@@ -24,7 +24,7 @@
 
 char str[64];
 
-SEC("fmod_ret/hid_bpf_device_event")
+SEC(HID_BPF_DEVICE_EVENT)
 int BPF_PROG(trace_hid_events, struct hid_bpf_ctx *hid_ctx)
 {
 	int i, j;
