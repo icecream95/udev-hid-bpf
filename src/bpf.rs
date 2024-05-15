@@ -36,7 +36,9 @@ fn run_syscall_prog_generic<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, 
     let fd = prog.as_fd().as_raw_fd();
     let data_ptr: *const libc::c_void = &data as *const _ as *const libc::c_void;
     let mut run_opts = libbpf_sys::bpf_test_run_opts {
-        sz: std::mem::size_of::<libbpf_sys::bpf_test_run_opts>() as u64,
+        sz: std::mem::size_of::<libbpf_sys::bpf_test_run_opts>()
+            .try_into()
+            .unwrap(),
         ctx_in: data_ptr,
         ctx_size_in: std::mem::size_of::<T>() as u32,
         ..Default::default()
