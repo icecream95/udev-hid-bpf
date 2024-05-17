@@ -1,4 +1,5 @@
 sources = [
+    '10-Huion__Inspiroy-2-S.bpf.c'
 ]
 
 foreach bpf : sources
