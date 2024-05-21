@@ -74,7 +74,7 @@ pub trait HidBPFLoader {
 
     fn attach_and_pin(
         &self,
-        object: &Object,
+        object: &mut Object,
         device: &hidudev::HidUdev,
         bpffs_path: &std::string::String,
     ) -> Result<Vec<String>, BpfError>;
@@ -83,6 +83,8 @@ pub trait HidBPFLoader {
 pub struct HidBPFTrace<'a> {
     inner: Option<AttachSkel<'a>>,
 }
+
+pub struct HidBPFStructOps {}
 
 pub fn get_bpffs_path(sysname: &str, object: &str) -> String {
     format!(
@@ -269,7 +271,7 @@ impl<'a> HidBPFLoader for HidBPFTrace<'a> {
     }
     fn attach_and_pin(
         &self,
-        object: &Object,
+        object: &mut Object,
         device: &hidudev::HidUdev,
         bpffs_path: &std::string::String,
     ) -> Result<Vec<String>, BpfError> {
@@ -279,10 +281,71 @@ impl<'a> HidBPFLoader for HidBPFTrace<'a> {
     }
 }
 
-fn get_bpf_loader(_open_object: &OpenObject) -> &'static impl HidBPFLoader {
-    static HID_BPF_TRACE: OnceLock<HidBPFTrace> = OnceLock::new();
+impl HidBPFStructOps {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
-    HID_BPF_TRACE.get_or_init(HidBPFTrace::new)
+impl HidBPFLoader for HidBPFStructOps {
+    fn load(
+        &self,
+        mut open_object: OpenObject,
+        device: &hidudev::HidUdev,
+    ) -> Result<Object, BpfError> {
+        let bytes_hid_id: [u8; 4] = device.id().to_le_bytes();
+
+        open_object
+            .maps_iter_mut()
+            .filter(|m| matches!(m.map_type(), libbpf_rs::MapType::StructOps))
+            .for_each(|m| {
+                if let Some(data) = m.initial_value_mut() {
+                    data[0..4].copy_from_slice(&bytes_hid_id);
+                }
+            });
+
+        Ok(open_object.load()?)
+    }
+
+    fn attach_and_pin(
+        &self,
+        object: &mut Object,
+        _device: &hidudev::HidUdev,
+        bpffs_path: &std::string::String,
+    ) -> Result<Vec<String>, BpfError> {
+        fs::create_dir_all(bpffs_path).unwrap_or_else(|why| {
+            log::warn!("! {:?}", why.kind());
+        });
+
+        object
+            .maps_iter_mut()
+            .filter(|m| matches!(m.map_type(), libbpf_rs::MapType::StructOps))
+            .map(|m| {
+                let path = format!("{}/{}", bpffs_path, m.name());
+
+                m.attach_struct_ops()?.pin(&path)?;
+                Ok(path)
+            })
+            .collect()
+    }
+}
+
+fn get_bpf_loader(open_object: &OpenObject) -> &'static dyn HidBPFLoader {
+    static HID_BPF_TRACE: OnceLock<HidBPFTrace> = OnceLock::new();
+    static HID_BPF_STRUCT_OPS: OnceLock<HidBPFStructOps> = OnceLock::new();
+
+    let have_struct_ops: bool = open_object.progs_iter().any(|p| {
+        matches!(p.prog_type(), libbpf_rs::ProgramType::StructOps)
+            && p.section().starts_with("struct_ops/hid_")
+    });
+
+    if !have_struct_ops {
+        log::debug!("Using HID_BPF_TRACE");
+        HID_BPF_TRACE.get_or_init(HidBPFTrace::new)
+    } else {
+        log::debug!("Using HID_BPF_STRUCT_OPS");
+        HID_BPF_STRUCT_OPS.get_or_init(HidBPFStructOps::new)
+    }
 }
 
 impl HidBPF {
@@ -291,6 +354,7 @@ impl HidBPF {
         for map in object
             .maps_iter_mut()
             .filter(|map| !map.name().contains('.'))
+            .filter(|m| !matches!(m.map_type(), libbpf_rs::MapType::StructOps))
         {
             let path = format!("{}/{}", bpffs_path, map.name(),);
 
@@ -324,7 +388,7 @@ impl HidBPF {
 
         let bpffs_path = get_bpffs_path(&device.sysname(), object_name);
         loader
-            .attach_and_pin(&object, device, &bpffs_path)
+            .attach_and_pin(&mut object, device, &bpffs_path)
             .context(format!("attach_and_pin() of {object_name} failed"))?;
 
         if let Err(e) = HidBPF::pin_maps(&mut object, &bpffs_path) {
