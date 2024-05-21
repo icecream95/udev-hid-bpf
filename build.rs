@@ -31,16 +31,15 @@ fn build_bpf_file(
         bpf_source.parent().unwrap().parent().unwrap(),
         &extra_include,
     ];
-    let includeflags: Vec<String> = includedirs
+    let cflags: Vec<String> = includedirs
         .iter()
-        .map(|d| format!("-I{} ", d.display()))
+        .map(|d| format!("-I{}", d.display()))
         .collect();
-    let includeflags: String = includeflags.join(" ");
 
     SkeletonBuilder::new()
         .source(bpf_source)
         .obj(&target_object)
-        .clang_args(includeflags)
+        .clang_args(&cflags)
         .build()
         .unwrap();
 
@@ -82,7 +81,7 @@ fn build_bpf_wrappers(src_dir: &Path, dst_dir: &Path) {
     let extra_include = env::var("EXTRA_INCLUDE").unwrap_or(String::from("."));
     SkeletonBuilder::new()
         .source(attach_prog)
-        .clang_args(format!("-I{}", extra_include))
+        .clang_args([format!("-I{}", extra_include)])
         .build_and_generate(&skel_file)
         .unwrap();
 
