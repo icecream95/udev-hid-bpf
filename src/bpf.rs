@@ -5,11 +5,13 @@ include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 use crate::hidudev;
 use anyhow::{bail, Context, Result};
 use libbpf_rs::skel::{OpenSkel, SkelBuilder};
-use libbpf_rs::{Object, Program};
+use libbpf_rs::{Object, OpenObject, Program};
 use std::convert::TryInto;
+use std::fmt::Display;
 use std::fs;
 use std::os::fd::{AsFd, AsRawFd};
 use std::path::Path;
+use std::sync::OnceLock;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -28,7 +30,57 @@ pub struct AttachProgArgs {
     pub retval: std::os::raw::c_int,
 }
 
-pub struct HidBPF<'a> {
+#[derive(Debug)]
+pub enum BpfError {
+    LibBPFError { error: libbpf_rs::Error },
+    OsError { errno: u32 },
+}
+
+impl std::error::Error for BpfError {}
+
+impl Display for BpfError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BpfError::LibBPFError { error } => write!(f, "{error}"),
+            BpfError::OsError { errno } => {
+                write!(f, "{}", libbpf_rs::Error::from_raw_os_error(*errno as i32))
+            }
+        }
+    }
+}
+
+impl From<libbpf_rs::Error> for BpfError {
+    fn from(e: libbpf_rs::Error) -> BpfError {
+        BpfError::LibBPFError { error: e }
+    }
+}
+
+pub struct HidBPF {}
+
+pub trait HidBPFLoader {
+    fn load(&self, object: OpenObject, _device: &hidudev::HidUdev) -> Result<Object, BpfError> {
+        Ok(object.load()?)
+    }
+
+    fn probe(&self, object: &Object, device: &hidudev::HidUdev) -> Result<i32, BpfError> {
+        match object.prog("probe") {
+            None => Ok(0),
+            Some(probe) => {
+                let args = hid_bpf_probe_args::from(device);
+                run_syscall_prog_probe(probe, args)
+            }
+        }
+    }
+
+    fn attach_and_pin(
+        &self,
+        object: &Object,
+        device: &hidudev::HidUdev,
+        bpffs_path: &std::string::String,
+    ) -> Result<Vec<String>, BpfError>;
+}
+
+pub struct HidBPFTrace<'a> {
     inner: Option<AttachSkel<'a>>,
 }
 
@@ -48,7 +100,7 @@ pub fn remove_bpf_objects(sysname: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-fn run_syscall_prog_generic<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, libbpf_rs::Error> {
+fn run_syscall_prog_generic<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, BpfError> {
     let fd = prog.as_fd().as_raw_fd();
     let data_ptr: *const libc::c_void = &data as *const _ as *const libc::c_void;
     let mut run_opts = libbpf_sys::bpf_test_run_opts {
@@ -64,17 +116,19 @@ fn run_syscall_prog_generic<T>(prog: &libbpf_rs::Program, data: T) -> Result<T, 
 
     match unsafe { libbpf_sys::bpf_prog_test_run_opts(fd, run_opts_ptr) } {
         0 => Ok(data),
-        e => Err(libbpf_rs::Error::from_raw_os_error(-e)),
+        e => Err(BpfError::OsError { errno: -e as u32 }),
     }
 }
 
 fn run_syscall_prog_attach(
     prog: &libbpf_rs::Program,
     attach_args: AttachProgArgs,
-) -> Result<i32, libbpf_rs::Error> {
+) -> Result<i32, BpfError> {
     let args = run_syscall_prog_generic(prog, attach_args)?;
     if args.retval < 0 {
-        Err(libbpf_rs::Error::from_raw_os_error(-args.retval))
+        Err(BpfError::OsError {
+            errno: -args.retval as u32,
+        })
     } else {
         Ok(args.retval)
     }
@@ -83,10 +137,12 @@ fn run_syscall_prog_attach(
 fn run_syscall_prog_probe(
     prog: &libbpf_rs::Program,
     probe_args: hid_bpf_probe_args,
-) -> Result<i32, libbpf_rs::Error> {
+) -> Result<i32, BpfError> {
     let args = run_syscall_prog_generic(prog, probe_args)?;
     if args.retval != 0 {
-        Err(libbpf_rs::Error::from_raw_os_error(-args.retval))
+        Err(BpfError::OsError {
+            errno: -args.retval as u32,
+        })
     } else {
         Ok(args.retval)
     }
@@ -96,13 +152,13 @@ fn run_syscall_prog_probe(
 * We have to rewrite our own `pin()` because we must be pinning the link
 * provided by HID-BPF, not the Program object nor a normal libbpf_rs::Link
 */
-fn pin_hid_bpf_prog(link: i32, path: &str) -> Result<(), libbpf_rs::Error> {
+fn pin_hid_bpf_prog(link: i32, path: &str) -> Result<(), BpfError> {
     unsafe {
         let c_str = std::ffi::CString::new(path).unwrap();
 
         match libbpf_sys::bpf_obj_pin(link, c_str.as_ptr()) {
             0 => Ok(()),
-            e => Err(libbpf_rs::Error::from_raw_os_error(-e)),
+            e => Err(BpfError::OsError { errno: -e as u32 }),
         }
     }
 }
@@ -126,12 +182,17 @@ impl hid_bpf_probe_args {
     }
 }
 
-impl<'a> HidBPF<'a> {
-    pub fn new() -> Result<Self, libbpf_rs::Error> {
+impl<'a> HidBPFTrace<'a> {
+    pub fn new() -> Self {
         let skel_builder = AttachSkelBuilder::default();
-        let open_skel = skel_builder.open()?;
-        let inner = Some(open_skel.load()?);
-        Ok(Self { inner })
+
+        if let Ok(open_skel) = skel_builder.open() {
+            if let Ok(inner) = open_skel.load() {
+                return Self { inner: Some(inner) };
+            }
+        }
+
+        Self { inner: None }
     }
 
     fn load_prog(&self, prog: &Program, hid_id: u32, bpffs_path: &str) -> Result<String> {
@@ -172,10 +233,9 @@ impl<'a> HidBPF<'a> {
     fn load_progs(
         &self,
         object: &Object,
-        object_name: &str,
         hid_id: u32,
         bpffs_path: &str,
-    ) -> Result<Vec<String>> {
+    ) -> Result<Vec<String>, BpfError> {
         let attached: Vec<String> = object
             .progs_iter()
             .filter(|p| matches!(p.prog_type(), libbpf_rs::ProgramType::Tracing))
@@ -189,12 +249,44 @@ impl<'a> HidBPF<'a> {
             .collect();
 
         if attached.is_empty() {
-            bail!("Failed to attach object {object_name}");
+            Err(BpfError::OsError {
+                errno: libc::EINVAL as u32,
+            })
+        } else {
+            Ok(attached)
         }
-        Ok(attached)
     }
+}
 
-    fn pin_maps(&self, object: &mut Object, bpffs_path: &String) -> Result<()> {
+impl<'a> HidBPFLoader for HidBPFTrace<'a> {
+    fn load(&self, object: OpenObject, _device: &hidudev::HidUdev) -> Result<Object, BpfError> {
+        match self.inner {
+            None => Err(BpfError::OsError {
+                errno: libc::ENOTSUP as u32,
+            }),
+            Some(_) => Ok(object.load()?),
+        }
+    }
+    fn attach_and_pin(
+        &self,
+        object: &Object,
+        device: &hidudev::HidUdev,
+        bpffs_path: &std::string::String,
+    ) -> Result<Vec<String>, BpfError> {
+        let hid_id = device.id();
+
+        self.load_progs(object, hid_id, bpffs_path)
+    }
+}
+
+fn get_bpf_loader(_open_object: &OpenObject) -> &'static impl HidBPFLoader {
+    static HID_BPF_TRACE: OnceLock<HidBPFTrace> = OnceLock::new();
+
+    HID_BPF_TRACE.get_or_init(HidBPFTrace::new)
+}
+
+impl HidBPF {
+    fn pin_maps(object: &mut Object, bpffs_path: &String) -> Result<()> {
         // compiler internal maps contain the name of the object and a dot
         for map in object
             .maps_iter_mut()
@@ -210,28 +302,32 @@ impl<'a> HidBPF<'a> {
         Ok(())
     }
 
-    pub fn load_programs(&self, path: &Path, device: &hidudev::HidUdev) -> Result<()> {
+    pub fn load_programs(path: &Path, device: &hidudev::HidUdev) -> Result<()> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
-        let mut object = obj_builder.open_file(path)?.load()?;
-        let object_name = path.file_stem().unwrap().to_str().unwrap();
+        let open_object = obj_builder.open_file(path)?;
 
-        let hid_id = device.id();
+        let loader = get_bpf_loader(&open_object);
+
+        let mut object = loader.load(open_object, device)?;
+        let object_name = path.file_stem().unwrap().to_str().unwrap();
 
         /*
          * if there is a "probe" syscall, execute it and
          * check for the return value: if not 0, then ignore
          * this bpf.o file
          */
-        if let Some(probe) = object.prog("probe") {
-            let args = hid_bpf_probe_args::from(device);
-            run_syscall_prog_probe(probe, args).context("probe() failed")?;
-        };
+        loader
+            .probe(&object, device)
+            .context(format!("probe() of {object_name} failed"))?;
 
         let bpffs_path = get_bpffs_path(&device.sysname(), object_name);
-        self.load_progs(&object, object_name, hid_id, &bpffs_path)?;
-        if let Err(e) = self.pin_maps(&mut object, &bpffs_path) {
+        loader
+            .attach_and_pin(&object, device, &bpffs_path)
+            .context(format!("attach_and_pin() of {object_name} failed"))?;
+
+        if let Err(e) = HidBPF::pin_maps(&mut object, &bpffs_path) {
             let _ = std::fs::remove_dir_all(bpffs_path);
             bail!(e);
         };

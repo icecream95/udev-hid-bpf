@@ -199,13 +199,12 @@ impl HidUdev {
             }
         };
         if let Some(paths) = paths {
-            let hid_bpf_loader = bpf::HidBPF::new().unwrap();
             let sorted: Vec<Vec<PathBuf>> = Self::sort_by_stem(&paths);
             // For each group in our vec of vecs, try to load them one-by-one.
             // The first successful one terminates that group and we continue with the next.
             for group in sorted {
                 for path in group {
-                    match hid_bpf_loader.load_programs(&path, self) {
+                    match bpf::HidBPF::load_programs(&path, self) {
                         Ok(_) => {
                             log::debug!("Successfully loaded {path:?}");
                             break;
