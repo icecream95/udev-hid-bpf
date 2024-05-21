@@ -56,4 +56,8 @@ int BPF_PROG(trace_hid_events, struct hid_bpf_ctx *hid_ctx)
 	return 0;
 }
 
+HID_BPF_OPS(trace_hid_events_ops) = {
+	.hid_device_event = (void *)trace_hid_events,
+};
+
 char _license[] SEC("license") = "GPL";

@@ -56,6 +56,10 @@ int BPF_PROG(hid_y_event, struct hid_bpf_ctx *hctx)
 	return 0;
 }
 
+HID_BPF_OPS(mouse_invert_y) = {
+	.hid_device_event = (void *)hid_y_event,
+};
+
 SEC("syscall")
 int probe(struct hid_bpf_probe_args *ctx)
 {
