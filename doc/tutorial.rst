@@ -97,6 +97,11 @@ And this file contains:
       return 0;
   }
 
+  HID_BPF_OPS(ignore_button) = {
+    .hid_device_event = (void *)ignore_button_fix_event,
+    .hid_rdesc_fixup = (void *)ignore_button_fix_rdesc,
+  };
+
   /* If your device only has a single HID interface you can skip
      the probe function altogether */
   SEC("syscall")
@@ -122,12 +127,13 @@ Then we need to add the file name to the list of files meson tracks in
 This doesn't do anything but it should be buildable, can be installed and
 we can attempt to load it manually::
 
-  $ sudo ./install.sh
-  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 10-vendor__mymouse.bpf.o
-  DEBUG - device added 0003:045E:07A5.0001, filename: target/bpf/10-vendor__mymouse.bpf.o
-  DEBUG - loading BPF object at "target/bpf/10-vendor__mymouse.bpf.o"
-  DEBUG - successfully attached ignore_button_fix_event to device id 1
-  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0001/10-vendor__mymouse_bpf/ignore_button_fix_event
+  $ meson setup builddir
+  $ meson compile -C builddir
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 builddir/src/bpf/10-vendor__mymouse.bpf.o
+  DEBUG - loading BPF object at "builddir/src/bpf/10-vendor__mymouse.bpf.o"
+  DEBUG - libbpf: elf: skipping unrecognized data section(8) .hid_bpf_config
+  DEBUG - Successfully loaded "builddir/src/bpf/10-vendor__mymouse.bpf.o"
+
 
 Because the BPF program is "pinned" it will remain even after the loading process terminates.
 And indeed, the BPF program shows up in the bpffs::
@@ -136,7 +142,7 @@ And indeed, the BPF program shows up in the bpffs::
     /sys/fs/bpf/hid/
     └── 0003_045E_07A5_0001
         └── 10-vendor__mymouse_bpf
-            └── ignore_button_fix_event
+            └── ignore_button
 
 And we can remove it again (so we can re-add it later)::
 
@@ -201,15 +207,18 @@ Now, as it turns out we actually stop loading the program now. Why? Because the 
 path we provided to the ``udev-hid-bpf`` tool is the Keyboard device, not the Mouse.
 Passing in the other interface (with the ``0002`` suffix) works::
 
-  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 10-vendor__mymouse.bpf.o
-  DEBUG - device added 0003:045E:07A5.0001, filename: /usr/local/lib/firmware/hid/bpf/10-vendor__mymouse.bpf.o
-  DEBUG - loading BPF object at "/usr/local/lib/firmware/hid/bpf/10-vendor__mymouse.bpf.o"
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 builddir/src/bpf/10-vendor__mymouse.bpf.o
+  DEBUG - loading BPF object at "builddir/src/bpf/10-vendor__mymouse.bpf.o"
+  DEBUG - libbpf: elf: skipping unrecognized data section(8) .hid_bpf_config
+  WARN - Failed to load "builddir/src/bpf/10-vendor__mymouse.bpf.o": probe() of 10-vendor__mymouse.bpf failed
 
-  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0002 10-vendor__mymouse.bpf.o
-  DEBUG - device added 0003:045E:07A5.0002, filename: /usr/local/lib/firmware/hid/bpf/10-vendor__mymouse.bpf.o
-  DEBUG - loading BPF object at "/usr/local/lib/firmware/hid/bpf/10-vendor__mymouse.bpf.o"
-  DEBUG - successfully attached ignore_button_fix_event to device id 2
-  DEBUG - Successfully pinned prog at /sys/fs/bpf/hid/0003_045E_07A5_0002/10-vendor__mymouse_bpf/ignore_button_fix_event
+  Caused by:
+      Invalid argument (os error 22)
+
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0002 builddir/src/bpf/10-vendor__mymouse.bpf.o
+  DEBUG - loading BPF object at "builddir/src/bpf/10-vendor__mymouse.bpf.o"
+  DEBUG - libbpf: elf: skipping unrecognized data section(8) .hid_bpf_config
+  DEBUG - Successfully loaded "builddir/src/bpf/10-vendor__mymouse.bpf.o"
 
 This indicates our probe is working correctly.
 
