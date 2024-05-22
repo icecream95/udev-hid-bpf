@@ -4,7 +4,7 @@
 #
 
 usage () {
-  echo "Usage: $(basename "$0") [-v|--verbose] [--wait-after-load] <test-udev-load|test-path-load|test-udev-trigger>"
+  echo "Usage: $(basename "$0") [-v|--verbose] [--load-tracing-bpf] [--wait-after-load] <test-udev-load|test-path-load|test-udev-trigger>"
   echo ""
   echo "Use --wait-after-load to pause the script after loading the BPF programs"
 }
@@ -15,6 +15,7 @@ test_udev_load=""
 test_udev_trigger=""
 test_path_load=""
 wait_after_load=""
+tracing=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -28,6 +29,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --wait-after-load)
             wait_after_load="1"
+            shift
+            ;;
+        --load-tracing-bpf)
+            tracing="1"
             shift
             ;;
         --*)
@@ -116,7 +121,15 @@ instdir=$(realpath "$MESON_BUILDDIR/")/_inst
 fwdir="$instdir/lib/firmware/hid/bpf"
 udev_hid_bpf="$instdir/bin/udev-hid-bpf"
 
-meson $meson_subcommand -Dbpfs=testing,stable -Dprefix="$instdir" -Dudevdir="$instdir/etc/udev" "$MESON_BUILDDIR"
+BPF_ID="10"
+
+MESON_FEATURES=""
+if [ -n "$tracing" ]; then
+    MESON_FEATURES="-Dbpf-tracing=true"
+    BPF_ID="09"
+fi
+
+meson $meson_subcommand -Dbpfs=testing,stable -Dprefix="$instdir" -Dudevdir="$instdir/etc/udev" $MESON_FEATURES "$MESON_BUILDDIR"
 meson compile -C "$MESON_BUILDDIR" -j "$jobs"
 meson install -C "$MESON_BUILDDIR"
 exists_or_fail "$instdir/lib/firmware/hid/bpf"
@@ -169,8 +182,8 @@ bpf_is_not_loaded() {
 }
 
 test_cmd_add_with_path() {
-    fail_bpf="$MESON_BUILDDIR/src/bpf/10-noop-probe-fail.bpf.o"
-    success_bpf="$MESON_BUILDDIR/src/bpf/10-noop-probe-succeed.bpf.o"
+    fail_bpf="$MESON_BUILDDIR/src/bpf/${BPF_ID}-noop-probe-fail.bpf.o"
+    success_bpf="$MESON_BUILDDIR/src/bpf/${BPF_ID}-noop-probe-succeed.bpf.o"
     exists_or_fail "$fail_bpf"
     exists_or_fail "$success_bpf"
 
@@ -199,8 +212,8 @@ test_cmd_add_with_path() {
 test_cmd_add_via_udev() {
     mode="$1"
 
-    fail_bpf="$MESON_BUILDDIR/src/bpf/10-noop-probe-fail.bpf.o"
-    succeed_bpf="$MESON_BUILDDIR/src/bpf/10-noop-probe-succeed.bpf.o"
+    fail_bpf="$MESON_BUILDDIR/src/bpf/${BPF_ID}-noop-probe-fail.bpf.o"
+    succeed_bpf="$MESON_BUILDDIR/src/bpf/${BPF_ID}-noop-probe-succeed.bpf.o"
     exists_or_fail "$fail_bpf"
     exists_or_fail "$succeed_bpf"
 

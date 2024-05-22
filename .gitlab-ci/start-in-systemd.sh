@@ -5,6 +5,7 @@ set -x
 systemd_target=basic.target
 post_command="/usr/bin/systemctl exit \$EXIT_STATUS"
 
+features=""
 test=""
 
 while [[ $# -gt 0 ]]; do
@@ -13,6 +14,10 @@ while [[ $# -gt 0 ]]; do
 			shift
 			systemd_target=multi-user.target
 			post_command="echo you can now log in as root (no password) and then turn off by running \'/usr/bin/systemctl exit \$EXIT_STATUS\'"
+			;;
+		--tracing-only)
+			shift
+			features="--load-tracing-bpf"
 			;;
 		udev)
 			test="test-udev-load"
@@ -47,7 +52,7 @@ Type=simple
 StandardOutput=journal+console
 EnvironmentFile=$B2C_WORKDIR/.b2c_env
 WorkingDirectory=$WORKDIR
-ExecStart=$WORKDIR/test/uhid-test.sh --verbose $test
+ExecStart=$WORKDIR/test/uhid-test.sh --verbose $features $test
 # exit the container on termination
 ExecStopPost=$post_command
 

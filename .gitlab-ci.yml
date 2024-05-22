@@ -377,13 +377,15 @@ b2c uhid-test:
   parallel:
     matrix:
       - TEST: udev
+        PARAMS: --tracing-only
       - TEST: path
+        PARAMS: --tracing-only
   variables:
     MESON_BUILDDIR: build_dir
   script:
     - *b2c-kernel-url
     - export B2C_KERNEL=$KERNEL_URL
-    - export B2C_COMMAND=".gitlab-ci/start-in-systemd.sh $TEST"
+    - export B2C_COMMAND=".gitlab-ci/start-in-systemd.sh $PARAMS $TEST"
     - /app/boot2container
   artifacts:
     name: "meson-logs-$CI_JOB_NAME"
