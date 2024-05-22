@@ -85,13 +85,13 @@ And this file contains:
        HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_MICROSOFT, PID_SCULPT_ERGONOMIC_MOUSE)
   );
 
-  SEC("fmod_ret/hid_bpf_rdesc_fixup")
+  SEC(HID_BPF_RDESC_FIXUP)
   int BPF_PROG(ignore_button_fix_rdesc, struct hid_bpf_ctx *hctx)
   {
       return 0;
   }
 
-  SEC("fmod_ret/hid_bpf_device_event")
+  SEC(HID_BPF_DEVICE_EVENT)
   int BPF_PROG(ignore_button_fix_event, struct hid_bpf_ctx *hid_ctx)
   {
       return 0;
@@ -109,6 +109,15 @@ And this file contains:
   }
 
   char _license[] SEC("license") = "GPL";
+
+Then we need to add the file name to the list of files meson tracks in
+``./src/bpf/testing/meson.build``:
+
+.. code-block:: python
+
+  sources = [
+    '10-vendor__mymouse.bpf.c',
+  ]
 
 This doesn't do anything but it should be buildable, can be installed and
 we can attempt to load it manually::
@@ -215,7 +224,7 @@ for the annoying button:
 
 .. code-block:: c
 
-  SEC("fmod_ret/hid_bpf_device_event")
+  SEC(HID_BPF_DEVICE_EVENT)
   int BPF_PROG(ignore_button_fix_event, struct hid_bpf_ctx *hid_ctx)
   {
       const int expected_length = 6;
@@ -249,7 +258,7 @@ report descriptor, much in the same way as we manipulated the HID report above:
 
 .. code-block:: c
 
-  SEC("fmod_ret/hid_bpf_rdesc_fixup")
+  SEC(HID_BPF_RDESC_FIXUP)
   int BPF_PROG(ignore_button_fix_rdesc, struct hid_bpf_ctx *hid_ctx)
   {
       const int expected_length = 223;
