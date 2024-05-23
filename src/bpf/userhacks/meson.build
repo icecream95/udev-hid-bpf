@@ -4,6 +4,7 @@
 # in the newer struct_ops approach and are thus compatible
 # for both approaches.
 tracing_sources = [
+    '10-Huion__H610-Pro.bpf.c',
     '10-Logitech-MX-Master-3B-middle-button.bpf.c',
     '10-mouse_invert_y.bpf.c',
     '10-trace_hid_events.bpf.c',
