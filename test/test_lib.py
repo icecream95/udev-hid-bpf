@@ -70,3 +70,33 @@ def test_event_userhacks_invert(y):
     values = struct.unpack("<3bh5b", values)
     y_out = values[3]
     assert y_out == -y
+
+
+class TestXPPenDecoMini4:
+    @pytest.mark.parametrize(
+        "report,expected",
+        [
+            # Invalid report descriptor
+            (b"\x02\x01\x02\x03\x04\x05\x06\x07", b"\x02\x01\x02\x03\x04\x05\x06\x07"),
+            # Button 1
+            (b"\x06\x00\x05\x00\x00\x00\x00\x00", b"\x06\x01\x00\x00\x00\x00\x00\x00"),
+            # Button 2
+            (b"\x06\x00\x08\x00\x00\x00\x00\x00", b"\x06\x02\x00\x00\x00\x00\x00\x00"),
+            # Button 3
+            (b"\x06\x04\x00\x00\x00\x00\x00\x00", b"\x06\x04\x00\x00\x00\x00\x00\x00"),
+            # Button 4
+            (b"\x06\x00\x2c\x00\x00\x00\x00\x00", b"\x06\x08\x00\x00\x00\x00\x00\x00"),
+            # Button 5
+            (b"\x06\x01\x16\x00\x00\x00\x00\x00", b"\x06\x10\x00\x00\x00\x00\x00\x00"),
+            # Button 6
+            (b"\x06\x01\x1d\x00\x00\x00\x00\x00", b"\x06\x20\x00\x00\x00\x00\x00\x00"),
+            # Buttons 3 and 5
+            (b"\x06\x05\x16\x00\x00\x00\x00\x00", b"\x06\x14\x00\x00\x00\x00\x00\x00"),
+            # All buttons
+            (b"\x06\x05\x05\x08\x2c\x16\x1d\x00", b"\x06\x3f\x00\x00\x00\x00\x00\x00"),
+        ],
+    )
+    def test_button_events(self, report, expected):
+        bpf = Bpf.load("10-XPPen__DecoMini4")
+        event = bpf.hid_bpf_device_event(report=report)
+        assert event == expected
