@@ -55,6 +55,11 @@ enum Commands {
         /// Folder to look at for bpf objects
         #[arg(short, long)]
         bpfdir: Option<std::path::PathBuf>,
+        /// Remove current BPF programs for the device first.
+        /// This is equivalent to running udev-hid-bpf remove with the
+        /// same device argument first.
+        #[arg(long, default_value_t = false)]
+        replace: bool,
     },
     /// A device is removed from the sysfs
     Remove {
@@ -514,7 +519,14 @@ fn udev_hid_bpf() -> Result<()> {
             devpath,
             objfile,
             bpfdir,
-        } => cmd_add(&devpath, objfile, bpfdir),
+            replace,
+        } => {
+            if replace {
+                cmd_remove(&devpath)?;
+                std::thread::sleep(std::time::Duration::from_millis(500));
+            }
+            cmd_add(&devpath, objfile, bpfdir)
+        }
         Commands::Remove { devpath } => cmd_remove(&devpath),
         Commands::ListBpfPrograms { bpfdir } => cmd_list_bpf_programs(bpfdir),
         Commands::ListDevices {} => cmd_list_devices(),
