@@ -487,7 +487,7 @@ fn cmd_install(
     Ok(())
 }
 
-fn main() -> ExitCode {
+fn udev_hid_bpf() -> Result<()> {
     let cli = Cli::parse();
 
     libbpf_rs::set_print(Some((
@@ -509,7 +509,7 @@ fn main() -> ExitCode {
         .init()
         .unwrap();
 
-    let rc = match cli.command {
+    match cli.command {
         Commands::Add {
             devpath,
             objfile,
@@ -526,8 +526,11 @@ fn main() -> ExitCode {
             install_exe,
             dry_run,
         } => cmd_install(&path, prefix, force, install_exe, dry_run),
-    };
+    }
+}
 
+fn main() -> ExitCode {
+    let rc = udev_hid_bpf();
     match rc {
         Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
