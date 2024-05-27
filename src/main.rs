@@ -48,10 +48,13 @@ fn print_to_log(lvl: libbpf_rs::PrintLevel, msg: String) {
 enum Commands {
     /// A new device is created
     Add {
-        /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
-        devpath: std::path::PathBuf,
-        /// The BPF program to load
-        objfile: Option<String>,
+        /// The sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
+        /// followed by an optional path to a BPF program.
+        ///
+        /// Multiple devices and/or BPF programs may be specified, use - to separate
+        /// device paths from BPF programs.
+        #[clap(num_args = 1..)]
+        paths: Vec<String>,
         /// Folder to look at for bpf objects
         #[arg(short, long)]
         bpfdir: Option<std::path::PathBuf>,
@@ -64,7 +67,8 @@ enum Commands {
     /// A device is removed from the sysfs
     Remove {
         /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
-        devpath: std::path::PathBuf,
+        #[clap(num_args = 1..)]
+        devpaths: Vec<std::path::PathBuf>,
     },
     /// List currently installed BPF programs
     ListBpfPrograms {
@@ -114,17 +118,28 @@ fn default_bpf_dirs() -> Vec<std::path::PathBuf> {
 }
 
 fn cmd_add(
-    syspath: &std::path::PathBuf,
-    objfile: Option<String>,
+    devices: &[std::path::PathBuf],
+    objfiles: &[String],
     bpfdir: Option<std::path::PathBuf>,
 ) -> Result<()> {
-    ensure!(syspath.exists(), "Invalid syspath {syspath:?}");
-
-    let dev = hidudev::HidUdev::from_syspath(syspath)?;
     let target_bpf_dirs: Vec<std::path::PathBuf> =
         bpfdir.into_iter().chain(default_bpf_dirs()).collect();
+    for syspath in devices {
+        ensure!(syspath.exists(), "Invalid syspath {syspath:?}");
+    }
 
-    Ok(dev.load_bpf_from_directories(&target_bpf_dirs, objfile)?)
+    for syspath in devices {
+        let dev = hidudev::HidUdev::from_syspath(syspath)?;
+        if objfiles.is_empty() {
+            dev.load_bpf_from_directories(&target_bpf_dirs, None)?;
+        } else {
+            for objfile in objfiles {
+                dev.load_bpf_from_directories(&target_bpf_dirs, Some(objfile))?;
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String> {
@@ -138,15 +153,18 @@ fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String>
         .ok_or(std::io::Error::from_raw_os_error(libc::EINVAL))
 }
 
-fn cmd_remove(syspath: &std::path::PathBuf) -> Result<()> {
-    let sysname = match hidudev::HidUdev::from_syspath(syspath) {
-        Ok(dev) => dev.sysname(),
-        Err(e) => match e.raw_os_error() {
-            Some(libc::ENODEV) => sysname_from_syspath(syspath)?,
-            _ => return Err(e.into()),
-        },
-    };
-    Ok(bpf::remove_bpf_objects(&sysname)?)
+fn cmd_remove(syspaths: &Vec<std::path::PathBuf>) -> Result<()> {
+    for syspath in syspaths {
+        let sysname = match hidudev::HidUdev::from_syspath(syspath) {
+            Ok(dev) => dev.sysname(),
+            Err(e) => match e.raw_os_error() {
+                Some(libc::ENODEV) => sysname_from_syspath(syspath)?,
+                _ => return Err(e.into()),
+            },
+        };
+        bpf::remove_bpf_objects(&sysname)?;
+    }
+    Ok(())
 }
 
 fn find_bpfs(dir: &std::path::PathBuf) -> Result<Vec<std::path::PathBuf>> {
@@ -492,6 +510,39 @@ fn cmd_install(
     Ok(())
 }
 
+/// Split a list of paths at the occurance of the first '-'
+/// element, i.e. [a, b, c, -, d, e] becomes [a, b, c] and [d, e].
+fn split_paths(mut paths: Vec<String>) -> Result<(Vec<String>, Vec<String>)> {
+    let divider = String::from("-");
+    let (devices, objects) = match &mut paths[..] {
+        [] => bail!("At least one device path is required"),
+        [d] => (vec![d.clone()], vec![]),
+        [d, o] => (vec![d.clone()], vec![o.clone()]),
+        _ => {
+            let split = paths.iter().position(|p| p == &divider);
+            match split {
+                Some(idx) => {
+                    let mut objfiles = paths.split_off(idx);
+                    objfiles.remove(0);
+                    (paths, objfiles)
+                }
+                None => (paths, vec![]),
+            }
+        }
+    };
+
+    if devices.iter().any(|d| d.is_empty() || d == &divider)
+        || objects.iter().any(|o| o.is_empty() || o == &divider)
+    {
+        bail!("Invalid device or object path");
+    }
+    if devices.is_empty() {
+        bail!("Missing device path");
+    }
+
+    Ok((devices, objects))
+}
+
 fn udev_hid_bpf() -> Result<()> {
     let cli = Cli::parse();
 
@@ -516,18 +567,20 @@ fn udev_hid_bpf() -> Result<()> {
 
     match cli.command {
         Commands::Add {
-            devpath,
-            objfile,
+            paths,
             bpfdir,
             replace,
         } => {
+            let (devices, objfiles) = split_paths(paths)?;
+            let devices: Vec<std::path::PathBuf> =
+                devices.iter().map(std::path::PathBuf::from).collect();
             if replace {
-                cmd_remove(&devpath)?;
+                cmd_remove(&devices)?;
                 std::thread::sleep(std::time::Duration::from_millis(500));
             }
-            cmd_add(&devpath, objfile, bpfdir)
+            cmd_add(&devices, &objfiles, bpfdir)
         }
-        Commands::Remove { devpath } => cmd_remove(&devpath),
+        Commands::Remove { devpaths } => cmd_remove(&devpaths),
         Commands::ListBpfPrograms { bpfdir } => cmd_list_bpf_programs(bpfdir),
         Commands::ListDevices {} => cmd_list_devices(),
         Commands::Inspect { paths } => cmd_inspect(&paths),
@@ -576,5 +629,55 @@ mod tests {
             let sysname = sysname_from_syspath(&std::path::PathBuf::from(syspath));
             assert!(sysname.is_ok());
         }
+    }
+
+    macro_rules! vec_of_strings {
+        ($($x:expr),*) => (vec![$($x.to_string()),*]);
+    }
+
+    #[test]
+    fn test_split_paths() {
+        let paths: Vec<String> = vec_of_strings!["a"];
+        let (a, b) = split_paths(paths).unwrap();
+        assert_eq!(a, vec!["a"]);
+        assert_eq!(b, vec![] as Vec<&str>);
+
+        let paths: Vec<String> = vec_of_strings!["a", "b"];
+        let (a, b) = split_paths(paths).unwrap();
+        assert_eq!(a, vec!["a"]);
+        assert_eq!(b, vec!["b"]);
+
+        let paths: Vec<String> = vec_of_strings!["a", "b", "c"];
+        let (a, b) = split_paths(paths).unwrap();
+        assert_eq!(a, vec!["a", "b", "c"]);
+        assert_eq!(b, vec![] as Vec<&str>);
+
+        let paths: Vec<String> = vec_of_strings!["a", "b", "-", "c"];
+        let (a, b) = split_paths(paths).unwrap();
+        assert_eq!(a, vec!["a", "b"]);
+        assert_eq!(b, vec!["c"]);
+
+        let paths: Vec<String> = vec_of_strings!["a", "-", "b", "c"];
+        let (a, b) = split_paths(paths).unwrap();
+        assert_eq!(a, vec!["a"]);
+        assert_eq!(b, vec!["b", "c"] as Vec<&str>);
+
+        let paths: Vec<String> = vec_of_strings!["a", "b", "c", "-"];
+        let (a, b) = split_paths(paths).unwrap();
+        assert_eq!(a, vec!["a", "b", "c"]);
+        assert_eq!(b, vec![] as Vec<&str>);
+
+        let paths: Vec<String> = vec_of_strings!["-", "b", "c", "d"];
+        assert!(split_paths(paths).is_err());
+        let paths: Vec<String> = vec_of_strings!["a", "-"];
+        assert!(split_paths(paths).is_err());
+        let paths: Vec<String> = vec_of_strings!["-", "a"];
+        assert!(split_paths(paths).is_err());
+        let paths: Vec<String> = vec_of_strings!["-"];
+        assert!(split_paths(paths).is_err());
+        let paths: Vec<String> = vec_of_strings![""];
+        assert!(split_paths(paths).is_err());
+        let paths: Vec<String> = vec_of_strings!["a", "-", ""];
+        assert!(split_paths(paths).is_err());
     }
 }

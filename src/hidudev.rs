@@ -174,7 +174,7 @@ impl HidUdev {
     pub fn load_bpf_from_directories(
         &self,
         bpf_dirs: &[PathBuf],
-        objfile: Option<String>,
+        objfile: Option<&String>,
     ) -> std::io::Result<()> {
         let paths = match objfile {
             Some(objfile) => {
