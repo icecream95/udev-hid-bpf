@@ -1,0 +1,135 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/* Copyright (c) 2024 Red Hat, Inc
+ */
+
+// THIS FILE IS GENERATED, DO NOT EDIT
+{# Ignore the warning above, you're looking at the source file #}
+
+#pragma once
+
+
+/* Macros for composing HID reports.
+ *
+ * HID Fields are added manually to the template, please add to it as needed
+ * for any individual device. The Usage Pages and Usages are generated.
+ *
+ * Some macros have a _i8, _i16, or _i32 suffix. Pick the
+ * right suffix given the passed-in value.
+ */
+
+/*
+ * This macro behaves like static_assert(), failing to
+ * compile if its argument is not true.  However, it always
+ * returns 0, which allows using it everywhere an expression
+ * can be used.
+ */
+#define must_be(e, msg_)                                  \
+(                                                         \
+    0 * (int) sizeof(                                     \
+        struct {                                          \
+            _Static_assert(e, msg_);                      \
+            int  ISO_C_forbids_a_struct_with_no_members;  \
+        }                                                 \
+    )                                                     \
+)
+
+/* Ensure the given value fits within 8/16/32 bits */
+#define i4(v_)  (((__u8)(v_) & 0xf)  + must_be((v_) >= -0x8 && (v_) <= 0x7, "not a i4"))
+#define i8(v_)  ((__u8)(v_)  + must_be((v_) >= -0x80 && (v_) <= 0xff, "not a i8/u8"))
+#define i16(v_) ((__u16)(v_) + must_be((v_) >= -0x8000 && (v_) <= 0xffff, "not a i16/u16"))
+#define i32(v_) ((__u32)(v_) + must_be((v_) >= -0x80000000L && (v_) <= 0xffffffffL, "not a i32/u16"))
+
+/* Split a value across multiple bytes in LE order */
+#define LE16(v_) i16(v_) & 0xff, ((v_) >> 8) & 0xff
+#define LE32(v_) i32(v_) & 0xff, ((v_) >> 8) & 0xff, ((v_) >> 16) & 0xff, ((v_) >> 24) & 0xff
+
+/* Collections require two items in the report descriptor, the start
+ * of the collection (0xa?) and the EndCollection item (0xc?).
+ * This macro provides both, use like this:
+ *
+ * static const __u8 fixed_rdesc[] = {
+ *     UsagePage_Generic_Desktop
+ *     Usage_GD_Keyboard
+ *     CollectionApplication(     ← Open the collection
+ *         ReportId(3)
+ *         LogicalRange_i8(0, 1)
+ *         // other fields
+ *     )                          ← End EndCollection
+ *
+ * Collections may be nested.
+ */
+#define Collection(col_, ...)		0xa1, i8(col_), __VA_ARGS__ 0xc0,
+#define CollectionPhysical(...)		Collection(0x00, __VA_ARGS__)
+#define CollectionApplication(...)	Collection(0x01, __VA_ARGS__)
+#define CollectionLogical(...)		Collection(0x02, __VA_ARGS__)
+
+/* See Collections, this macro provides Push and Pop with
+ * elements in between */
+#define PushPop(...)			0xa4, __VA_ARGS__ 0xb4,
+
+/* Arguments to use in bitwise-or for Input, Output, Feature */
+#define Const		0x1
+#define Var		0x2
+#define Arr		0x0
+#define Abs		0x0
+#define Rel		0x4
+
+/* Use like this: Input(Var|Abs) */
+#define Input(i_)			0x081, i8(i_),
+#define Output(i_)			0x091, i8(i_),
+#define Feature(i_)			0x0b1, i8(i_),
+
+#define ReportId(id_)			0x85, i8(id_),
+#define ReportSize(sz_)		        0x75, i8(sz_),
+#define ReportCount(cnt_)		0x95, i8(cnt_),
+
+#define LogicalRange_i8(min_, max_)	0x15, i8(min_), 0x25, i8(max_),
+#define LogicalRange_i16(min_, max_)	0x16, LE16(min_), 0x26, LE16(max_),
+#define LogicalRange_i32(min_, max_)	0x17, LE32(min_), 0x27, LE32(max_),
+
+#define PhysicalRange_i8(min_, max_)	0x35, i8(min_), 0x45, i8(max_),
+#define PhysicalRange_i16(min_, max_)	0x36, LE16(min_), 0x46, LE16(max_),
+#define PhysicalRange_i32(min_, max_)	0x37, LE32(min_), 0x47, LE32(max_),
+
+#define UsageRange_i8(min_, max_)	0x19, i8(min_), 0x29, i8(max_),
+#define UsageRange_i16(min_, max_)	0x1a, LE16(min_), 0x2a, LE16(max_),
+
+#define UsagePage_i8(p_)		0x05, i8(p_),
+#define UsagePage_i16(p_)		0x06, LE16(p_),
+
+#define Usage_i8(u_)			0x09, i8(u_),
+#define Usage_i16(u_)			0x0a, LE16(u_),
+#define Usage_i32(u_)			0x0b, LE32(u_),
+
+#define SILinear			0x1
+#define SIRotation			0x2
+#define EnglishLinear			0x3
+#define EnglishRotation			0x4
+#define cm				(SILinear | (0x1 << 4))
+#define rad				(SIRotation | (0x1 << 4))
+#define deg				(EnglishRotation | (0x1 << 4))
+#define in				(EnglishLinear | (0x1 << 4))
+/* Use as Unit(cm) or Unit(rad) or similar.
+ * This macro currently defaults to exponent 1 only, so no
+ * cm^2 or others */
+#define Unit(u_)                        Unit_i8(u_)
+#define Unit_i8(u_)			0x65, i8(u_),
+#define Unit_i16(u_)			0x66, i16(u_),
+#define Unit_i32(u_)			0x67, i32(u_),
+
+#define UnitExponent(u_)		0x55, i4(u_),
+
+/* ----- Generated Usage Pages and Usages ------ */
+{% for usage_page in usage_pages %}
+{% set size = "i8" if usage_page.value < 0xff  else "i16" %}
+#define UsagePage_{{ usage_page.name.ljust(30)}} UsagePage_{{size}}(0x{{'%x' % usage_page.value}})
+{% endfor %}
+#define UsagePage_Vendor(u_)		UsagePage_i16((u_) + must_be(((u_) & 0xff00) == 0xff00, "not a 0xff00 vendor page")
+
+{% for usage_page in usage_pages %}
+{% for usage in usage_page.usages %}
+{% set size = "i8" if usage.value < 0xff  else "i16" %}
+{% set name = usage_page.acronym + "_" + usage.name %}
+#define Usage_{{ name.ljust(40)}} Usage_{{size}}(0x{{'%x' % usage.value}})
+{% endfor %}
+{% endfor %}
