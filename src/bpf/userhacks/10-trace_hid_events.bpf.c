@@ -37,19 +37,17 @@ int BPF_PROG(trace_hid_events, struct hid_bpf_ctx *hid_ctx)
 			return 0; /* EPERM check */
 
 		for (j = 0; j < 8 && i * 64 + j * 8 < hid_ctx->size; j++) {
-			long n;
-
-			n = BPF_SNPRINTF(str, sizeof(str),
-					 "%02x %02x %02x %02x %02x %02x %02x %02x ",
-					 data[j * 8],
-					 data[j * 8 + 1],
-					 data[j * 8 + 2],
-					 data[j * 8 + 3],
-					 data[j * 8 + 4],
-					 data[j * 8 + 5],
-					 data[j * 8 + 6],
-					 data[j * 8 + 7]
-					 );
+			 BPF_SNPRINTF(str, sizeof(str),
+				      "%02x %02x %02x %02x %02x %02x %02x %02x ",
+				      data[j * 8],
+				      data[j * 8 + 1],
+				      data[j * 8 + 2],
+				      data[j * 8 + 3],
+				      data[j * 8 + 4],
+				      data[j * 8 + 5],
+				      data[j * 8 + 6],
+				      data[j * 8 + 7]
+				      );
 
 			bpf_printk(" 0x%08x: %s", i * 64 + j * 8, str);
 		}
