@@ -45,9 +45,10 @@ variables:
     python3-click
     python3-rich
     python3-pyudev
+    python3-pytest
     libevdev
     systemd-udev
-  FEDORA_TAG:  '2024-06-12.2'
+  FEDORA_TAG:  '2024-06-14.0'
   FDO_DISTRIBUTION_EXEC: 'pip3 install --break-system-packages git+https://gitlab.freedesktop.org/libevdev/hid-tools/'
   RUST_BACKTRACE: '1'
   PREFIX: /_inst
@@ -75,6 +76,7 @@ variables:
     perl-Term-ANSIColor
     perl-Encode
     jq
+  MESON_OPTIONS: -Dtests=enabled
 
 .policy:
   retry:

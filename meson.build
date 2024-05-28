@@ -177,6 +177,8 @@ if uname.found()
     endif
 endif
 
+subdir('test')
+
 summary({'kernel version': kernel_version}, section: 'Host machine')
 summary({'udevdir': udevdir,
          'prefix': prefix,

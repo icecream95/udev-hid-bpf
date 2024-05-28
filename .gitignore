@@ -1,3 +1,4 @@
 /target
 Cargo.lock
 udev-hid-bpf-*.tar.*
+__pycache__
