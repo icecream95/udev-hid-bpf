@@ -31,10 +31,13 @@ fn build_bpf_file(
         bpf_source.parent().unwrap().parent().unwrap(),
         &extra_include,
     ];
-    let cflags: Vec<String> = includedirs
+    let mut cflags: Vec<String> = includedirs
         .iter()
         .map(|d| format!("-I{}", d.display()))
         .collect();
+
+    cflags.push("-Wall".to_string());
+    cflags.push("-Werror".to_string());
 
     SkeletonBuilder::new()
         .source(bpf_source)
