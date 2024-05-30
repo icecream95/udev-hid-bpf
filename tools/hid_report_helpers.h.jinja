@@ -119,6 +119,40 @@
 
 #define UnitExponent(u_)		0x55, i4(u_),
 
+/* A macro to generate a vendor-specific padding-only
+ * report with Report ID 0xac of the given size in bytes.
+ * The size is inclusive of the 1 byte Report ID prefix.
+ *
+ * HID-BPF requires that at least one report has
+ * the same size as the original report from the device.
+ * The easy way to ensure that is to add this
+ * macro as the last element of your CollectionApplication
+ * other reports can be of any size less than this.
+ *
+ * e.g.
+ *   static __u8 fixed_rdesc = [
+ *      UsagePage_Generic_Desktop
+ *      Usage_GD_Keyboard
+ *      CollectionApplication(
+ *          ... intended rdesc items go here ...
+ *          FixedSizeVendorReport(12)
+ *      )
+ *   ];
+ *
+ *   If the FixedSizeVendorReport is placed outside
+ *   a CollectionApplication it will result in
+ *   an extra useless evdev node being created.
+ */
+#define FixedSizeVendorReport(bytes_)			\
+	UsagePage_Vendor(0xffff)			\
+	Usage_i8(0x01)					\
+	CollectionPhysical(				\
+		ReportId(0xac)				\
+		ReportSize(8)				\
+		ReportCount((bytes_) - 1)		\
+		Input(Const)				\
+	)
+
 /* ----- Generated Usage Pages and Usages ------ */
 {% for usage_page in usage_pages %}
 {% set size = "i8" if usage_page.value < 0xff  else "i16" %}
