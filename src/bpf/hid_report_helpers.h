@@ -153,7 +153,7 @@
 #define UsagePage_CameraControl                  UsagePage_i8(0x90)
 #define UsagePage_Arcade                         UsagePage_i8(0x91)
 #define UsagePage_FIDOAlliance                   UsagePage_i16(0xf1d0)
-#define UsagePage_Vendor(u_)		UsagePage_i16((u_) + must_be(((u_) & 0xff00) == 0xff00, "not a 0xff00 vendor page")
+#define UsagePage_Vendor(u_)		UsagePage_i16((u_) + must_be(((u_) & 0xff00) == 0xff00, "not a 0xff00 vendor page"))
 
 #define Usage_GD_Pointer                               Usage_i8(0x1)
 #define Usage_GD_Mouse                                 Usage_i8(0x2)

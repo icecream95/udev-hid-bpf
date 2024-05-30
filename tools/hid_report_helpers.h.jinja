@@ -124,7 +124,7 @@
 {% set size = "i8" if usage_page.value < 0xff  else "i16" %}
 #define UsagePage_{{ usage_page.name.ljust(30)}} UsagePage_{{size}}(0x{{'%x' % usage_page.value}})
 {% endfor %}
-#define UsagePage_Vendor(u_)		UsagePage_i16((u_) + must_be(((u_) & 0xff00) == 0xff00, "not a 0xff00 vendor page")
+#define UsagePage_Vendor(u_)		UsagePage_i16((u_) + must_be(((u_) & 0xff00) == 0xff00, "not a 0xff00 vendor page"))
 
 {% for usage_page in usage_pages %}
 {% for usage in usage_page.usages %}
