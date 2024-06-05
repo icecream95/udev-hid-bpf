@@ -4,6 +4,7 @@
 # in the newer struct_ops approach and are thus compatible
 # for both approaches.
 tracing_sources = [
+    '10-Huion__Dial-2.bpf.c',
     '10-Huion__Inspiroy-2-S.bpf.c',
     '10-XPPen__DecoMini4.bpf.c',
 ]
