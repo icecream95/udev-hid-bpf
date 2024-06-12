@@ -28,7 +28,7 @@ variables:
   FEDORA_VERSION: 39
   FEDORA_RELEASE_VERSION: 37
   FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel meson tree jq python3-pip python3-click python3-rich python3-pyudev libevdev systemd-udev'
-  FEDORA_TAG:  '2024-04-10.0'
+  FEDORA_TAG:  '2024-06-12.0'
   FDO_DISTRIBUTION_EXEC: 'pip3 install --break-system-packages git+https://gitlab.freedesktop.org/libevdev/hid-tools/'
   RUST_BACKTRACE: '1'
   PREFIX: /_inst
@@ -344,6 +344,7 @@ b2c uhid-test:
   stage: test
   needs:
     - rebuild kernel
+    - fedora@container-prep
   parallel:
     matrix:
       - TEST: udev
