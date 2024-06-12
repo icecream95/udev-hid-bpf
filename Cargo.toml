@@ -26,6 +26,5 @@ tempfile = "3.10.1"
 libbpf-rs = "0.23"
 libbpf-cargo = { version = "0.23" }
 log = "0.4"
-bindgen = "0.69.4"
 regex = "1.9.1"
 udev =  { version = "0.7.0", features = ["mio08"] }

@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
-extern crate bindgen;
-
 #[allow(dead_code)]
 /// modalias is not used completely here, so some functions are not used
 #[path = "src/modalias.rs"]
@@ -87,29 +85,6 @@ fn build_bpf_wrappers(src_dir: &Path, dst_dir: &Path) {
         .clang_args([format!("-I{}", extra_include)])
         .build_and_generate(&skel_file)
         .unwrap();
-
-    // Create a wrapper around our bpf interface
-    // The bindgen::Builder is the main entry point
-    // to bindgen, and lets you build up options for
-    // the resulting bindings.
-    let bindings = bindgen::Builder::default()
-        // The input header we would like to generate
-        // bindings for.
-        .header(WRAPPER)
-        // make struct attach_prog_args more rust-friendly
-        .raw_line("type AttachProgArgs = attach_prog_args;")
-        // Tell cargo to invalidate the built crate whenever any of the
-        // included header files changed.
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
-        // Finish the builder and generate the bindings.
-        .generate()
-        // Unwrap the Result and panic on failure.
-        .expect("Unable to generate bindings");
-
-    // Write the bindings to the hid_bpf_bindings.rs file.
-    bindings
-        .write_to_file(dst_dir.join("hid_bpf_bindings.rs"))
-        .expect("Couldn't write bindings!");
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
