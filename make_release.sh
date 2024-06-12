@@ -6,6 +6,8 @@ usage () {
   echo "Usage: $(basename "$0") [-v|--verbose]"
 }
 
+DIRTY="--dirty"
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --help)
@@ -14,6 +16,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --verbose|-v)
       set -x
+      shift
+      ;;
+    --yes-I-really-do-not-want-dirty-suffix)
+      DIRTY=""
       shift
       ;;
     --features)
@@ -53,7 +59,7 @@ meson setup \
 meson compile -C "$BUILDDIR"
 meson install -C "$BUILDDIR"
 
-VERSION=$(git describe --tags --dirty)
+VERSION=$(git describe --tags $DIRTY)
 NAME=udev-hid-bpf_${VERSION}
 
 # Now get the list of installed files and generate install.sh and uninstall.sh with it

@@ -379,12 +379,14 @@ make release:
     - .fedora-cargo@template
   stage: deploy
   script:
+    # Fedora 37 can't properly use _Pragma under GCC
+    - git apply .gitlab-ci/fedora-37.patch
     - python3 -m venv _venv
     - . _venv/bin/activate
     - pip install yq
     - ln -s /usr/bin/true /usr/local/bin/udevadm
     - ln -s /usr/bin/true /usr/local/bin/systemd-hwdb
-    - ./make_release.sh --verbose --features testing,stable
+    - ./make_release.sh --verbose --features testing,stable --yes-I-really-do-not-want-dirty-suffix
     - mkdir -p tarball_dir
     - tar xf udev-hid-bpf*.tar.xz -C tarball_dir --strip-components=1
     - pushd tarball_dir

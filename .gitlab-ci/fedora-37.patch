@@ -1,0 +1,16 @@
+diff --git a/src/bpf/hid_bpf_helpers.h b/src/bpf/hid_bpf_helpers.h
+index 3ba24d1..5e11106 100644
+--- a/src/bpf/hid_bpf_helpers.h
++++ b/src/bpf/hid_bpf_helpers.h
+@@ -9,6 +9,11 @@
+ #include <bpf/bpf_helpers.h>
+ #include <linux/errno.h>
+ 
++#if __GNUC__ && !__clang__
++#undef SEC
++#define SEC(name) __attribute__((section(name), used))
++#endif
++
+ extern __u8 *hid_bpf_get_data(struct hid_bpf_ctx *ctx,
+ 			      unsigned int offset,
+ 			      const size_t __sz) __ksym;
