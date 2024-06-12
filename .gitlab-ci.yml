@@ -27,8 +27,27 @@ variables:
   FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
   FEDORA_VERSION: 39
   FEDORA_RELEASE_VERSION: 37
-  FEDORA_PACKAGES: 'cargo clang elfutils-libelf-devel git-core rustfmt systemd-devel xz zlib-devel meson tree jq python3-pip python3-click python3-rich python3-pyudev libevdev systemd-udev'
-  FEDORA_TAG:  '2024-06-12.0'
+  FEDORA_PACKAGES: >
+    bpftool
+    cargo
+    clang
+    elfutils-libelf-devel
+    libbpf-devel
+    git-core
+    rustfmt
+    systemd-devel
+    xz
+    zlib-devel
+    meson
+    tree
+    jq
+    python3-pip
+    python3-click
+    python3-rich
+    python3-pyudev
+    libevdev
+    systemd-udev
+  FEDORA_TAG:  '2024-06-12.2'
   FDO_DISTRIBUTION_EXEC: 'pip3 install --break-system-packages git+https://gitlab.freedesktop.org/libevdev/hid-tools/'
   RUST_BACKTRACE: '1'
   PREFIX: /_inst
@@ -238,7 +257,7 @@ meson build and test:
     - .gitlab-ci/meson-build.sh --run-install
     - tree $PREFIX
   variables:
-    MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev
+    MESON_ARGS: --prefix=$PREFIX -Dbpfs=stable,testing -Dudevdir=$PREFIX/lib/udev
   artifacts:
     paths:
       - $MESON_BUILDDIR
@@ -285,11 +304,15 @@ meson features build:
     - .fedora-meson@template
   parallel:
     matrix:
+      - NO_FEATURE: no_feature
       - FEATURE: testing
       - FEATURE: stable
       - FEATURE: testing,stable
   script:
-    - export MESON_EXTRA_ARGS="-Dbpfs=$FEATURE"
+    - |
+      if [ -n $FEATURE ]; then
+        export MESON_EXTRA_ARGS="-Dbpfs=$FEATURE"
+      fi
     - .gitlab-ci/meson-build.sh --run-install
     - tree $PREFIX
     - |
@@ -297,7 +320,7 @@ meson features build:
         test ! -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
       fi
     - |
-      if [ "$FILTER" = "testing,stable" ]; then
+      if [ "$FEATURE" = "testing,stable" ]; then
         test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
       fi
     # no userhacks files should be installed

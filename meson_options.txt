@@ -19,3 +19,11 @@ option('bpfdirs',
        type: 'array',
        value: ['PREFIXED_BPFDIR', '/usr/local/lib/firmware/hid/bpf', '/usr/lib/firmware/hid/bpf', '/lib/firmware/hid/bpf'],
        description: 'A list of prefixes to load bpf.o files from, in order of preference. The special value PREFIX_BPFDIR resolves to PREFIX/lib/firmware. If empty, only the PREFIX_BPFDIR value is used.')
+
+# from systemd meson_options.txt
+option('bpf-compiler', type : 'combo', choices : ['clang', 'gcc'],
+       description : 'compiler used to build BPF programs')
+option('vmlinux-h', type : 'combo', choices : ['auto', 'provided', 'generated', 'disabled'], value: 'provided',
+       description : 'which vmlinux.h to use')
+option('vmlinux-h-path', type : 'string', value : '@SOURCE_DIR@/src/bpf/vmlinux.h',
+       description : 'path to vmlinux.h to use')

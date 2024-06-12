@@ -1,6 +1,8 @@
-project('udev-hid-bpf', 'rust',
+project('udev-hid-bpf', 'rust', 'c',
         version: '1.0.1-20240515', # Update Cargo.toml too!
         meson_version: '>= 1.0.0')
+
+cc = meson.get_compiler('c')
 
 prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
@@ -30,13 +32,6 @@ if udevdir == ''
     endif
 endif
 
-filters = get_option('bpf-filter')
-have_filters = filters != []
-
-subset = get_option('bpfs')
-install_testing = 'testing' in subset or have_filters
-install_stable = 'stable' in subset or have_filters
-
 cargo = find_program('cargo', required: true)
 
 cargo_options = [
@@ -53,18 +48,7 @@ else
   message('Building in debug mode')
 endif
 
-# For cargo we need to mirror much of the source tree
-fs = import('fs')
-bpf_sources = files()
-bpf_o_files_testing = []
-bpf_o_files_stable = []
-bpf_o_files_userhacks = []
 subdir('src')
-
-bpf_output_files = []
-foreach f : bpf_sources
-    bpf_output_files = fs.replace_suffix(f, '.o')
-endforeach
 
 # Now the cargo invocation
 cargo_env = {
@@ -73,7 +57,6 @@ cargo_env = {
     'CARGO_HOME': meson.project_build_root() / 'cargo-home',
     'CARGO_TARGET_DIR': meson.project_build_root(),
     'BPF_SOURCE_ROOT': meson.project_source_root(),
-    'EXTRA_INCLUDE': meson.project_source_root() / 'src' / 'bpf',
     'BPF_INSTALL_DIR': bpfdir,
     'BPF_LOOKUP_DIRS': lookup_bpfdirs,
 }
@@ -81,6 +64,7 @@ cargo_env = {
 cargo_files = files(
     'Cargo.toml',
     'build.rs',
+    'src/bpf/attach.bpf.c',
     'src/bpf.rs',
     'src/hid_bpf_wrapper.h',
     'src/hidudev.rs',
@@ -99,7 +83,7 @@ cargo_build = custom_target(
   console: true,
   install: true,
   install_dir: bindir,
-  depend_files: bpf_sources + cargo_files,
+  depend_files: cargo_files,
   env: cargo_env,
   command: [
     cargo, 'build',
