@@ -19,11 +19,14 @@ option('bpfdirs',
        type: 'array',
        value: ['PREFIXED_BPFDIR', '/usr/local/lib/firmware/hid/bpf', '/usr/lib/firmware/hid/bpf', '/lib/firmware/hid/bpf'],
        description: 'A list of prefixes to load bpf.o files from, in order of preference. The special value PREFIX_BPFDIR resolves to PREFIX/lib/firmware. If empty, only the PREFIX_BPFDIR value is used.')
+option('bpf-tracing',
+       type: 'boolean',
+       value: true,  # set to true while struct_ops is not in most distributions
+       description: 'Build HID-BPF objects with the tracing capability, depending of the running kernel. This only affects the generated objects, udev-hid-bpf is capable of loading both kinds')
 option('tests',
         type: 'feature',
         value: 'auto',
         description: 'Build the unit tests')
-
 
 # from systemd meson_options.txt
 option('bpf-compiler', type : 'combo', choices : ['clang', 'gcc'],

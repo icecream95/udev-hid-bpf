@@ -12,9 +12,10 @@ endif
 # per BPF program.
 foreach obj: bpf_objects
     srcfile = obj['file']
+    outfile = obj['output_file']
     bpf_o = obj['bpf_o']
     src = ['test-wrapper.c'] + srcfile
-    fname = fs.stem(srcfile)
+    fname = fs.stem(outfile)
     fname = fs.stem(fname)
     fname = fs.name(fname)
 

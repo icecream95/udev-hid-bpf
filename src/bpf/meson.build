@@ -223,6 +223,8 @@ endif
 # We need to append the bpf dir after the possibly generated vmlinux.h
 bpf_o_unstripped_cmd += ['-I' + meson.project_source_root() / 'src' / 'bpf']
 
+bpf_tracing_o_unstripped_cmd = bpf_o_unstripped_cmd + ['-DHID_BPF_TRACING']
+
 filters = get_option('bpf-filter')
 have_filters = filters != []
 
@@ -252,6 +254,28 @@ foreach bpf_source : bpf_sources
     kind = fs.name(outdir)
     install = bpf_source['install']
     build_by_default = bpf_source.get('build_by_default', false)
+    compile_with_tracing = bpf_source['compile_with_tracing']
+
+    bpf_splitted = bpf.split('-')
+    id = bpf_splitted[0].to_int()
+    # we remove the first numbers, the first '-' and the last 2 chars for '.c'
+    stem = bpf.strip('0123456789').substring(1, -2)
+
+    cmd = bpf_o_unstripped_cmd
+
+    # Build with an id lower than struct_ops so loading always prefers
+    # struct_ops and only falls back to tracing where struct_ops fails
+    if compile_with_tracing
+        id = id - 1
+        cmd = bpf_tracing_o_unstripped_cmd
+    endif
+
+    if id < 10
+        file_id = f'0@id@'
+    else
+        file_id = f'@id@'
+    endif
+
 
     filter_matches = not have_filters
     if have_filters
@@ -262,16 +286,20 @@ foreach bpf_source : bpf_sources
             endif
         endforeach
     endif
+
+
     unstripped_bpf = custom_target(
         input : file,
-        output: ['@BASENAME@.unstripped.o'],
-        command : bpf_o_unstripped_cmd,
+        output: ['@0@-@1@.unstripped.o'.format(file_id, stem)],
+        command : cmd,
         depends : vmlinux_h_dependency)
+
+    bpf_o_file = '@0@-@1@.o'.format(file_id, stem)
 
     bpf_o = custom_target(
         input: unstripped_bpf,
         depend_files: file,
-        output: ['@0@.o'.format(bpf.substring(0, -2))],
+        output: [bpf_o_file],
         command : bpf_o_cmd,
         install: install and filter_matches,
         install_dir: bpfdir,
@@ -286,5 +314,5 @@ foreach bpf_source : bpf_sources
         bpf_o_files_userhacks += bpf_o
     endif
 
-    bpf_objects += [{ 'file': file, 'bpf_o': bpf_o },]
+    bpf_objects += [{ 'file': file, 'bpf_o': bpf_o, 'output_file': bpf_o_file },]
 endforeach

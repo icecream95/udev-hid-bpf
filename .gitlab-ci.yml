@@ -282,21 +282,25 @@ meson filter build:
     - |
       if [ "$FILTER" = "trace" ]; then
         # We only expect one file to be installed
-        test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 1
+        test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 2
         test -e $PREFIX/lib/firmware/hid/bpf/10-trace_hid_events.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/09-trace_hid_events.bpf.o
       fi
     - |
       if [ "$FILTER" = "XBox" ]; then
         # We only expect one file to be installed
-        test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 1
+        test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 2
         test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/09-Microsoft__XBox-Elite-2.bpf.o
       fi
     - |
       if [ "$FILTER" = "trace,XBox" ]; then
         # We only expect two files to be installed
-        test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 2
+        test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 4
         test -e $PREFIX/lib/firmware/hid/bpf/10-trace_hid_events.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/09-trace_hid_events.bpf.o
         test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/09-Microsoft__XBox-Elite-2.bpf.o
       fi
   variables:
     MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev

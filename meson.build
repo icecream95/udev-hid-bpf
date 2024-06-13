@@ -34,6 +34,8 @@ endif
 
 cargo = find_program('cargo', required: true)
 
+use_bpf_tracing = get_option('bpf-tracing')
+
 cargo_options = [
     '--manifest-path', meson.project_source_root() / 'Cargo.toml',
 ]
