@@ -284,13 +284,13 @@ meson filter build:
         test -e $PREFIX/lib/firmware/hid/bpf/10-trace_hid_events.bpf.o
       fi
     - |
-      if [ "$FILTER" = "Xbox" ]; then
+      if [ "$FILTER" = "XBox" ]; then
         # We only expect one file to be installed
         test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 1
         test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
       fi
     - |
-      if [ "$FILTER" = "trace,Xbox" ]; then
+      if [ "$FILTER" = "trace,XBox" ]; then
         # We only expect two files to be installed
         test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 2
         test -e $PREFIX/lib/firmware/hid/bpf/10-trace_hid_events.bpf.o
