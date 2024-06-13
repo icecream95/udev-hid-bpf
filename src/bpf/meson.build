@@ -285,6 +285,50 @@ bpf_o_files_userhacks = []
 prefix = get_option('prefix')
 bpfdir = prefix / 'lib' / 'firmware' / 'hid' / 'bpf'
 
+bpf_sources = []
+
 subdir('testing')
 subdir('stable')
 subdir('userhacks')
+
+foreach bpf_source : bpf_sources
+    bpf = bpf_source['name']
+    file = bpf_source['file']
+    outdir = fs.parent(file)
+    kind = fs.name(outdir)
+    install = bpf_source['install']
+    build_by_default = bpf_source.get('build_by_default', false)
+
+    filter_matches = not have_filters
+    if have_filters
+        foreach filter: filters
+            if bpf.contains(filter)
+                filter_matches = true
+                break
+            endif
+        endforeach
+    endif
+    unstripped_bpf = custom_target(
+        input : file,
+        output: ['@BASENAME@.unstripped.o'],
+        command : bpf_o_unstripped_cmd,
+        depends : vmlinux_h_dependency)
+
+    bpf_o = custom_target(
+        input: unstripped_bpf,
+        depend_files: file,
+        output: ['@0@.o'.format(bpf.substring(0, -2))],
+        command : bpf_o_cmd,
+        install: install and filter_matches,
+        install_dir: bpfdir,
+        build_by_default: build_by_default,
+    )
+
+    if kind == 'stable'
+        bpf_o_files_stable += bpf_o
+    elif kind == 'testing'
+        bpf_o_files_testing += bpf_o
+    elif kind == 'userhacks'
+        bpf_o_files_userhacks += bpf_o
+    endif
+endforeach

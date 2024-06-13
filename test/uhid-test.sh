@@ -169,8 +169,8 @@ bpf_is_not_loaded() {
 }
 
 test_cmd_add_with_path() {
-    fail_bpf="$MESON_BUILDDIR/src/bpf/userhacks/10-noop-probe-fail.bpf.o"
-    success_bpf="$MESON_BUILDDIR/src/bpf/userhacks/10-noop-probe-succeed.bpf.o"
+    fail_bpf="$MESON_BUILDDIR/src/bpf/10-noop-probe-fail.bpf.o"
+    success_bpf="$MESON_BUILDDIR/src/bpf/10-noop-probe-succeed.bpf.o"
     exists_or_fail "$fail_bpf"
     exists_or_fail "$success_bpf"
 
@@ -199,8 +199,8 @@ test_cmd_add_with_path() {
 test_cmd_add_via_udev() {
     mode="$1"
 
-    fail_bpf="$MESON_BUILDDIR/src/bpf/userhacks/10-noop-probe-fail.bpf.o"
-    succeed_bpf="$MESON_BUILDDIR/src/bpf/userhacks/10-noop-probe-succeed.bpf.o"
+    fail_bpf="$MESON_BUILDDIR/src/bpf/10-noop-probe-fail.bpf.o"
+    succeed_bpf="$MESON_BUILDDIR/src/bpf/10-noop-probe-succeed.bpf.o"
     exists_or_fail "$fail_bpf"
     exists_or_fail "$succeed_bpf"
 

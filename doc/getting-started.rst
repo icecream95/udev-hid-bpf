@@ -59,9 +59,9 @@ Install a specific ``bpf.o`` file only
 In many cases a user only wants to install a single file for testing. The
 easiest approach is to use ``udev-hid-bpf`` to install it::
 
-  $ ./builddir/udev-hid-bpf install ./builddir/src/bpf/userhacks/my_awesome_hid_bpf_filter.bpf.o
+  $ ./builddir/udev-hid-bpf install ./builddir/src/bpf/my_awesome_hid_bpf_filter.bpf.o
   # or to install udev-hid-bpf itself too
-  $ ./builddir/udev-hid-bpf install --install-exe ./builddir/src/bpf/userhacks/my_awesome_hid_bpf_filter.bpf.o
+  $ ./builddir/udev-hid-bpf install --install-exe ./builddir/src/bpf/my_awesome_hid_bpf_filter.bpf.o
 
 This will install the ``.bpf.o`` file into ``/etc/udev-hid-bpf/`` and also
 install a custom udev rule udev for this file. If ``--install-exe`` is given,
