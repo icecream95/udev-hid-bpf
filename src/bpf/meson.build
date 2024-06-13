@@ -278,7 +278,6 @@ subset = get_option('bpfs')
 install_testing = 'testing' in subset or have_filters
 install_stable = 'stable' in subset or have_filters
 
-bpf_sources = files()
 bpf_o_files_testing = []
 bpf_o_files_stable = []
 bpf_o_files_userhacks = []

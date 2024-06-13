@@ -16,7 +16,6 @@ foreach bpf : sources
             endif
         endforeach
     endif
-    bpf_sources += files(bpf)
     unstripped_bpf = custom_target(
         '@0@.unstripped.o'.format(bpf),
         input : bpf,
