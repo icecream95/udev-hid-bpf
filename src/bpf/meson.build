@@ -6,74 +6,36 @@ bpf_compiler = get_option('bpf-compiler')
 libbpf = dependency('libbpf',
                     required : true,
                     version : bpf_compiler == 'gcc' ? '>= 1.4.0' : '>= 0.1.0')
-clang_found = false
-clang_supports_bpf = false
-bpf_gcc_found = false
-bpftool_strip = false
-deps_found = false
 
 if bpf_compiler == 'clang'
         # Support 'versioned' clang/llvm-strip binaries, as seen on Debian/Ubuntu
         # (like clang-10/llvm-strip-10)
         if meson.is_cross_build() or cc.get_id() != 'clang' or cc.cmd_array()[0].contains('afl-clang') or cc.cmd_array()[0].contains('hfuzz-clang')
-                r = find_program('clang',
-                                 required : true,
-                                 version : '>= 10.0.0')
-                clang_found = r.found()
-                if clang_found
-                        clang = r.full_path()
-                endif
+                clang = find_program('clang',
+                                     required : true,
+                                     version : '>= 10.0.0')
         else
-                clang_found = true
                 clang = cc.cmd_array()
         endif
 
-        if clang_found
-                # Check if 'clang -target bpf' is supported.
-                clang_supports_bpf = run_command(clang, '-target', 'bpf', '--print-supported-cpus', check : false).returncode() == 0
-        endif
+        # Check if 'clang -target bpf' is supported.
+        run_command(clang, '-target', 'bpf', '--print-supported-cpus', check : true)
 elif bpf_compiler == 'gcc'
         bpf_gcc = find_program('bpf-gcc',
                                'bpf-none-gcc',
                                required : true,
                                version : '>= 13.1.0')
-        bpf_gcc_found = bpf_gcc.found()
+else
+        error('Unsupported bpf_compiler option')
 endif
 
-if clang_supports_bpf or bpf_gcc_found
-        # Debian installs this in /usr/sbin/ which is not in $PATH.
-        # We check for 'bpftool' first, honouring $PATH, and in /usr/sbin/ for Debian.
-        # We use 'bpftool gen object' subcommand for bpftool strip, it was added by d80b2fcbe0a023619e0fc73112f2a02c2662f6ab (v5.13).
-        bpftool = find_program('bpftool',
-                               '/usr/sbin/bpftool',
-                               required : bpf_compiler == 'gcc',
-                               version : bpf_compiler == 'gcc' ? '>= 7.0.0' : '>= 5.13.0')
-
-        if bpftool.found()
-                bpftool_strip = true
-                deps_found = true
-        elif bpf_compiler == 'clang'
-                # We require the 'bpftool gen skeleton' subcommand, it was added by 985ead416df39d6fe8e89580cc1db6aa273e0175 (v5.6).
-                bpftool = find_program('bpftool',
-                                       '/usr/sbin/bpftool',
-                                       required : true,
-                                       version : '>= 5.6.0')
-        endif
-
-        # We use `llvm-strip` as a fallback if `bpftool gen object` strip support is not available.
-        if not bpftool_strip and bpftool.found() and clang_supports_bpf
-                if not meson.is_cross_build()
-                        llvm_strip_bin = run_command(clang, '--print-prog-name', 'llvm-strip',
-                                                     check : true).stdout().strip()
-                else
-                        llvm_strip_bin = 'llvm-strip'
-                endif
-                llvm_strip = find_program(llvm_strip_bin,
-                                          required : bpf_framework,
-                                          version : '>= 10.0.0')
-                deps_found = llvm_strip.found()
-        endif
-endif
+# Debian installs this in /usr/sbin/ which is not in $PATH.
+# We check for 'bpftool' first, honouring $PATH, and in /usr/sbin/ for Debian.
+# We use 'bpftool gen object' subcommand for bpftool strip, it was added by d80b2fcbe0a023619e0fc73112f2a02c2662f6ab (v5.13).
+bpftool = find_program('bpftool',
+                       '/usr/sbin/bpftool',
+                       required : true,
+                       version : bpf_compiler == 'gcc' ? '>= 7.0.0' : '>= 5.13.0')
 
 bpf_clang_flags = [
         '-std=gnu11',
@@ -177,23 +139,13 @@ bpf_o_unstripped_cmd += [
         '@OUTPUT@'
 ]
 
-if bpftool_strip
-        bpf_o_cmd = [
-                bpftool,
-                'gen',
-                'object',
-                '@OUTPUT@',
-                '@INPUT@'
-        ]
-elif bpf_compiler == 'clang'
-        bpf_o_cmd = [
-                llvm_strip,
-                '-g',
-                '@INPUT@',
-                '-o',
-                '@OUTPUT@'
-        ]
-endif
+bpf_o_cmd = [
+        bpftool,
+        'gen',
+        'object',
+        '@OUTPUT@',
+        '@INPUT@'
+]
 
 skel_h_cmd = [
         bpftool,
