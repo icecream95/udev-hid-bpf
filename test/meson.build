@@ -10,9 +10,10 @@ endif
 
 # We recompile the BPF as a normal shared library, one
 # per BPF program.
-foreach f: bpf_sources
-    src = ['test-wrapper.c'] + f
-    fname = fs.stem(f)
+foreach obj: bpf_objects
+    srcfile = obj['file']
+    src = ['test-wrapper.c'] + srcfile
+    fname = fs.stem(srcfile)
     fname = fs.stem(fname)
     fname = fs.name(fname)
     shared_library('test-@0@'.format(fname),

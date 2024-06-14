@@ -11,7 +11,7 @@ from ctypes import (
     c_void_p,
     c_size_t,
 )
-from typing import Optional, Tuple, Type
+from typing import Optional, Tuple, Type, Self
 from dataclasses import dataclass
 
 import logging
@@ -101,7 +101,10 @@ class Bpf:
             )
 
     @classmethod
-    def load(cls, name: str):
+    def load(cls, name: str) -> Self:
+        """
+        Load the given bpf.o file from our tree
+        """
         name = f"libtest-{name}.so"
         if name not in cls._libs:
             cls._libs[name] = cls(cls._load(name))

@@ -243,6 +243,8 @@ subdir('testing')
 subdir('stable')
 subdir('userhacks')
 
+bpf_objects = []
+
 foreach bpf_source : bpf_sources
     bpf = bpf_source['name']
     file = bpf_source['file']
@@ -283,4 +285,6 @@ foreach bpf_source : bpf_sources
     elif kind == 'userhacks'
         bpf_o_files_userhacks += bpf_o
     endif
+
+    bpf_objects += [{ 'file': file, 'bpf_o': bpf_o },]
 endforeach
