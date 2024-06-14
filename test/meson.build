@@ -12,10 +12,24 @@ endif
 # per BPF program.
 foreach obj: bpf_objects
     srcfile = obj['file']
+    bpf_o = obj['bpf_o']
     src = ['test-wrapper.c'] + srcfile
     fname = fs.stem(srcfile)
     fname = fs.stem(fname)
     fname = fs.name(fname)
+
+    custom_target(
+        'test - extract json data @0@'.format(fname),
+        depends: cargo_build,
+        output: 'libtest-@0@.json'.format(fname),
+        capture: true,
+        command: [
+            cargo_build,
+            'inspect',
+            bpf_o,
+        ],
+        build_by_default: true,
+    )
     shared_library('test-@0@'.format(fname),
         src,
         c_args : ['-Wno-unknown-pragmas'],

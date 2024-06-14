@@ -13,9 +13,12 @@ from ctypes import (
 )
 from typing import Optional, Tuple, Type, Self
 from dataclasses import dataclass
+from pathlib import Path
 
 import logging
 import ctypes
+import os
+import json
 import pytest
 
 
@@ -86,28 +89,63 @@ class Bpf:
         self._callbacks = None
 
     @classmethod
-    def _load(cls, name: str):
+    def _load(cls, name: str) -> Self:
+        # Load the libtest-$BPF.so file first.o, map probe and set_callbacks which
+        # have a fixed name.
+        #
+        # Then try to find the corresponding libtest-$BPF.json file that meson
+        # should have generated.
+        # Because our actual entry points have custom names we check the json for the
+        # right section and then map those we want into fixed-name wrappers, i.e.
+        # SEC(HID_BPF_RDESC_FIXUP) becomes self._hid_bpf_rdesc_fixup() which points
+        # to the right ctypes function.
         try:
-            lib = ctypes.CDLL(name, use_errno=True)
-            for api in cls._api_prototypes:
-                func = getattr(lib, api.name)
-                func.argtypes = api.args
-                func.restype = api.return_type
-                setattr(lib, api.basename, func)
-            return lib
+            lib = ctypes.CDLL(f"{name}.so", use_errno=True)
+            assert lib is not None
         except OSError as e:
             pytest.exit(
                 f"Error loading the library: {e}. Maybe export LD_LIBRARY_PATH=builddir/test"
             )
+        for api in cls._api_prototypes:
+            func = getattr(lib, api.name)
+            func.argtypes = api.args
+            func.restype = api.return_type
+            setattr(lib, api.basename, func)
+
+        try:
+            # Our test setup guarantees this works, running things manually is
+            # a bit more complicated.
+            ld_path = os.environ.get("LD_LIBRARY_PATH")
+            assert ld_path is not None
+
+            # Only one entry per json file so we're good
+            js = json.load(open(Path(ld_path) / f"{name}.json"))[0]
+            for program in js["programs"]:
+                if program["section"].endswith("/hid_bpf_rdesc_fixup"):
+                    func = getattr(lib, program["name"])
+                    func.argtypes = (ctypes.POINTER(HidBpfCtx),)
+                    func.restype = c_int
+                    setattr(lib, "_hid_bpf_rdesc_fixup", func)
+                elif program["section"].endswith("/hid_bpf_device_event"):
+                    func = getattr(lib, program["name"])
+                    func.argtypes = (ctypes.POINTER(HidBpfCtx),)
+                    func.restype = c_int
+                    setattr(lib, "_hid_bpf_device_event", func)
+        except OSError as e:
+            pytest.exit(
+                f"Error loading the JSON file: {e}. Unexpected LD_LIBRARY_PATH?"
+            )
+
+        return cls(lib)
 
     @classmethod
     def load(cls, name: str) -> Self:
         """
         Load the given bpf.o file from our tree
         """
-        name = f"libtest-{name}.so"
+        name = f"libtest-{name}"
         if name not in cls._libs:
-            cls._libs[name] = cls(cls._load(name))
+            cls._libs[name] = cls._load(name)
         instance = cls._libs[name]
         assert instance is not None
         return instance
@@ -138,14 +176,11 @@ class Bpf:
 
     def hid_bpf_device_event(
         self,
-        name: str,
-        /,
         report: bytes | None = None,
         ctx: HidBpfCtx | None = None,
     ) -> None | bytes:
         """
-        Call the BPF program's hid_bpf_device_event function. The name
-        is specific to each BPF program and must be supplied here
+        Call the BPF program's hid_bpf_device_event function.
 
         If a report is given, it returns the (possibly modified) report.
         Otherwise it returns None.
@@ -162,10 +197,7 @@ class Bpf:
         else:
             data = None
 
-        func = getattr(self.lib, name)
-        func.argtypes = (ctypes.POINTER(HidBpfCtx),)
-        func.restype = c_int
-        rc = func(ctypes.byref(ctx))
+        rc = self.lib._hid_bpf_device_event(ctypes.byref(ctx))
         if rc != 0:
             raise OSError(rc)
 
@@ -176,14 +208,11 @@ class Bpf:
 
     def hid_bpf_rdesc_fixup(
         self,
-        name: str,
-        /,
         rdesc: bytes | None = None,
         ctx: HidBpfCtx | None = None,
     ) -> None | bytes:
         """
-        Call the BPF program's hid_bpf_rdesc_fixup function. The name
-        is specific to each BPF program and must be supplied here
+        Call the BPF program's hid_bpf_rdesc_fixup function.
 
         If an rdesc is given, it returns the (possibly modified) rdesc.
         Otherwise it returns None.
@@ -200,10 +229,7 @@ class Bpf:
         else:
             data = None
 
-        func = getattr(self.lib, name)
-        func.argtypes = (ctypes.POINTER(HidBpfCtx),)
-        func.restype = c_int
-        rc = func(ctypes.byref(ctx))
+        rc = self.lib._hid_bpf_rdesc_fixup(ctypes.byref(ctx))
         if rc != 0:
             raise OSError(rc)
 

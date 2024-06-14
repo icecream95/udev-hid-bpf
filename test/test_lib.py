@@ -42,7 +42,7 @@ def test_rdesc_fixup_raptor_mach_2():
     bpf = Bpf.load("10-FR-TEC__Raptor-Mach-2")
     rdesc = bytes(4096)
 
-    data = bpf.hid_bpf_rdesc_fixup("hid_fix_rdesc_raptor_mach_2", rdesc=rdesc)
+    data = bpf.hid_bpf_rdesc_fixup(rdesc=rdesc)
     assert data[177] == 0x07
 
 
@@ -66,7 +66,7 @@ def test_event_userhacks_invert(y):
     values = (0, 0, 0, y, 0, 0, 0, 0, 0)
     report = struct.pack("<3bh5b", *values)
 
-    values = bpf.hid_bpf_device_event("hid_y_event", report=report)
+    values = bpf.hid_bpf_device_event(report=report)
     values = struct.unpack("<3bh5b", values)
     y_out = values[3]
     assert y_out == -y
