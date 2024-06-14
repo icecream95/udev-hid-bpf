@@ -14,18 +14,18 @@ use std::path::Path;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct hid_bpf_probe_args {
-    pub hid: ::std::os::raw::c_uint,
-    pub rdesc_size: ::std::os::raw::c_uint,
-    pub rdesc: [::std::os::raw::c_uchar; 4096usize],
-    pub retval: ::std::os::raw::c_int,
+    pub hid: std::os::raw::c_uint,
+    pub rdesc_size: std::os::raw::c_uint,
+    pub rdesc: [std::os::raw::c_uchar; 4096usize],
+    pub retval: std::os::raw::c_int,
 }
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct AttachProgArgs {
-    pub prog_fd: ::std::os::raw::c_int,
-    pub hid: ::std::os::raw::c_uint,
-    pub retval: ::std::os::raw::c_int,
+    pub prog_fd: std::os::raw::c_int,
+    pub hid: std::os::raw::c_uint,
+    pub retval: std::os::raw::c_int,
 }
 
 pub struct HidBPF<'a> {
