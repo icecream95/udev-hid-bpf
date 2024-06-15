@@ -121,12 +121,16 @@ class Bpf:
             # Only one entry per json file so we're good
             js = json.load(open(Path(ld_path) / f"{name}.json"))[0]
             for program in js["programs"]:
-                if program["section"].endswith("/hid_bpf_rdesc_fixup"):
+                if program["section"].endswith("/hid_bpf_rdesc_fixup") or program[
+                    "section"
+                ].endswith("/hid_rdesc_fixup"):
                     func = getattr(lib, program["name"])
                     func.argtypes = (ctypes.POINTER(HidBpfCtx),)
                     func.restype = c_int
                     setattr(lib, "_hid_bpf_rdesc_fixup", func)
-                elif program["section"].endswith("/hid_bpf_device_event"):
+                elif program["section"].endswith("/hid_bpf_device_event") or program[
+                    "section"
+                ].endswith("/hid_device_event"):
                     func = getattr(lib, program["name"])
                     func.argtypes = (ctypes.POINTER(HidBpfCtx),)
                     func.restype = c_int
