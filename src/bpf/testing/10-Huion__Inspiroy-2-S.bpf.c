@@ -468,6 +468,11 @@ int BPF_PROG(inspiroy_2_fix_events, struct hid_bpf_ctx *hctx)
 	return 0;
 }
 
+HID_BPF_OPS(inspiroy_2) = {
+	.hid_device_event = (void *)inspiroy_2_fix_events,
+	.hid_rdesc_fixup = (void *)hid_fix_rdesc,
+};
+
 SEC("syscall")
 int probe(struct hid_bpf_probe_args *ctx)
 {

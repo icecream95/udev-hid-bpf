@@ -199,6 +199,11 @@ int BPF_PROG(hid_device_event_xppen_deco_mini_4, struct hid_bpf_ctx *hctx)
 	return 0;
 }
 
+HID_BPF_OPS(deco_mini_4) = {
+	.hid_device_event = (void *)hid_device_event_xppen_deco_mini_4,
+	.hid_rdesc_fixup = (void *)hid_rdesc_fixup_xppen_deco_mini_4,
+};
+
 SEC("syscall")
 int probe(struct hid_bpf_probe_args *ctx)
 {
