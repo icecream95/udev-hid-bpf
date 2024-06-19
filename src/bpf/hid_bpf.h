@@ -10,11 +10,13 @@
 #define HID_BPF_RDESC_FIXUP  "struct_ops/hid_rdesc_fixup"
 #define HID_BPF_OPS(name) SEC(".struct_ops.link") \
 	struct hid_bpf_ops name
+#define hid_set_name(_hdev, _name) __builtin_memcpy(_hdev->name, _name, sizeof(_name))
 #else
 #define HID_BPF_DEVICE_EVENT "fmod_ret/hid_bpf_device_event"
 #define HID_BPF_RDESC_FIXUP  "fmod_ret/hid_bpf_rdesc_fixup"
 #define HID_BPF_OPS(name) \
 	struct hid_bpf_ops name
+#define hid_set_name(_hdev, _name)
 #endif
 
 struct hid_bpf_probe_args {

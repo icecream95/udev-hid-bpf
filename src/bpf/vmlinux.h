@@ -38484,7 +38484,7 @@ enum hid_class_request {
 struct hid_device;
 
 struct hid_bpf_ctx {
-	const struct hid_device *hid;
+	struct hid_device *hid;
 	__u32 allocated_size;
 	union {
 		__s32 retval;

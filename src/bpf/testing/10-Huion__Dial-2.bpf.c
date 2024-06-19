@@ -407,10 +407,12 @@ int BPF_PROG(dial_2_fix_rdesc, struct hid_bpf_ctx *hctx)
 
 	if (rdesc_size == PAD_REPORT_DESCRIPTOR_LENGTH) {
 		__builtin_memcpy(data, fixed_rdesc_pad, sizeof(fixed_rdesc_pad));
+		hid_set_name(hctx->hid, "HUION Huion Tablet_Q630M Keypad");
 		return sizeof(fixed_rdesc_pad);
 	}
 	if (rdesc_size == PEN_REPORT_DESCRIPTOR_LENGTH) {
 		__builtin_memcpy(data, fixed_rdesc_pen, sizeof(fixed_rdesc_pen));
+		hid_set_name(hctx->hid, "HUION Huion Tablet_Q630M Stylus");
 		return sizeof(fixed_rdesc_pen);
 	}
 	if (rdesc_size == VENDOR_REPORT_DESCRIPTOR_LENGTH) {
