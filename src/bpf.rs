@@ -5,7 +5,7 @@ include!(concat!(env!("OUT_DIR"), "/attach.skel.rs"));
 use crate::hidudev;
 use anyhow::{bail, Context, Result};
 use libbpf_rs::skel::{OpenSkel, SkelBuilder};
-use libbpf_rs::{Object, OpenObject, Program};
+use libbpf_rs::{AsRawLibbpf, Btf, Object, OpenObject, Program};
 use std::convert::TryInto;
 use std::fmt::Display;
 use std::fs;
@@ -72,6 +72,69 @@ pub trait HidBPFLoader {
                 run_syscall_prog_probe(probe, args)
             }
         }
+    }
+
+    fn inject_udev_properties_in_array(
+        &self,
+        object: &mut Object,
+        array_name: &str,
+        btf: &Btf,
+        udev_properties: &[hidudev::HidUdevProperty],
+    ) -> Result<(), BpfError> {
+        let Some(btf_map) = btf.type_by_name::<libbpf_rs::btf::types::DataSec>(array_name) else {
+            return Ok(());
+        };
+
+        object
+            .maps_iter_mut()
+            .filter(|m| m.name().ends_with(array_name))
+            .for_each(|m| {
+                m.keys().for_each(|k| {
+                    if let Some(mut data) = m.lookup(&k, libbpf_rs::MapFlags::ANY).unwrap() {
+                        btf_map.iter().for_each(|v| {
+                            let v_type = btf.type_by_id::<libbpf_rs::btf::BtfType>(v.ty).unwrap();
+
+                            if let Some(prop) = v_type
+                                .name()
+                                .map(|n| n.to_str().unwrap())
+                                .filter(|name| name.starts_with("UDEV_PROP_"))
+                                .map(|name| &name["UDEV_PROP_".len()..])
+                                .and_then(|pname| {
+                                    udev_properties.iter().find(|prop| prop.name == pname)
+                                })
+                            {
+                                let buf = prop.value.as_bytes();
+
+                                if buf.len() < v.size {
+                                    let start: usize = v.offset.try_into().unwrap();
+                                    let end = start + buf.len();
+
+                                    data[start..end].clone_from_slice(buf);
+
+                                    let r = m.update(&k, &data, libbpf_rs::MapFlags::ANY);
+                                    log::debug!(target: "libbpf",
+                                               "inserting {}={} in map: {:?}", prop.name, prop.value, r)
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+        Ok(())
+    }
+
+    fn inject_udev_properties(
+        &self,
+        object: &mut Object,
+        device: &hidudev::HidUdev,
+    ) -> Result<(), BpfError> {
+        let btf = Btf::from_bpf_object(unsafe { object.as_libbpf_object().as_ref() })?.unwrap();
+
+        let udev_properties = device.udev_properties();
+
+        self.inject_udev_properties_in_array(object, ".bss", &btf, &udev_properties)?;
+        self.inject_udev_properties_in_array(object, ".data", &btf, &udev_properties)?;
+        Ok(())
     }
 
     fn attach_and_pin(
@@ -375,6 +438,10 @@ impl HidBPF {
 
         let mut object = loader.load(open_object, device)?;
         let object_name = path.file_stem().unwrap().to_str().unwrap();
+
+        loader
+            .inject_udev_properties(&mut object, device)
+            .context(format!("couldn't set udev properties on {object_name}"))?;
 
         /*
          * if there is a "probe" syscall, execute it and

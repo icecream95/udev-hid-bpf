@@ -11,6 +11,11 @@ pub struct HidUdev {
     udev_device: udev::Device,
 }
 
+pub struct HidUdevProperty {
+    pub name: String,
+    pub value: String,
+}
+
 impl HidUdev {
     pub fn from_syspath(syspath: &std::path::Path) -> std::io::Result<Self> {
         let mut device = udev::Device::from_syspath(syspath)?;
@@ -74,6 +79,17 @@ impl HidUdev {
             })
             .filter(|(name, _)| name.starts_with("HID_BPF_"))
             .map(|(_, value)| value)
+            .collect()
+    }
+
+    pub fn udev_properties(&self) -> Vec<HidUdevProperty> {
+        self.udev_device
+            .properties()
+            .flat_map(|prop| -> Option<HidUdevProperty> {
+                let name = String::from(prop.name().to_str()?);
+                let value = String::from(prop.value().to_str()?);
+                Some(HidUdevProperty { name, value })
+            })
             .collect()
     }
 
