@@ -549,7 +549,7 @@ int BPF_PROG(dial_2_fix_events, struct hid_bpf_ctx *hctx)
 	return 0;
 }
 
-HID_BPF_OPS(h610_pro) = {
+HID_BPF_OPS(inspiroy_dial2) = {
 	.hid_device_event = (void *)dial_2_fix_events,
 	.hid_rdesc_fixup = (void *)dial_2_fix_rdesc,
 };
