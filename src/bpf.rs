@@ -94,7 +94,7 @@ pub trait HidBPFLoader {
                         if btf_map.iter().fold(false, |acc, v| {
                             let v_type = btf.type_by_id::<libbpf_rs::btf::BtfType>(v.ty).unwrap();
 
-                            acc || v_type
+                            v_type
                                 .name()
                                 .map(|n| n.to_str().unwrap())
                                 .filter(|name| name.starts_with("UDEV_PROP_"))
@@ -119,6 +119,7 @@ pub trait HidBPFLoader {
 
                                     size_ok
                                 })
+                                || acc
                         }) {
                             let r = m.update(&k, &data, libbpf_rs::MapFlags::ANY);
                             log::debug!(target: "libbpf",
