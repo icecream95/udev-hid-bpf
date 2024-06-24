@@ -16,6 +16,14 @@ HID_BPF_CONFIG(
 	HID_DEVICE(BUS_USB, HID_GROUP_GENERIC, VID_HUION, PID_DIAL_2),
 );
 
+/* Filled in by udev-hid-bpf */
+char UDEV_PROP_HUION_FIRMWARE_ID[64];
+
+/* The prefix of the firmware ID we expect for this device. The full firmware
+ * string has a date suffix, e.g. HUION_T21j_221221
+ */
+char EXPECTED_FIRMWARE_ID[] = "HUION_T216_";
+
 /* How this BPF program works: the tablet has two modes, firmware mode and
  * tablet mode. In firmware mode (out of the box) the tablet sends button events
  * and the dial as keyboard combinations. In tablet mode it uses a vendor specific
@@ -26,8 +34,12 @@ HID_BPF_CONFIG(
  * To switch the tablet use e.g.  https://github.com/whot/huion-switcher
  * or one of the tools from the digimend project
  *
- * This BPF works for both modes, though the drawback is that the device will show up
- * twice if you bind it to all event nodes.
+ * This BPF works for both modes. The huion-switcher tool sets the
+ * HUION_FIRMWARE_ID udev property - if that is set then we disable the firwmare
+ * pad and pen reports (by making them vendor collections that are ignored).
+ * If that property is not set we fix all hidraw nodes so the tablet works in
+ * either mode though the drawback is that the device will show up twice if
+ * you bind it to all event nodes
  *
  * Default report descriptor for the first exposed hidraw node:
  *
@@ -396,25 +408,53 @@ static const __u8 fixed_rdesc_vendor[] = {
 	)
 };
 
+static const __u8 disabled_rdesc_pen[] = {
+	FixedSizeVendorReport(PEN_REPORT_LENGTH)
+};
+
+static const __u8 disabled_rdesc_pad[] = {
+	FixedSizeVendorReport(PAD_REPORT_LENGTH)
+};
+
 SEC(HID_BPF_RDESC_FIXUP)
 int BPF_PROG(dial_2_fix_rdesc, struct hid_bpf_ctx *hctx)
 {
 	__u8 *data = hid_bpf_get_data(hctx, 0 /* offset */, HID_MAX_DESCRIPTOR_SIZE /* size */);
 	__s32 rdesc_size = hctx->size;
+	__u8 have_fw_id;
 
 	if (!data)
 		return 0; /* EPERM check */
 
+	/* If we have a firmware ID and it matches our expected prefix, we
+	 * disable the default pad/pen nodes. They won't send events
+	 * but cause duplicate devices.
+	 */
+	have_fw_id = __builtin_memcmp(UDEV_PROP_HUION_FIRMWARE_ID,
+				      EXPECTED_FIRMWARE_ID,
+				      sizeof(EXPECTED_FIRMWARE_ID) - 1) == 0;
 	if (rdesc_size == PAD_REPORT_DESCRIPTOR_LENGTH) {
-		__builtin_memcpy(data, fixed_rdesc_pad, sizeof(fixed_rdesc_pad));
-		hid_set_name(hctx->hid, "HUION Huion Tablet_Q630M Keypad");
-		return sizeof(fixed_rdesc_pad);
+		if (have_fw_id) {
+			__builtin_memcpy(data, disabled_rdesc_pad, sizeof(disabled_rdesc_pad));
+			return sizeof(disabled_rdesc_pad);
+		} else {
+			__builtin_memcpy(data, fixed_rdesc_pad, sizeof(fixed_rdesc_pad));
+			hid_set_name(hctx->hid, "HUION Huion Tablet_Q630M Keypad");
+			return sizeof(fixed_rdesc_pad);
+		}
 	}
 	if (rdesc_size == PEN_REPORT_DESCRIPTOR_LENGTH) {
-		__builtin_memcpy(data, fixed_rdesc_pen, sizeof(fixed_rdesc_pen));
-		hid_set_name(hctx->hid, "HUION Huion Tablet_Q630M Stylus");
-		return sizeof(fixed_rdesc_pen);
+		if (have_fw_id) {
+			__builtin_memcpy(data, disabled_rdesc_pen, sizeof(disabled_rdesc_pen));
+			return sizeof(disabled_rdesc_pen);
+		} else {
+			__builtin_memcpy(data, fixed_rdesc_pen, sizeof(fixed_rdesc_pen));
+			hid_set_name(hctx->hid, "HUION Huion Tablet_Q630M Stylus");
+			return sizeof(fixed_rdesc_pen);
+		}
 	}
+	/* Always fix the vendor mode so the tablet will work even if nothing sets
+	 * the udev property (e.g. huion-switcher run manually) */
 	if (rdesc_size == VENDOR_REPORT_DESCRIPTOR_LENGTH) {
 		__builtin_memcpy(data, fixed_rdesc_vendor, sizeof(fixed_rdesc_vendor));
 		return sizeof(fixed_rdesc_vendor);
