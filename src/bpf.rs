@@ -16,6 +16,7 @@ use std::sync::OnceLock;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
+#[allow(non_camel_case_types)]
 pub struct hid_bpf_probe_args {
     pub hid: c_uint,
     pub rdesc_size: c_uint,
