@@ -11,6 +11,7 @@ pub struct HidUdev {
     udev_device: udev::Device,
 }
 
+#[derive(Debug)]
 pub struct HidUdevProperty {
     pub name: String,
     pub value: String,
