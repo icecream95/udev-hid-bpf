@@ -78,7 +78,7 @@ pub trait HidBPFLoader {
         &self,
         object: &mut Object,
         device: &hidudev::HidUdev,
-        bpffs_path: &String,
+        bpffs_path: &str,
     ) -> Result<Vec<String>, BpfError>;
 }
 
@@ -275,7 +275,7 @@ impl<'a> HidBPFLoader for HidBPFTrace<'a> {
         &self,
         object: &mut Object,
         device: &hidudev::HidUdev,
-        bpffs_path: &String,
+        bpffs_path: &str,
     ) -> Result<Vec<String>, BpfError> {
         let hid_id = device.id();
 
@@ -313,7 +313,7 @@ impl HidBPFLoader for HidBPFStructOps {
         &self,
         object: &mut Object,
         _device: &hidudev::HidUdev,
-        bpffs_path: &String,
+        bpffs_path: &str,
     ) -> Result<Vec<String>, BpfError> {
         fs::create_dir_all(bpffs_path).unwrap_or_else(|why| {
             log::warn!("! {:?}", why.kind());
