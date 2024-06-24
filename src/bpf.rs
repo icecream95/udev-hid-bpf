@@ -86,6 +86,7 @@ pub struct HidBPFTrace<'a> {
     inner: Option<AttachSkel<'a>>,
 }
 
+#[derive(Default)]
 pub struct HidBPFStructOps {}
 
 pub fn get_bpffs_path(sysname: &str, object: &str) -> String {
@@ -186,8 +187,8 @@ impl hid_bpf_probe_args {
     }
 }
 
-impl<'a> HidBPFTrace<'a> {
-    pub fn new() -> Self {
+impl<'a> Default for HidBPFTrace<'a> {
+    fn default() -> Self {
         let skel_builder = AttachSkelBuilder::default();
 
         if let Ok(open_skel) = skel_builder.open() {
@@ -198,7 +199,9 @@ impl<'a> HidBPFTrace<'a> {
 
         Self { inner: None }
     }
+}
 
+impl<'a> HidBPFTrace<'a> {
     fn load_prog(&self, prog: &Program, hid_id: u32, bpffs_path: &str) -> Result<String> {
         let inner = self.inner.as_ref().expect("open_and_load() never called!");
         let attach_args = AttachProgArgs {
@@ -283,12 +286,6 @@ impl<'a> HidBPFLoader for HidBPFTrace<'a> {
     }
 }
 
-impl HidBPFStructOps {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
 impl HidBPFLoader for HidBPFStructOps {
     fn load(
         &self,
@@ -343,10 +340,10 @@ fn get_bpf_loader(open_object: &OpenObject) -> &'static dyn HidBPFLoader {
 
     if !have_struct_ops {
         log::debug!("Using HID_BPF_TRACE");
-        HID_BPF_TRACE.get_or_init(HidBPFTrace::new)
+        HID_BPF_TRACE.get_or_init(HidBPFTrace::default)
     } else {
         log::debug!("Using HID_BPF_STRUCT_OPS");
-        HID_BPF_STRUCT_OPS.get_or_init(HidBPFStructOps::new)
+        HID_BPF_STRUCT_OPS.get_or_init(HidBPFStructOps::default)
     }
 }
 
