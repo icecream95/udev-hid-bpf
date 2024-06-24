@@ -91,10 +91,10 @@ pub trait HidBPFLoader {
             .for_each(|m| {
                 m.keys().for_each(|k| {
                     if let Some(mut data) = m.lookup(&k, libbpf_rs::MapFlags::ANY).unwrap() {
-                        btf_map.iter().for_each(|v| {
+                        if btf_map.iter().fold(false, |acc, v| {
                             let v_type = btf.type_by_id::<libbpf_rs::btf::BtfType>(v.ty).unwrap();
 
-                            if let Some(prop) = v_type
+                            acc || v_type
                                 .name()
                                 .map(|n| n.to_str().unwrap())
                                 .filter(|name| name.starts_with("UDEV_PROP_"))
@@ -102,21 +102,28 @@ pub trait HidBPFLoader {
                                 .and_then(|pname| {
                                     udev_properties.iter().find(|prop| prop.name == pname)
                                 })
-                            {
-                                let buf = prop.value.as_bytes();
+                                .map_or(false, |prop| {
+                                    let buf = prop.value.as_bytes();
 
-                                if buf.len() < v.size {
-                                    let start: usize = v.offset.try_into().unwrap();
-                                    let end = start + buf.len();
+                                    let size_ok = buf.len() < v.size;
 
-                                    data[start..end].clone_from_slice(buf);
+                                    if size_ok {
+                                        let start: usize = v.offset.try_into().unwrap();
+                                        let end = start + buf.len();
 
-                                    let r = m.update(&k, &data, libbpf_rs::MapFlags::ANY);
-                                    log::debug!(target: "libbpf",
-                                               "inserting {}={} in map: {:?}", prop.name, prop.value, r)
-                                }
-                            }
-                        });
+                                        data[start..end].clone_from_slice(buf);
+
+                                        log::debug!(target: "libbpf",
+                                                   "inserting {}={} in map {}", prop.name, prop.value, m.name());
+                                    }
+
+                                    size_ok
+                                })
+                        }) {
+                            let r = m.update(&k, &data, libbpf_rs::MapFlags::ANY);
+                            log::debug!(target: "libbpf",
+                                        "updated map {}: {:?}", m.name(), r);
+                        }
                     }
                 });
             });
