@@ -1,5 +1,5 @@
 project('udev-hid-bpf', 'rust', 'c',
-        version: '1.0.1-20240515', # Update Cargo.toml too!
+        version: '2.0.0-20240624', # Update Cargo.toml too!
         meson_version: '>= 1.0.0')
 
 cc = meson.get_compiler('c')
