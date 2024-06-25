@@ -1,9 +1,8 @@
-libbpf_dep = dependency('libbpf', required: get_option('tests'))
 pytest = find_program('pytest-3', 'pytest', required: get_option('tests'))
 pymod = import('python')
 python = pymod.find_installation('python3', required: get_option('tests'))
 
-build_tests = libbpf_dep.found() and pytest.found() and python.found()
+build_tests = pytest.found() and python.found()
 if not build_tests
     subdir_done()
 endif
