@@ -53,3 +53,11 @@ Specifying a filter automatically enables all of testing, stable and userhacks.
 Note that all the `bpf.c` files that are known to meson (so registered in `src/bpf/*/meson.build`) are recompiled
 when there is a change. So for `bpf/userhacks`, in most cases, no meson option needs to be added: just recompile
 with `ninja` and then use `udev-hid-bpf install ./builddir/src/bpf/my_awesome_hid_bpf_filter.bpf.c`.
+
+# Release Numbers
+
+udev-hid-bpf uses a two-part release version number in the form `1.0.0-20240601`. The first component
+(`1.0.0`) is a [semver](https://semver.org) describing udev-hid-bpf itself and its APIs. The second is a date
+and describes the BPF programs provided in this repo. Changes to udev-hid-bpf are reflected in the first
+version component only, so two identical semver components with different dates represent changes to the BPF
+programs only.
