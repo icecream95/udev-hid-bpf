@@ -297,7 +297,7 @@ static const __u8 fixed_rdesc_vendor[] = {
 				Input(Var|Abs)
 			)
 			// Bytes 6/7 in report
-			LogicalRange_i16(0, 2047)
+			LogicalRange_i16(0, 8192)
 			Usage_Dig_TipPressure
 			Input(Var|Abs)
 		)
