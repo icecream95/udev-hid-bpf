@@ -44,6 +44,31 @@ fn print_to_log(lvl: libbpf_rs::PrintLevel, msg: String) {
     }
 }
 
+impl TryFrom<&str> for hidudev::HidUdevProperty {
+    type Error = clap::Error;
+
+    fn try_from(s: &str) -> std::result::Result<Self, Self::Error> {
+        s.split_once('=')
+            .map(|(name, value)| hidudev::HidUdevProperty {
+                name: name.into(),
+                value: value.into(),
+            })
+            .and_then(|prop| {
+                if prop.name.contains(char::is_whitespace) {
+                    None
+                } else {
+                    Some(prop)
+                }
+            })
+            .ok_or(clap::Error::new(clap::error::ErrorKind::ValueValidation))
+    }
+}
+
+// For some reason we can't use PropertyTyple::try_from directly in #[arg(value_parser])
+fn tuple_parse(s: &str) -> std::result::Result<hidudev::HidUdevProperty, clap::error::Error> {
+    hidudev::HidUdevProperty::try_from(s)
+}
+
 #[derive(Subcommand, Debug)]
 enum Commands {
     /// A new device is created
@@ -63,6 +88,16 @@ enum Commands {
         /// same device argument first.
         #[arg(long, default_value_t = false)]
         replace: bool,
+
+        /// Provide an arbitrary NAME=VALUE pair to the BPF program.
+        /// This NAME=VALUE pair is treated as if it was a
+        /// udev property set on the device, taking precedence over
+        /// any udev property of the same name.
+        /// This option may be specified multiple times to
+        /// supply multiple properties. Empty properties must be
+        /// the empty string (NAME="")
+        #[arg(short, long, value_parser=tuple_parse)]
+        property: Vec<hidudev::HidUdevProperty>,
     },
     /// A device is removed from the sysfs
     Remove {
@@ -121,6 +156,7 @@ fn cmd_add(
     devices: &[std::path::PathBuf],
     objfiles: &[String],
     bpfdir: Option<std::path::PathBuf>,
+    properties: &[hidudev::HidUdevProperty],
 ) -> Result<()> {
     let target_bpf_dirs: Vec<std::path::PathBuf> =
         bpfdir.into_iter().chain(default_bpf_dirs()).collect();
@@ -131,10 +167,10 @@ fn cmd_add(
     for syspath in devices {
         let dev = hidudev::HidUdev::from_syspath(syspath)?;
         if objfiles.is_empty() {
-            dev.load_bpf_from_directories(&target_bpf_dirs, None)?;
+            dev.load_bpf_from_directories(&target_bpf_dirs, None, properties)?;
         } else {
             for objfile in objfiles {
-                dev.load_bpf_from_directories(&target_bpf_dirs, Some(objfile))?;
+                dev.load_bpf_from_directories(&target_bpf_dirs, Some(objfile), properties)?;
             }
         }
     }
@@ -570,6 +606,7 @@ fn udev_hid_bpf() -> Result<()> {
             paths,
             bpfdir,
             replace,
+            property,
         } => {
             let (devices, objfiles) = split_paths(paths)?;
             let devices: Vec<std::path::PathBuf> =
@@ -578,7 +615,7 @@ fn udev_hid_bpf() -> Result<()> {
                 cmd_remove(&devices)?;
                 std::thread::sleep(std::time::Duration::from_millis(500));
             }
-            cmd_add(&devices, &objfiles, bpfdir)
+            cmd_add(&devices, &objfiles, bpfdir, &property)
         }
         Commands::Remove { devpaths } => cmd_remove(&devpaths),
         Commands::ListBpfPrograms { bpfdir } => cmd_list_bpf_programs(bpfdir),
@@ -679,5 +716,25 @@ mod tests {
         assert!(split_paths(paths).is_err());
         let paths: Vec<String> = vec_of_strings!["a", "-", ""];
         assert!(split_paths(paths).is_err());
+    }
+
+    #[test]
+    fn test_tuple_parse() {
+        let p = tuple_parse("foo=bar").unwrap();
+        assert_eq!(p.name, "foo");
+        assert_eq!(p.value, "bar");
+
+        let p = tuple_parse("foo=bar=baz").unwrap();
+        assert_eq!(p.name, "foo");
+        assert_eq!(p.value, "bar=baz");
+
+        let p = tuple_parse("foo=").unwrap();
+        assert_eq!(p.name, "foo");
+        assert_eq!(p.value, "");
+
+        assert!(tuple_parse("foo bar=baz").is_err());
+        assert!(tuple_parse("foo\tbar=baz").is_err());
+        assert!(tuple_parse("foobar =baz").is_err());
+        assert!(tuple_parse("foobar").is_err());
     }
 }

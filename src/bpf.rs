@@ -135,10 +135,16 @@ pub trait HidBPFLoader {
         &self,
         object: &mut Object,
         device: &hidudev::HidUdev,
+        extra_props: &[hidudev::HidUdevProperty],
     ) -> Result<(), BpfError> {
         let btf = Btf::from_bpf_object(unsafe { object.as_libbpf_object().as_ref() })?.unwrap();
 
-        let udev_properties = device.udev_properties();
+        let udev_properties: Vec<hidudev::HidUdevProperty> = device
+            .udev_properties()
+            .into_iter()
+            .filter(|prop| extra_props.iter().find(|ep| ep.name == prop.name).is_none())
+            .chain(extra_props.iter().map(hidudev::HidUdevProperty::from))
+            .collect();
 
         self.inject_udev_properties_in_array(object, ".bss", &btf, &udev_properties)?;
         self.inject_udev_properties_in_array(object, ".data", &btf, &udev_properties)?;
@@ -436,7 +442,11 @@ impl HidBPF {
         Ok(())
     }
 
-    pub fn load_programs(path: &Path, device: &hidudev::HidUdev) -> Result<()> {
+    pub fn load_programs(
+        path: &Path,
+        device: &hidudev::HidUdev,
+        properties: &[hidudev::HidUdevProperty],
+    ) -> Result<()> {
         log::debug!(target: "libbpf", "loading BPF object at {:?}", path.display());
 
         let mut obj_builder = libbpf_rs::ObjectBuilder::default();
@@ -448,7 +458,7 @@ impl HidBPF {
         let object_name = path.file_stem().unwrap().to_str().unwrap();
 
         loader
-            .inject_udev_properties(&mut object, device)
+            .inject_udev_properties(&mut object, device, properties)
             .context(format!("couldn't set udev properties on {object_name}"))?;
 
         /*

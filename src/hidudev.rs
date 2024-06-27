@@ -11,7 +11,7 @@ pub struct HidUdev {
     udev_device: udev::Device,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HidUdevProperty {
     pub name: String,
     pub value: String,
@@ -192,6 +192,7 @@ impl HidUdev {
         &self,
         bpf_dirs: &[PathBuf],
         objfile: Option<&String>,
+        properties: &[HidUdevProperty],
     ) -> std::io::Result<()> {
         let paths = match objfile {
             Some(objfile) => {
@@ -221,7 +222,7 @@ impl HidUdev {
             // The first successful one terminates that group and we continue with the next.
             for group in sorted {
                 for path in group {
-                    match bpf::HidBPF::load_programs(&path, self) {
+                    match bpf::HidBPF::load_programs(&path, self, properties) {
                         Ok(_) => {
                             log::debug!("Successfully loaded {path:?}");
                             break;
@@ -243,6 +244,15 @@ impl HidUdev {
         std::fs::remove_dir_all(path).ok();
 
         Ok(())
+    }
+}
+
+impl From<&HidUdevProperty> for HidUdevProperty {
+    fn from(p: &HidUdevProperty) -> HidUdevProperty {
+        HidUdevProperty {
+            name: p.name.clone(),
+            value: p.value.clone(),
+        }
     }
 }
 
