@@ -386,7 +386,7 @@ static const __u8 fixed_rdesc_vendor[] = {
 			Input(Var|Abs)
 			// Byte 4 is the button state
 			UsagePage_Button
-			UsageRange_i8(0x01, 0x6)
+			UsageRange_i8(0x01, 0x8)
 			LogicalRange_i8(0x0, 0x1)
 			ReportCount(8)
 			ReportSize(1)
