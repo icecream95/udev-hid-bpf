@@ -35,7 +35,7 @@ char EXPECTED_FIRMWARE_ID[] = "HUION_T216_";
  * or one of the tools from the digimend project
  *
  * This BPF works for both modes. The huion-switcher tool sets the
- * HUION_FIRMWARE_ID udev property - if that is set then we disable the firwmare
+ * HUION_FIRMWARE_ID udev property - if that is set then we disable the firmware
  * pad and pen reports (by making them vendor collections that are ignored).
  * If that property is not set we fix all hidraw nodes so the tablet works in
  * either mode though the drawback is that the device will show up twice if
@@ -437,24 +437,23 @@ int BPF_PROG(dial_2_fix_rdesc, struct hid_bpf_ctx *hctx)
 		if (have_fw_id) {
 			__builtin_memcpy(data, disabled_rdesc_pad, sizeof(disabled_rdesc_pad));
 			return sizeof(disabled_rdesc_pad);
-		} else {
-			__builtin_memcpy(data, fixed_rdesc_pad, sizeof(fixed_rdesc_pad));
-			hid_set_name(hctx->hid, "HUION Huion Tablet_Q630M Keypad");
-			return sizeof(fixed_rdesc_pad);
 		}
+
+		__builtin_memcpy(data, fixed_rdesc_pad, sizeof(fixed_rdesc_pad));
+		return sizeof(fixed_rdesc_pad);
 	}
 	if (rdesc_size == PEN_REPORT_DESCRIPTOR_LENGTH) {
 		if (have_fw_id) {
 			__builtin_memcpy(data, disabled_rdesc_pen, sizeof(disabled_rdesc_pen));
 			return sizeof(disabled_rdesc_pen);
-		} else {
-			__builtin_memcpy(data, fixed_rdesc_pen, sizeof(fixed_rdesc_pen));
-			hid_set_name(hctx->hid, "HUION Huion Tablet_Q630M Stylus");
-			return sizeof(fixed_rdesc_pen);
 		}
+
+		__builtin_memcpy(data, fixed_rdesc_pen, sizeof(fixed_rdesc_pen));
+		return sizeof(fixed_rdesc_pen);
 	}
 	/* Always fix the vendor mode so the tablet will work even if nothing sets
-	 * the udev property (e.g. huion-switcher run manually) */
+	 * the udev property (e.g. huion-switcher run manually)
+	 */
 	if (rdesc_size == VENDOR_REPORT_DESCRIPTOR_LENGTH) {
 		__builtin_memcpy(data, fixed_rdesc_vendor, sizeof(fixed_rdesc_vendor));
 		return sizeof(fixed_rdesc_vendor);
@@ -467,7 +466,7 @@ SEC(HID_BPF_DEVICE_EVENT)
 int BPF_PROG(dial_2_fix_events, struct hid_bpf_ctx *hctx)
 {
 	__u8 *data = hid_bpf_get_data(hctx, 0 /* offset */, 16 /* size */);
-	static __u8 button = 0;
+	static __u8 button;
 
 	if (!data)
 		return 0; /* EPERM check */
@@ -510,6 +509,7 @@ int BPF_PROG(dial_2_fix_events, struct hid_bpf_ctx *hctx)
 		}
 
 		__u8 report[8] = {PAD_REPORT_ID, 0x0, 0x0, 0x0, 0x00, button};
+
 		__builtin_memcpy(data, report, sizeof(report));
 		return sizeof(report);
 	}
@@ -528,6 +528,7 @@ int BPF_PROG(dial_2_fix_events, struct hid_bpf_ctx *hctx)
 		button |= !!data[1] << 6;
 
 		__u8 report[] = {PAD_REPORT_ID, 0x0, 0x0, 0x0, dial, button};
+
 		__builtin_memcpy(data, report, sizeof(report));
 		return sizeof(report);
 	}
@@ -570,7 +571,7 @@ int BPF_PROG(dial_2_fix_events, struct hid_bpf_ctx *hctx)
 				dial_2 = 0;
 			}
 
-			pad_report = (struct pad_report*)data;
+			pad_report = (struct pad_report *)data;
 
 			pad_report->report_id = PAD_REPORT_ID;
 			pad_report->btn_stylus = 0;

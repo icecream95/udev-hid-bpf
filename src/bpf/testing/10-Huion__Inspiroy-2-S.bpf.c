@@ -34,7 +34,7 @@ char EXPECTED_FIRMWARE_ID[] = "HUION_T21j_";
  * or one of the tools from the digimend project
  *
  * This BPF works for both modes. The huion-switcher tool sets the
- * HUION_FIRMWARE_ID udev property - if that is set then we disable the firwmare
+ * HUION_FIRMWARE_ID udev property - if that is set then we disable the firmware
  * pad and pen reports (by making them vendor collections that are ignored).
  * If that property is not set we fix all hidraw nodes so the tablet works in
  * either mode though the drawback is that the device will show up twice if
@@ -63,90 +63,90 @@ char EXPECTED_FIRMWARE_ID[] = "HUION_T21j_";
  * switched to raw mode, then it's mute.
  *
  * # Report descriptor length: 93 bytes
- * # 0x05, 0x0d,                    // Usage Page (Digitizers)                   0
- * # 0x09, 0x02,                    // Usage (Pen)                               2
- * # 0xa1, 0x01,                    // Collection (Application)                  4
- * # 0x85, 0x0a,                    //   Report ID (10)                          6
- * # 0x09, 0x20,                    //   Usage (Stylus)                          8
- * # 0xa1, 0x01,                    //   Collection (Application)                10
- * # 0x09, 0x42,                    //     Usage (Tip Switch)                    12
- * # 0x09, 0x44,                    //     Usage (Barrel Switch)                 14
- * # 0x09, 0x45,                    //     Usage (Eraser)                        16
- * # 0x09, 0x3c,                    //     Usage (Invert)                        18 <-- has no Invert eraser
- * # 0x15, 0x00,                    //     Logical Minimum (0)                   20
- * # 0x25, 0x01,                    //     Logical Maximum (1)                   22
- * # 0x75, 0x01,                    //     Report Size (1)                       24
- * # 0x95, 0x06,                    //     Report Count (6)                      26
- * # 0x81, 0x02,                    //     Input (Data,Var,Abs)                  28
- * # 0x09, 0x32,                    //     Usage (In Range)                      30
- * # 0x75, 0x01,                    //     Report Size (1)                       32
- * # 0x95, 0x01,                    //     Report Count (1)                      34
- * # 0x81, 0x02,                    //     Input (Data,Var,Abs)                  36
- * # 0x81, 0x03,                    //     Input (Cnst,Var,Abs)                  38
- * # 0x05, 0x01,                    //     Usage Page (Generic Desktop)          40
- * # 0x09, 0x30,                    //     Usage (X)                             42
- * # 0x09, 0x31,                    //     Usage (Y)                             44
- * # 0x55, 0x0d,                    //     Unit Exponent (-3)                    46 <-- change to -2
- * # 0x65, 0x33,                    //     Unit (EnglishLinear: in³)             48 <-- change in³ to in
- * # 0x26, 0xff, 0x7f,              //     Logical Maximum (32767)               50
- * # 0x35, 0x00,                    //     Physical Minimum (0)                  53
- * # 0x46, 0x00, 0x08,              //     Physical Maximum (2048)               55 <-- invalid size
- * # 0x75, 0x10,                    //     Report Size (16)                      58
- * # 0x95, 0x02,                    //     Report Count (2)                      60
- * # 0x81, 0x02,                    //     Input (Data,Var,Abs)                  62
- * # 0x05, 0x0d,                    //     Usage Page (Digitizers)               64
- * # 0x09, 0x30,                    //     Usage (Tip Pressure)                  66
- * # 0x26, 0xff, 0x1f,              //     Logical Maximum (8191)                68
- * # 0x75, 0x10,                    //     Report Size (16)                      71
- * # 0x95, 0x01,                    //     Report Count (1)                      73
- * # 0x81, 0x02,                    //     Input (Data,Var,Abs)                  75
- * # 0x09, 0x3d,                    //     Usage (X Tilt)                        77 <-- No tilt reported
- * # 0x09, 0x3e,                    //     Usage (Y Tilt)                        79
- * # 0x15, 0x81,                    //     Logical Minimum (-127)                81
- * # 0x25, 0x7f,                    //     Logical Maximum (127)                 83
- * # 0x75, 0x08,                    //     Report Size (8)                       85
- * # 0x95, 0x02,                    //     Report Count (2)                      87
- * # 0x81, 0x02,                    //     Input (Data,Var,Abs)                  89
- * # 0xc0,                          //   End Collection                          91
- * # 0xc0,                          // End Collection                            92
+ * # 0x05, 0x0d,          // Usage Page (Digitizers)                   0
+ * # 0x09, 0x02,          // Usage (Pen)                               2
+ * # 0xa1, 0x01,          // Collection (Application)                  4
+ * # 0x85, 0x0a,          //   Report ID (10)                          6
+ * # 0x09, 0x20,          //   Usage (Stylus)                          8
+ * # 0xa1, 0x01,          //   Collection (Application)                10
+ * # 0x09, 0x42,          //     Usage (Tip Switch)                    12
+ * # 0x09, 0x44,          //     Usage (Barrel Switch)                 14
+ * # 0x09, 0x45,          //     Usage (Eraser)                        16
+ * # 0x09, 0x3c,          //     Usage (Invert)                        18 <-- has no Invert eraser
+ * # 0x15, 0x00,          //     Logical Minimum (0)                   20
+ * # 0x25, 0x01,          //     Logical Maximum (1)                   22
+ * # 0x75, 0x01,          //     Report Size (1)                       24
+ * # 0x95, 0x06,          //     Report Count (6)                      26
+ * # 0x81, 0x02,          //     Input (Data,Var,Abs)                  28
+ * # 0x09, 0x32,          //     Usage (In Range)                      30
+ * # 0x75, 0x01,          //     Report Size (1)                       32
+ * # 0x95, 0x01,          //     Report Count (1)                      34
+ * # 0x81, 0x02,          //     Input (Data,Var,Abs)                  36
+ * # 0x81, 0x03,          //     Input (Cnst,Var,Abs)                  38
+ * # 0x05, 0x01,          //     Usage Page (Generic Desktop)          40
+ * # 0x09, 0x30,          //     Usage (X)                             42
+ * # 0x09, 0x31,          //     Usage (Y)                             44
+ * # 0x55, 0x0d,          //     Unit Exponent (-3)                    46 <-- change to -2
+ * # 0x65, 0x33,          //     Unit (EnglishLinear: in³)             48 <-- change in³ to in
+ * # 0x26, 0xff, 0x7f,    //     Logical Maximum (32767)               50
+ * # 0x35, 0x00,          //     Physical Minimum (0)                  53
+ * # 0x46, 0x00, 0x08,    //     Physical Maximum (2048)               55 <-- invalid size
+ * # 0x75, 0x10,          //     Report Size (16)                      58
+ * # 0x95, 0x02,          //     Report Count (2)                      60
+ * # 0x81, 0x02,          //     Input (Data,Var,Abs)                  62
+ * # 0x05, 0x0d,          //     Usage Page (Digitizers)               64
+ * # 0x09, 0x30,          //     Usage (Tip Pressure)                  66
+ * # 0x26, 0xff, 0x1f,    //     Logical Maximum (8191)                68
+ * # 0x75, 0x10,          //     Report Size (16)                      71
+ * # 0x95, 0x01,          //     Report Count (1)                      73
+ * # 0x81, 0x02,          //     Input (Data,Var,Abs)                  75
+ * # 0x09, 0x3d,          //     Usage (X Tilt)                        77 <-- No tilt reported
+ * # 0x09, 0x3e,          //     Usage (Y Tilt)                        79
+ * # 0x15, 0x81,          //     Logical Minimum (-127)                81
+ * # 0x25, 0x7f,          //     Logical Maximum (127)                 83
+ * # 0x75, 0x08,          //     Report Size (8)                       85
+ * # 0x95, 0x02,          //     Report Count (2)                      87
+ * # 0x81, 0x02,          //     Input (Data,Var,Abs)                  89
+ * # 0xc0,                //   End Collection                          91
+ * # 0xc0,                // End Collection                            92
  * R: 93 05 0d 09 02 a1 01 85 0a 09 20 a1 01 09 42 09 44 09 45 09 3c 15 00 25 01 7501 95 06 81 02 09 32 75 01 95 01 81 02 81 03 05 01 09 30 09 31 55 0d 65 33 26 ff7f 35 00 46 00 08 75 10 95 02 81 02 05 0d 09 30 26 ff 1f 75 10 95 01 81 02 09 3d09 3e 15 81 25 7f 75 08 95 02 81 02 c0 c0
  *
  * Third hidraw node is the pad which sends a combination of keyboard shortcuts until
  * the tablet is switched to raw mode, then it's mute:
  *
  * # Report descriptor length: 65 bytes
- * # 0x05, 0x01,                    // Usage Page (Generic Desktop)              0
- * # 0x09, 0x06,                    // Usage (Keyboard)                          2
- * # 0xa1, 0x01,                    // Collection (Application)                  4
- * # 0x85, 0x03,                    //   Report ID (3)                           6
- * # 0x05, 0x07,                    //   Usage Page (Keyboard/Keypad)            8
- * # 0x19, 0xe0,                    //   UsageMinimum (224)                      10
- * # 0x29, 0xe7,                    //   UsageMaximum (231)                      12
- * # 0x15, 0x00,                    //   Logical Minimum (0)                     14
- * # 0x25, 0x01,                    //   Logical Maximum (1)                     16
- * # 0x75, 0x01,                    //   Report Size (1)                         18
- * # 0x95, 0x08,                    //   Report Count (8)                        20
- * # 0x81, 0x02,                    //   Input (Data,Var,Abs)                    22
- * # 0x05, 0x07,                    //   Usage Page (Keyboard/Keypad)            24
- * # 0x19, 0x00,                    //   UsageMinimum (0)                        26
- * # 0x29, 0xff,                    //   UsageMaximum (255)                      28
- * # 0x26, 0xff, 0x00,              //   Logical Maximum (255)                   30
- * # 0x75, 0x08,                    //   Report Size (8)                         33
- * # 0x95, 0x06,                    //   Report Count (6)                        35
- * # 0x81, 0x00,                    //   Input (Data,Arr,Abs)                    37
- * # 0xc0,                          // End Collection                            39
- * # 0x05, 0x0c,                    // Usage Page (Consumer)                     40
- * # 0x09, 0x01,                    // Usage (Consumer Control)                  42
- * # 0xa1, 0x01,                    // Collection (Application)                  44
- * # 0x85, 0x04,                    //   Report ID (4)                           46
- * # 0x19, 0x00,                    //   UsageMinimum (0)                        48
- * # 0x2a, 0x3c, 0x02,              //   UsageMaximum (572)                      50
- * # 0x15, 0x00,                    //   Logical Minimum (0)                     53
- * # 0x26, 0x3c, 0x02,              //   Logical Maximum (572)                   55
- * # 0x95, 0x01,                    //   Report Count (1)                        58
- * # 0x75, 0x10,                    //   Report Size (16)                        60
- * # 0x81, 0x00,                    //   Input (Data,Arr,Abs)                    62
- * # 0xc0,                          // End Collection                            64
+ * # 0x05, 0x01,          // Usage Page (Generic Desktop)              0
+ * # 0x09, 0x06,          // Usage (Keyboard)                          2
+ * # 0xa1, 0x01,          // Collection (Application)                  4
+ * # 0x85, 0x03,          //   Report ID (3)                           6
+ * # 0x05, 0x07,          //   Usage Page (Keyboard/Keypad)            8
+ * # 0x19, 0xe0,          //   UsageMinimum (224)                      10
+ * # 0x29, 0xe7,          //   UsageMaximum (231)                      12
+ * # 0x15, 0x00,          //   Logical Minimum (0)                     14
+ * # 0x25, 0x01,          //   Logical Maximum (1)                     16
+ * # 0x75, 0x01,          //   Report Size (1)                         18
+ * # 0x95, 0x08,          //   Report Count (8)                        20
+ * # 0x81, 0x02,          //   Input (Data,Var,Abs)                    22
+ * # 0x05, 0x07,          //   Usage Page (Keyboard/Keypad)            24
+ * # 0x19, 0x00,          //   UsageMinimum (0)                        26
+ * # 0x29, 0xff,          //   UsageMaximum (255)                      28
+ * # 0x26, 0xff, 0x00,    //   Logical Maximum (255)                   30
+ * # 0x75, 0x08,          //   Report Size (8)                         33
+ * # 0x95, 0x06,          //   Report Count (6)                        35
+ * # 0x81, 0x00,          //   Input (Data,Arr,Abs)                    37
+ * # 0xc0,                // End Collection                            39
+ * # 0x05, 0x0c,          // Usage Page (Consumer)                     40
+ * # 0x09, 0x01,          // Usage (Consumer Control)                  42
+ * # 0xa1, 0x01,          // Collection (Application)                  44
+ * # 0x85, 0x04,          //   Report ID (4)                           46
+ * # 0x19, 0x00,          //   UsageMinimum (0)                        48
+ * # 0x2a, 0x3c, 0x02,    //   UsageMaximum (572)                      50
+ * # 0x15, 0x00,          //   Logical Minimum (0)                     53
+ * # 0x26, 0x3c, 0x02,    //   Logical Maximum (572)                   55
+ * # 0x95, 0x01,          //   Report Count (1)                        58
+ * # 0x75, 0x10,          //   Report Size (16)                        60
+ * # 0x81, 0x00,          //   Input (Data,Arr,Abs)                    62
+ * # 0xc0,                // End Collection                            64
  * R: 65 05 01 09 06 a1 01 85 03 05 07 19 e0 29 e7 15 00 25 01 75 01 95 08 81 02 0507 19 00 29 ff 26 ff 00 75 08 95 06 81 00 c0 05 0c 09 01 a1 01 85 04 19 00 2a 3c02 15 00 26 3c 02 95 01 75 10 81 00 c0
  * N: HUION Huion Tablet_H641P
  */
@@ -376,22 +376,23 @@ int BPF_PROG(hid_fix_rdesc, struct hid_bpf_ctx *hctx)
 		if (have_fw_id) {
 			__builtin_memcpy(data, disabled_rdesc_pad, sizeof(disabled_rdesc_pad));
 			return sizeof(disabled_rdesc_pad);
-		} else {
-			__builtin_memcpy(data, fixed_rdesc_pad, sizeof(fixed_rdesc_pad));
-			return sizeof(fixed_rdesc_pad);
 		}
+
+		__builtin_memcpy(data, fixed_rdesc_pad, sizeof(fixed_rdesc_pad));
+		return sizeof(fixed_rdesc_pad);
 	}
 	if (rdesc_size == PEN_REPORT_DESCRIPTOR_LENGTH) {
 		if (have_fw_id) {
 			__builtin_memcpy(data, disabled_rdesc_pen, sizeof(disabled_rdesc_pen));
 			return sizeof(disabled_rdesc_pen);
-		} else {
-			__builtin_memcpy(data, fixed_rdesc_pen, sizeof(fixed_rdesc_pen));
-			return sizeof(fixed_rdesc_pen);
 		}
+
+		__builtin_memcpy(data, fixed_rdesc_pen, sizeof(fixed_rdesc_pen));
+		return sizeof(fixed_rdesc_pen);
 	}
 	/* Always fix the vendor mode so the tablet will work even if nothing sets
-	 * the udev property (e.g. huion-switcher run manually) */
+	 * the udev property (e.g. huion-switcher run manually)
+	 */
 	if (rdesc_size == VENDOR_REPORT_DESCRIPTOR_LENGTH) {
 		__builtin_memcpy(data, fixed_rdesc_vendor, sizeof(fixed_rdesc_vendor));
 		return sizeof(fixed_rdesc_vendor);
@@ -419,7 +420,7 @@ int BPF_PROG(inspiroy_2_fix_events, struct hid_bpf_ctx *hctx)
 		 *   Button 4: 03 01 16 00 00 00 00 00 -> Ctrl S
 		 *   Button 5: 03 00 2c 00 00 00 00 00 -> space
 		 *   Button 6: 03 05 1d 00 00 00 00 00 -> Ctrl Alt Z
-                 *
+		 *
 		 *   Wheel down: 03 01 2d 00 00 00 00 00 -> Ctrl -
 		 *   Wheel up:   03 01 2e 00 00 00 00 00 -> Ctrl =
 		 */
@@ -457,6 +458,7 @@ int BPF_PROG(inspiroy_2_fix_events, struct hid_bpf_ctx *hctx)
 		}
 
 		__u8 report[6] = {PAD_REPORT_ID, 0x0, 0x0, 0x0, wheel, button};
+
 		__builtin_memcpy(data, report, sizeof(report));
 		return sizeof(report);
 	}
@@ -490,7 +492,7 @@ int BPF_PROG(inspiroy_2_fix_events, struct hid_bpf_ctx *hctx)
 				wheel = 0; // wheel
 			}
 
-			pad_report = (struct pad_report*)data;
+			pad_report = (struct pad_report *)data;
 
 			pad_report->report_id = PAD_REPORT_ID;
 			pad_report->btn_stylus = 0;

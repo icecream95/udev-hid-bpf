@@ -194,6 +194,7 @@ int BPF_PROG(hid_device_event_xppen_deco_mini_4, struct hid_bpf_ctx *hctx)
 	}
 
 	__u8 report[8] = {PAD_REPORT_ID, button_mask, 0x00};
+
 	__builtin_memcpy(data, report, sizeof(report));
 
 	return 0;
