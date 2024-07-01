@@ -4,10 +4,6 @@
 # in the newer struct_ops approach and are thus compatible
 # for both approaches.
 tracing_sources = [
-    '10-Huion__Dial-2.bpf.c',
-    '10-Huion__Inspiroy-2-S.bpf.c',
-    '10-Thrustmaster__TCA-Yoke-Boeing.bpf.c',
-    '10-XPPen__DecoMini4.bpf.c',
 ]
 
 # 'sources' are BPF programs only compatible with

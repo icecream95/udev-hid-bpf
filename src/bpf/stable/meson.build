@@ -6,12 +6,16 @@
 tracing_sources = [
     '10-FR-TEC__Raptor-Mach-2.bpf.c',
     '10-HP__Elite-Presenter.bpf.c',
+    '10-Huion__Dial-2.bpf.c',
+    '10-Huion__Inspiroy-2-S.bpf.c',
     '10-Huion__Kamvas-Pro-19.bpf.c',
     '10-IOGEAR__Kaliber-MMOmentum.bpf.c',
     '10-Microsoft__XBox-Elite-2.bpf.c',
+    '10-Thrustmaster__TCA-Yoke-Boeing.bpf.c',
     '10-Wacom__ArtPen.bpf.c',
     '10-XPPen__Artist24.bpf.c',
     '10-XPPen__ArtistPro16Gen2.bpf.c',
+    '10-XPPen__DecoMini4.bpf.c',
 ]
 
 # 'sources' are BPF programs only compatible with
