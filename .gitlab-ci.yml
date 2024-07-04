@@ -273,8 +273,8 @@ meson filter build:
   parallel:
     matrix:
       - FILTER: trace
-      - FILTER: XBox
-      - FILTER: trace,XBox
+      - FILTER: Xbox
+      - FILTER: trace,Xbox
   script:
     - export MESON_EXTRA_ARGS="-Dbpf-filter=$FILTER"
     - .gitlab-ci/meson-build.sh --run-install
@@ -287,20 +287,20 @@ meson filter build:
         test -e $PREFIX/lib/firmware/hid/bpf/09-trace_hid_events.bpf.o
       fi
     - |
-      if [ "$FILTER" = "XBox" ]; then
+      if [ "$FILTER" = "Xbox" ]; then
         # We only expect one file to be installed
         test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 2
-        test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
-        test -e $PREFIX/lib/firmware/hid/bpf/09-Microsoft__XBox-Elite-2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__Xbox-Elite-2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/09-Microsoft__Xbox-Elite-2.bpf.o
       fi
     - |
-      if [ "$FILTER" = "trace,XBox" ]; then
+      if [ "$FILTER" = "trace,Xbox" ]; then
         # We only expect two files to be installed
         test $(ls $PREFIX/lib/firmware/hid/bpf/ | wc -l) -eq 4
         test -e $PREFIX/lib/firmware/hid/bpf/10-trace_hid_events.bpf.o
         test -e $PREFIX/lib/firmware/hid/bpf/09-trace_hid_events.bpf.o
-        test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
-        test -e $PREFIX/lib/firmware/hid/bpf/09-Microsoft__XBox-Elite-2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__Xbox-Elite-2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/09-Microsoft__Xbox-Elite-2.bpf.o
       fi
   variables:
     MESON_ARGS: --prefix=$PREFIX -Dudevdir=$PREFIX/lib/udev
@@ -323,11 +323,11 @@ meson features build:
     - tree $PREFIX
     - |
       if [ "$FEATURE" = "testing" ]; then
-        test ! -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
+        test ! -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__Xbox-Elite-2.bpf.o
       fi
     - |
       if [ "$FEATURE" = "testing,stable" ]; then
-        test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__XBox-Elite-2.bpf.o
+        test -e $PREFIX/lib/firmware/hid/bpf/10-Microsoft__Xbox-Elite-2.bpf.o
       fi
     # no userhacks files should be installed
     - test ! -e $PREFIX/lib/firmware/hid/bpf/10-trace_hid_events.bpf.o
