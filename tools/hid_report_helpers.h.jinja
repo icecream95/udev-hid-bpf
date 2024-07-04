@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only
+/* SPDX-License-Identifier: GPL-2.0-only */
 /* Copyright (c) 2024 Red Hat, Inc
  */
 
@@ -23,21 +23,22 @@
  * returns 0, which allows using it everywhere an expression
  * can be used.
  */
-#define must_be(e, msg_)                                  \
-(                                                         \
-    0 * (int) sizeof(                                     \
-        struct {                                          \
-            _Static_assert(e, msg_);                      \
-            int  ISO_C_forbids_a_struct_with_no_members;  \
-        }                                                 \
-    )                                                     \
+#define must_be(e, msg_)						\
+(									\
+	0 * (int) sizeof(						\
+		struct {						\
+			_Static_assert(e, msg_);			\
+			int  ISO_C_forbids_a_struct_with_no_members;	\
+		}							\
+	)								\
 )
 
 /* Ensure the given value fits within 8/16/32 bits */
 #define i4(v_)  (((__u8)(v_) & 0xf)  + must_be((v_) >= -0x8 && (v_) <= 0x7, "not a i4"))
 #define i8(v_)  ((__u8)(v_)  + must_be((v_) >= -0x80 && (v_) <= 0xff, "not a i8/u8"))
 #define i16(v_) ((__u16)(v_) + must_be((v_) >= -0x8000 && (v_) <= 0xffff, "not a i16/u16"))
-#define i32(v_) ((__u32)(v_) + must_be((v_) >= -0x80000000L && (v_) <= 0xffffffffL, "not a i32/u16"))
+#define i32(v_) ((__u32)(v_) + must_be((v_) >= -0x80000000L && (v_) <= 0xffffffffL, \
+				       "not a i32/u16"))
 
 /* Split a value across multiple bytes in LE order */
 #define LE16(v_) i16(v_) & 0xff, ((v_) >> 8) & 0xff
@@ -64,7 +65,8 @@
 #define CollectionLogical(...)		Collection(0x02, __VA_ARGS__)
 
 /* See Collections, this macro provides Push and Pop with
- * elements in between */
+ * elements in between
+ */
 #define PushPop(...)			0xa4, __VA_ARGS__ 0xb4,
 
 /* Arguments to use in bitwise-or for Input, Output, Feature */
@@ -111,7 +113,8 @@
 #define in				(EnglishLinear | (0x1 << 4))
 /* Use as Unit(cm) or Unit(rad) or similar.
  * This macro currently defaults to exponent 1 only, so no
- * cm^2 or others */
+ * cm^2 or others
+ */
 #define Unit(u_)                        Unit_i8(u_)
 #define Unit_i8(u_)			0x65, i8(u_),
 #define Unit_i16(u_)			0x66, i16(u_),
@@ -158,7 +161,8 @@
 {% set size = "i8" if usage_page.value < 0xff  else "i16" %}
 #define UsagePage_{{ usage_page.name.ljust(30)}} UsagePage_{{size}}(0x{{'%x' % usage_page.value}})
 {% endfor %}
-#define UsagePage_Vendor(u_)		UsagePage_i16((u_) + must_be(((u_) & 0xff00) == 0xff00, "not a 0xff00 vendor page"))
+#define UsagePage_Vendor(u_)	\
+	UsagePage_i16((u_) + must_be(((u_) & 0xff00) == 0xff00, "not a 0xff00 vendor page"))
 
 {% for usage_page in usage_pages %}
 {% for usage in usage_page.usages %}
