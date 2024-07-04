@@ -1,6 +1,6 @@
 [package]
 name = "udev-hid-bpf"
-version = "2.0.0-20240624"  # Update meson.build too!
+version = "2.1.0-20240704"  # Update meson.build too!
 edition = "2021"
 license = "GPL-2.0-only"
 rust-version = "1.70"
