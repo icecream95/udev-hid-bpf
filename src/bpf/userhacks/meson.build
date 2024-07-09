@@ -16,6 +16,7 @@ tracing_sources = [
 # 'sources' are BPF programs only compatible with
 # struct_ops (kernel v6.11+)
 sources = [
+    '10-Microsoft__Surface_Dial.bpf.c',
 ]
 
 foreach bpf: tracing_sources
