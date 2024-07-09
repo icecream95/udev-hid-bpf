@@ -52,3 +52,10 @@ int hid_bpf_hw_request(struct hid_bpf_ctx *ctx,
 {
 	return callbacks.hid_bpf_hw_request(ctx, data, buf__sz, type, reqtype);
 }
+
+int bpf_wq_set_callback_impl(struct bpf_wq *wq,
+		int (callback_fn)(void *map, int *key, struct bpf_wq *wq),
+		unsigned int flags__k, void *aux__ign)
+{
+	return 0;
+}
