@@ -72,6 +72,16 @@ def test_event_userhacks_invert(y):
     assert y_out == -y
 
 
+def test_rdesc_fixup_rapoo_m50():
+    bpf = Bpf.load("10-Rapoo__M50-Plus-Silent")
+    rdesc = bytearray(4096)
+    rdesc[17] = 0x03
+
+    data = bpf.hid_bpf_rdesc_fixup(rdesc=rdesc)
+    rdesc[17] = 0x05
+    assert data == rdesc
+
+
 class TestXPPenDecoMini4:
     @pytest.mark.parametrize(
         "report,expected",
