@@ -14,7 +14,7 @@ option('bpf-filter',
 option('placeholder-udev-rules-file',
        type: 'boolean',
        value: false,
-       description: 'Do not substituate the a @BINDIR@ placeholder in the udev rule')
+       description: 'Do not substitute the a @BINDIR@ placeholder in the udev rule')
 option('bpfdirs',
        type: 'array',
        value: ['PREFIXED_BPFDIR', '/usr/local/lib/firmware/hid/bpf', '/usr/lib/firmware/hid/bpf', '/lib/firmware/hid/bpf'],
