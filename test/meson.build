@@ -7,6 +7,14 @@ if not build_tests
     subdir_done()
 endif
 
+cflags = []
+if cc_id == 'clang'
+    cflags += [
+        '-Wno-unknown-attributes', # warning: unknown attribute 'preserve_access_index' ignored [-Wunknown-attributes]
+    ]
+endif
+add_project_arguments(cc.get_supported_arguments(cflags), language: 'c')
+
 # We recompile the BPF as a normal shared library, one
 # per BPF program.
 foreach obj: bpf_objects
