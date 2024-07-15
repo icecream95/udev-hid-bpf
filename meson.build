@@ -41,14 +41,14 @@ cargo_options = [
     '--target-dir', meson.project_build_root(),
 ]
 
-if get_option('buildtype') == 'release'
-  cargo_options += [ '--release' ]
-  rust_target = 'release'
-  message('Building in release mode')
-else
+if get_option('buildtype') in ['debug', 'debugoptimized']
   cargo_options += [ '--all-targets' ]
   rust_target = 'debug'
   message('Building in debug mode')
+else
+  cargo_options += [ '--release' ]
+  rust_target = 'release'
+  message('Building in release mode')
 endif
 
 subdir('src')
