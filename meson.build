@@ -58,7 +58,6 @@ cargo_env = {
     'MESON_BINDIR': bindir,
     'CARGO_HOME': meson.project_build_root() / 'cargo-home',
     'BPF_SOURCE_ROOT': meson.project_source_root(),
-    'BPF_INSTALL_DIR': bpfdir,
     'BPF_LOOKUP_DIRS': lookup_bpfdirs,
 }
 
