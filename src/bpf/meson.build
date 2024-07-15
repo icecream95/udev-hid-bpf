@@ -2,7 +2,6 @@ fs = import('fs')
 
 # copied from systemd meson.build
 c_args = get_option('c_args')
-bpf_compiler = get_option('bpf-compiler')
 libbpf = dependency('libbpf',
                     required : true,
                     version : bpf_compiler == 'gcc' ? '>= 1.4.0' : '>= 0.1.0')

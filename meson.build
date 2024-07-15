@@ -2,8 +2,6 @@ project('udev-hid-bpf', 'rust', 'c',
         version: '2.1.0-20240704', # Update Cargo.toml too!
         meson_version: '>= 1.0.0')
 
-cc = meson.get_compiler('c')
-
 prefix = get_option('prefix')
 bindir = prefix / get_option('bindir')
 bpfdir = prefix / 'lib' / 'firmware' / 'hid' / 'bpf'
@@ -31,6 +29,27 @@ if udevdir == ''
         udevdir = prefix / 'lib' / 'udev'
     endif
 endif
+
+bpf_compiler = get_option('bpf-compiler')
+cc = meson.get_compiler('c')
+cc_id = cc.get_id()
+if cc_id == bpf_compiler
+    foreach func: ['memcpy', 'memcmp']
+        if not cc.compiles(f'''
+            int main(void) {
+                __builtin_@func@(0, 0, 0);
+                return 0;
+            }
+            '''
+        )
+            cc_version = cc.version()
+            error(f'@cc_id@ @cc_version@ does not support __builtin_@func@(), try a newer version')
+        endif
+    endforeach
+else
+    warning(f'C compiler is @cc_id@ but BPF compiler is @bpf_compiler@')
+endif
+
 
 use_bpf_tracing = get_option('bpf-tracing')
 
