@@ -32,10 +32,11 @@ if udevdir == ''
     endif
 endif
 
-cargo = find_program('cargo', required: true)
-
 use_bpf_tracing = get_option('bpf-tracing')
 
+subdir('src')
+
+cargo = find_program('cargo', required: true)
 cargo_options = [
     '--manifest-path', meson.project_source_root() / 'Cargo.toml',
     '--target-dir', meson.project_build_root(),
@@ -50,8 +51,6 @@ else
   rust_target = 'release'
   message('Building in release mode')
 endif
-
-subdir('src')
 
 # Now the cargo invocation
 cargo_env = {
