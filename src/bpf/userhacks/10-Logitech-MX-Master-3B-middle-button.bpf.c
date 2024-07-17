@@ -114,10 +114,8 @@ int probe(struct hid_bpf_probe_args *ctx)
 	else
 		ctx->retval = check_bluetooth_report_descriptor(ctx);
 
-	if (ctx->retval) {
-		ret = 0;
+	if (ctx->retval)
 		goto out;
-	}
 
 	bpf_printk("successfully found Logitech MX Master 3B");
 
