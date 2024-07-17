@@ -142,7 +142,7 @@ pub trait HidBPFLoader {
         let udev_properties: Vec<hidudev::HidUdevProperty> = device
             .udev_properties()
             .into_iter()
-            .filter(|prop| extra_props.iter().find(|ep| ep.name == prop.name).is_none())
+            .filter(|prop| !extra_props.iter().any(|ep| ep.name == prop.name))
             .chain(extra_props.iter().map(hidudev::HidUdevProperty::from))
             .collect();
 

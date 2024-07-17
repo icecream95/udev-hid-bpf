@@ -232,8 +232,7 @@ impl<'m> Metadata<'m> {
         /* parse the HID_BPF config section */
         self.types
             .iter()
-            .enumerate()
-            .filter_map(|(_, e)| Modalias::from_btf_type_id(self.btf, e))
+            .filter_map(|e| Modalias::from_btf_type_id(self.btf, e))
     }
 }
 
