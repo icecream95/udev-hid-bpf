@@ -5,6 +5,7 @@
 # for both approaches.
 tracing_sources = [
     '10-Rapoo__M50-Plus-Silent.bpf.c',
+    '10-Mistel__MD770.bpf.c',
 ]
 
 # 'sources' are BPF programs only compatible with
