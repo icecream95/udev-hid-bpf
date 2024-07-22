@@ -40,8 +40,7 @@ bpf_clang_flags = [
         '-std=gnu11',
         '-fno-stack-protector',
         '-O2',
-        '-target',
-        'bpf',
+        '-target', 'bpf',
         '-g',
         '-c',
 ]
