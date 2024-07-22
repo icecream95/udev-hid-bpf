@@ -38,7 +38,6 @@ bpftool = find_program('bpftool',
 
 bpf_clang_flags = [
         '-std=gnu11',
-        '-Wno-compare-distinct-pointer-types',
         '-fno-stack-protector',
         '-O2',
         '-target',
