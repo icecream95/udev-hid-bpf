@@ -22,36 +22,10 @@
  * sudo udev-hid-bpf remove /sys/bus/hid/devices/<DEVICE>
  */
 
-char str[64];
-
 SEC(HID_BPF_DEVICE_EVENT)
 int BPF_PROG(trace_hid_events, struct hid_bpf_ctx *hid_ctx)
 {
-	int i, j;
-	__u8 *data;
-
-	bpf_printk("event: size: %d", hid_ctx->size);
-	for (i = 0; i * 64 < hid_ctx->size && i < 64; i++) {
-		data = hid_bpf_get_data(hid_ctx, i * 64, 64);
-		if (!data)
-			return 0; /* EPERM check */
-
-		for (j = 0; j < 8 && i * 64 + j * 8 < hid_ctx->size; j++) {
-			 BPF_SNPRINTF(str, sizeof(str),
-				      "%02x %02x %02x %02x %02x %02x %02x %02x ",
-				      data[j * 8],
-				      data[j * 8 + 1],
-				      data[j * 8 + 2],
-				      data[j * 8 + 3],
-				      data[j * 8 + 4],
-				      data[j * 8 + 5],
-				      data[j * 8 + 6],
-				      data[j * 8 + 7]
-				      );
-
-			bpf_printk(" 0x%08x: %s", i * 64 + j * 8, str);
-		}
-	}
+	hid_bpf_printk_event(hid_ctx);
 
 	return 0;
 }

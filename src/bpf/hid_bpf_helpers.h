@@ -42,6 +42,45 @@ extern int bpf_wq_set_callback_impl(struct bpf_wq *wq,
 #define HID_MAX_DESCRIPTOR_SIZE	4096
 #define HID_IGNORE_EVENT	-1
 
+#define PRINTK_PACKET_SIZE 64
+#define HID_MAX_BUFFER_SIZE	16384		/* 16kb, from include/linux/hid.h */
+#define HID_MAX_PACKET (HID_MAX_BUFFER_SIZE / PRINTK_PACKET_SIZE)
+
+char __printk_str[PRINTK_PACKET_SIZE * 3 + 1];
+
+static inline void hid_bpf_printk_event(struct hid_bpf_ctx *hctx)
+{
+	const unsigned int length = hctx->size;
+	unsigned int p, i;
+	__u8 *data;
+
+	if (hctx->size < 0) {
+		bpf_printk("error in event of size %d", hctx->size);
+		return;
+	}
+
+	const unsigned int packet_count = length / PRINTK_PACKET_SIZE + 1;
+
+	bpf_printk("event: size: %d", length);
+	bpf_for(p, 0, packet_count) {
+		const unsigned int offset = p * PRINTK_PACKET_SIZE;
+
+		data = hid_bpf_get_data(hctx, offset, PRINTK_PACKET_SIZE /* size */);
+		if (!data)
+			return; /* EPERM check */
+
+		bpf_for(i, 0, PRINTK_PACKET_SIZE) {
+			if (i + offset < hctx->size) {
+				BPF_SNPRINTF(__printk_str + i * 3, 4,
+					     "%02x ",
+					     data[i]
+					     );
+			}
+		}
+		bpf_printk(" 0x%08x: %s", p * PRINTK_PACKET_SIZE, __printk_str);
+	}
+}
+
 /* extracted from <linux/input.h> */
 #define BUS_ANY			0x00
 #define BUS_PCI			0x01
