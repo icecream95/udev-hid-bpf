@@ -593,8 +593,13 @@ fn udev_hid_bpf() -> Result<()> {
         print_to_log,
     )));
 
+    let mut modules = vec![module_path!(), "HID-BPF metadata"];
+    if cli.verbose {
+        modules.push("libbpf");
+    }
+
     stderrlog::new()
-        .modules(vec![module_path!(), "libbpf", "HID-BPF metadata"])
+        .modules(modules)
         .verbosity(if cli.verbose {
             log::LevelFilter::Debug
         } else {
