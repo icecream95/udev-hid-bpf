@@ -598,7 +598,7 @@ fn udev_hid_bpf() -> Result<()> {
         .verbosity(if cli.verbose {
             log::LevelFilter::Debug
         } else {
-            log::LevelFilter::Info
+            log::LevelFilter::Warn
         })
         .init()
         .unwrap();
