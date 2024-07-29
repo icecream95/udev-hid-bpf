@@ -31,12 +31,14 @@ struct Cli {
 }
 
 fn print_to_log(lvl: libbpf_rs::PrintLevel, msg: String) {
-    let level =
-        if msg.contains("skipping unrecognized data section") && msg.contains(".hid_bpf_config") {
-            libbpf_rs::PrintLevel::Debug
-        } else {
-            lvl
-        };
+    let level = if msg.contains("skipping unrecognized data section")
+        && msg.contains(".hid_bpf_config")
+        || msg.contains("skipping relo section")
+    {
+        libbpf_rs::PrintLevel::Debug
+    } else {
+        lvl
+    };
     match level {
         libbpf_rs::PrintLevel::Debug => log::debug!(target: "libbpf", "{}", msg.trim()),
         libbpf_rs::PrintLevel::Info => log::info!(target: "libbpf", "{}", msg.trim()),
