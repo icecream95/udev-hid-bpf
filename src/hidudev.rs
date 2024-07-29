@@ -224,7 +224,7 @@ impl HidUdev {
                 for path in group {
                     match bpf::HidBPF::load_programs(&path, self, properties) {
                         Ok(_) => {
-                            log::debug!("Successfully loaded {path:?}");
+                            log::info!("Successfully loaded {path:?}");
                             break;
                         }
                         Err(e) => log::warn!("Failed to load {:?}: {:?}", path, e),
