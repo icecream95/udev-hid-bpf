@@ -94,6 +94,12 @@ impl HidUdev {
             .collect()
     }
 
+    pub fn is_ignored(&self) -> bool {
+        self.udev_device
+            .property_value("HID_BPF_IGNORE_DEVICE")
+            .is_some()
+    }
+
     /// Find the given file name in the set of directories, returning a path
     /// to the first filename found. The directories are assumed in preference
     /// order, first match wins.
@@ -200,13 +206,6 @@ impl HidUdev {
             None => {
                 if !bpf_dirs.iter().any(|d| d.exists()) {
                     log::warn!("bpf directories {:?} don't exist, aborting", bpf_dirs);
-                    return Ok(());
-                }
-                if self
-                    .udev_device
-                    .property_value("HID_BPF_IGNORE_DEVICE")
-                    .is_some()
-                {
                     return Ok(());
                 }
                 self.search_for_matching_objfiles(bpf_dirs)

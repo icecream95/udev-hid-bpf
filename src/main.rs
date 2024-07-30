@@ -165,11 +165,13 @@ fn cmd_add(
 
     for syspath in devices {
         let dev = hidudev::HidUdev::from_syspath(syspath)?;
-        if objfiles.is_empty() {
-            dev.load_bpf_from_directories(&target_bpf_dirs, None, properties)?;
-        } else {
-            for objfile in objfiles {
-                dev.load_bpf_from_directories(&target_bpf_dirs, Some(objfile), properties)?;
+        if !dev.is_ignored() {
+            if objfiles.is_empty() {
+                dev.load_bpf_from_directories(&target_bpf_dirs, None, properties)?;
+            } else {
+                for objfile in objfiles {
+                    dev.load_bpf_from_directories(&target_bpf_dirs, Some(objfile), properties)?;
+                }
             }
         }
     }
