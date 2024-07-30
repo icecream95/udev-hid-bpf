@@ -36,6 +36,7 @@ pub struct AttachProgArgs {
 pub enum BpfError {
     LibBPFError { error: libbpf_rs::Error },
     OsError { errno: u32 },
+    Unsupported,
 }
 
 impl std::error::Error for BpfError {}
@@ -47,6 +48,7 @@ impl Display for BpfError {
             BpfError::OsError { errno } => {
                 write!(f, "{}", libbpf_rs::Error::from_raw_os_error(*errno as i32))
             }
+            BpfError::Unsupported => write!(f, "unsupported on this kernel"),
         }
     }
 }
@@ -380,7 +382,20 @@ impl HidBPFLoader for HidBPFStructOps {
                 }
             });
 
-        Ok(open_object.load()?)
+        open_object.load().map_err(|e| {
+            // Unfortunately libbpf gives us ENOENT if the kernel does
+            // not support struct ops which makes it impossible to distinguish
+            // between "not supported" and "file not found".
+            // Since we do our best to only ever load files that exist
+            // in the fs, let's assume ENOENT here means "not supported".
+            // Which is a much better error than "no such file or directory" for an
+            // object that definitely exists...
+            if e.kind() == libbpf_rs::ErrorKind::NotFound {
+                BpfError::Unsupported
+            } else {
+                BpfError::LibBPFError { error: e }
+            }
+        })
     }
 
     fn attach_and_pin(
