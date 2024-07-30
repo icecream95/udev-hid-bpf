@@ -149,8 +149,8 @@ impl HidUdev {
     }
 
     /// For each file find the first matching .bpf.o file within the set of directories.
-    fn find_named_objfiles(filenames: &[String], bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
-        let vec: Vec<PathBuf> = filenames
+    fn find_named_objfiles(filenames: &[String], bpf_dirs: &[PathBuf]) -> Vec<PathBuf> {
+        filenames
             .iter()
             .filter(|filename| filename.ends_with(".bpf.o"))
             .flat_map(|filename| {
@@ -161,16 +161,11 @@ impl HidUdev {
                     Self::find_first_matching_file(bpf_dirs, filename)
                 }
             })
-            .collect();
-        if vec.is_empty() {
-            None
-        } else {
-            Some(vec)
-        }
+            .collect()
     }
 
     /// Search for any file in the HID_BPF_ udev properties set on this device
-    fn search_for_matching_objfiles(&self, bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
+    fn search_for_matching_objfiles(&self, bpf_dirs: &[PathBuf]) -> Vec<PathBuf> {
         let paths: Vec<String> = self
             .hid_bpf_properties()
             .iter()
@@ -196,10 +191,11 @@ impl HidUdev {
     ) -> std::io::Result<()> {
         let paths = match objfile {
             Some(objfile) => {
-                Self::find_named_objfiles(&[objfile.clone()], bpf_dirs).or_else(|| {
+                let files = Self::find_named_objfiles(&[objfile.clone()], bpf_dirs);
+                if files.is_empty() {
                     log::warn!("Unable to find BPF program: {objfile}");
-                    None
-                })
+                }
+                files
             }
             None => {
                 if !bpf_dirs.iter().any(|d| d.exists()) {
@@ -216,7 +212,7 @@ impl HidUdev {
                 self.search_for_matching_objfiles(bpf_dirs)
             }
         };
-        if let Some(paths) = paths {
+        if !paths.is_empty() {
             let sorted: Vec<Vec<PathBuf>> = Self::sort_by_stem(&paths);
             // For each group in our vec of vecs, try to load them one-by-one.
             // The first successful one terminates that group and we continue with the next.
@@ -290,8 +286,7 @@ mod tests {
             .map(|&s| s.into())
             .collect();
         let objfiles = HidUdev::find_named_objfiles(&props, &dirs);
-        assert!(objfiles.is_some());
-        let objfiles = objfiles.unwrap();
+        assert!(!objfiles.is_empty());
         let expected = [
             &usr_local.join("10-one.bpf.o"),
             &usr.join("20-one.bpf.o"),
@@ -308,8 +303,7 @@ mod tests {
             .map(|&s| s.into())
             .collect();
         let objfiles = HidUdev::find_named_objfiles(&props, &dirs);
-        assert!(objfiles.is_some());
-        let objfiles = objfiles.unwrap();
+        assert!(!objfiles.is_empty());
         let expected = [
             &usr_local.join("10-one.bpf.o"),
             &usr_local.join("10-two.bpf.o"),
@@ -325,8 +319,7 @@ mod tests {
             .map(|&s| s.into())
             .collect();
         let objfiles = HidUdev::find_named_objfiles(&props, &dirs);
-        assert!(objfiles.is_some());
-        let objfiles = objfiles.unwrap();
+        assert!(!objfiles.is_empty());
         let expected = [&usr_local.join("10-one.bpf.o"), &usr.join("10-three.bpf.o")];
         objfiles
             .iter()
