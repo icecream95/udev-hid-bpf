@@ -158,9 +158,17 @@ fn cmd_add(
     bpfdir: Option<PathBuf>,
     properties: &[hidudev::HidUdevProperty],
 ) -> Result<()> {
-    let target_bpf_dirs: Vec<PathBuf> = bpfdir.into_iter().chain(default_bpf_dirs()).collect();
     for syspath in devices {
         ensure!(syspath.exists(), "Invalid syspath {syspath:?}");
+    }
+
+    let target_bpf_dirs: Vec<PathBuf> = bpfdir.into_iter().chain(default_bpf_dirs()).collect();
+    if objfiles.is_empty() {
+        ensure!(
+            target_bpf_dirs.iter().any(|d| d.exists()),
+            "bpf directories {:?} don't exist, aborting",
+            target_bpf_dirs
+        );
     }
 
     for syspath in devices {

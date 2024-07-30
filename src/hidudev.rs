@@ -203,13 +203,7 @@ impl HidUdev {
                 }
                 files
             }
-            None => {
-                if !bpf_dirs.iter().any(|d| d.exists()) {
-                    log::warn!("bpf directories {:?} don't exist, aborting", bpf_dirs);
-                    return Ok(());
-                }
-                self.search_for_matching_objfiles(bpf_dirs)
-            }
+            None => self.search_for_matching_objfiles(bpf_dirs),
         };
         if !paths.is_empty() {
             let sorted: Vec<Vec<PathBuf>> = Self::sort_by_stem(&paths);
