@@ -173,6 +173,8 @@ fn cmd_add(
                     dev.load_bpf_from_directories(&target_bpf_dirs, Some(objfile), properties)?;
                 }
             }
+        } else {
+            log::warn!("Device {syspath:?} has HID_BPF_IGNORE_DEVICE set, skipping");
         }
     }
 
