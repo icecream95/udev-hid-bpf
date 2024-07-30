@@ -110,7 +110,7 @@ impl HidUdev {
     ///   ["10-foo.bpf.o"]
     /// ]
     /// We can then iterate through and load whichever program is happy first.
-    fn sort_by_stem(paths: &[std::path::PathBuf]) -> Vec<Vec<PathBuf>> {
+    fn sort_by_stem(paths: &[PathBuf]) -> Vec<Vec<PathBuf>> {
         let mut ht: HashMap<String, Vec<PathBuf>> = HashMap::new();
 
         for path in paths.iter() {
@@ -120,9 +120,9 @@ impl HidUdev {
                 None => String::from(&filename).to_lowercase(),
             };
             match ht.get_mut(&stem) {
-                Some(v) => v.push(std::path::PathBuf::from(path)),
+                Some(v) => v.push(PathBuf::from(path)),
                 None => {
-                    let v = vec![std::path::PathBuf::from(path)];
+                    let v = vec![PathBuf::from(path)];
                     ht.insert(stem, v);
                 }
             };

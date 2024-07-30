@@ -5,6 +5,7 @@ use clap::{Parser, Subcommand};
 use regex::Regex;
 use serde::Serialize;
 use std::io::Write;
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 pub mod bpf;
@@ -19,7 +20,7 @@ static BINDIR: &str = env!("MESON_BINDIR");
 struct Cli {
     /// Folder to look at for bpf objects
     #[arg(short, long)]
-    bpf: Option<std::path::PathBuf>,
+    bpf: Option<PathBuf>,
     /// Print debugging information
     #[arg(short, long, default_value_t = false)]
     debug: bool,
@@ -84,7 +85,7 @@ enum Commands {
         paths: Vec<String>,
         /// Folder to look at for bpf objects
         #[arg(short, long)]
-        bpfdir: Option<std::path::PathBuf>,
+        bpfdir: Option<PathBuf>,
         /// Remove current BPF programs for the device first.
         /// This is equivalent to running udev-hid-bpf remove with the
         /// same device argument first.
@@ -105,20 +106,20 @@ enum Commands {
     Remove {
         /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
         #[clap(num_args = 1..)]
-        devpaths: Vec<std::path::PathBuf>,
+        devpaths: Vec<PathBuf>,
     },
     /// List currently installed BPF programs
     ListBpfPrograms {
         /// Folder to look at for bpf objects
         #[arg(short, long)]
-        bpfdir: Option<std::path::PathBuf>,
+        bpfdir: Option<PathBuf>,
     },
     /// List available devices
     ListDevices {},
     /// Inspect a bpf.o file
     Inspect {
         /// One or more paths to a bpf.o file
-        paths: Vec<std::path::PathBuf>,
+        paths: Vec<PathBuf>,
     },
     /// Install one bpf.o file.
     ///
@@ -131,10 +132,10 @@ enum Commands {
     /// to install the current executable in that prefix.
     Install {
         /// Path to a bpf.o file
-        path: std::path::PathBuf,
+        path: PathBuf,
         /// The prefix, converted to $prefix/bin. Defaults to the compiled-in prefix.
         #[arg(long)]
-        prefix: Option<std::path::PathBuf>,
+        prefix: Option<PathBuf>,
         /// Overwrite an existing file with the same name
         #[arg(long, default_value_t = false)]
         force: bool,
@@ -147,21 +148,17 @@ enum Commands {
     },
 }
 
-fn default_bpf_dirs() -> Vec<std::path::PathBuf> {
-    DEFAULT_BPF_DIRS
-        .split(':')
-        .map(std::path::PathBuf::from)
-        .collect()
+fn default_bpf_dirs() -> Vec<PathBuf> {
+    DEFAULT_BPF_DIRS.split(':').map(PathBuf::from).collect()
 }
 
 fn cmd_add(
-    devices: &[std::path::PathBuf],
+    devices: &[PathBuf],
     objfiles: &[String],
-    bpfdir: Option<std::path::PathBuf>,
+    bpfdir: Option<PathBuf>,
     properties: &[hidudev::HidUdevProperty],
 ) -> Result<()> {
-    let target_bpf_dirs: Vec<std::path::PathBuf> =
-        bpfdir.into_iter().chain(default_bpf_dirs()).collect();
+    let target_bpf_dirs: Vec<PathBuf> = bpfdir.into_iter().chain(default_bpf_dirs()).collect();
     for syspath in devices {
         ensure!(syspath.exists(), "Invalid syspath {syspath:?}");
     }
@@ -180,7 +177,7 @@ fn cmd_add(
     Ok(())
 }
 
-fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String> {
+fn sysname_from_syspath(syspath: &PathBuf) -> std::io::Result<String> {
     let re = Regex::new(r"[A-Z0-9]{4}:[A-Z0-9]{4}:[A-Z0-9]{4}\.[A-Z0-9]{4}").unwrap();
     let abspath = std::fs::read_link(syspath).unwrap_or(syspath.clone());
     abspath
@@ -191,7 +188,7 @@ fn sysname_from_syspath(syspath: &std::path::PathBuf) -> std::io::Result<String>
         .ok_or(std::io::Error::from_raw_os_error(libc::EINVAL))
 }
 
-fn cmd_remove(syspaths: &Vec<std::path::PathBuf>) -> Result<()> {
+fn cmd_remove(syspaths: &Vec<PathBuf>) -> Result<()> {
     for syspath in syspaths {
         let sysname = match hidudev::HidUdev::from_syspath(syspath) {
             Ok(dev) => dev.sysname(),
@@ -205,7 +202,7 @@ fn cmd_remove(syspaths: &Vec<std::path::PathBuf>) -> Result<()> {
     Ok(())
 }
 
-fn find_bpfs(dir: &std::path::PathBuf) -> Result<Vec<std::path::PathBuf>> {
+fn find_bpfs(dir: &PathBuf) -> Result<Vec<PathBuf>> {
     ensure!(dir.exists(), "File or directory {dir:?} does not exist");
 
     let metadata = dir.metadata().unwrap();
@@ -225,8 +222,8 @@ fn find_bpfs(dir: &std::path::PathBuf) -> Result<Vec<std::path::PathBuf>> {
     Ok(result)
 }
 
-fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> Result<()> {
-    let dirs: Vec<std::path::PathBuf> = bpfdir.into_iter().chain(default_bpf_dirs()).collect();
+fn cmd_list_bpf_programs(bpfdir: Option<PathBuf>) -> Result<()> {
+    let dirs: Vec<PathBuf> = bpfdir.into_iter().chain(default_bpf_dirs()).collect();
     let files = dirs
         .iter()
         .map(move |dir| (dir, find_bpfs(dir)))
@@ -246,7 +243,7 @@ fn cmd_list_bpf_programs(bpfdir: Option<std::path::PathBuf>) -> Result<()> {
         })
         .flat_map(move |t| t.1.into_iter())
         .flatten()
-        .collect::<Vec<std::path::PathBuf>>();
+        .collect::<Vec<PathBuf>>();
 
     ensure!(!files.is_empty(), "no BPF object file found in {dirs:?}");
 
@@ -349,7 +346,7 @@ struct InspectionData {
     maps: Vec<InspectionMap>,
 }
 
-fn inspect(path: &std::path::PathBuf) -> Result<InspectionData> {
+fn inspect(path: &PathBuf) -> Result<InspectionData> {
     ensure!(path.exists(), "Invalid bpf.o path {path:?}");
 
     let btf = libbpf_rs::btf::Btf::from_path(path)
@@ -389,7 +386,7 @@ fn inspect(path: &std::path::PathBuf) -> Result<InspectionData> {
     Ok(data)
 }
 
-fn cmd_inspect(paths: &[std::path::PathBuf]) -> Result<()> {
+fn cmd_inspect(paths: &[PathBuf]) -> Result<()> {
     let mut objects: Vec<InspectionData> = Vec::new();
     for path in paths {
         let idata = inspect(path)?;
@@ -450,8 +447,8 @@ SUBSYSTEM!="hid", GOTO="hid_bpf_end"
 }
 
 fn cmd_install(
-    path: &std::path::PathBuf,
-    prefix: Option<std::path::PathBuf>,
+    path: &PathBuf,
+    prefix: Option<PathBuf>,
     force: bool,
     install_exe: bool,
     dry_run: bool,
@@ -475,7 +472,7 @@ fn cmd_install(
     let bindir = prefix
         .as_ref()
         .map(|p| p.join("bin"))
-        .unwrap_or(std::path::PathBuf::from(BINDIR));
+        .unwrap_or(PathBuf::from(BINDIR));
 
     // We install ourselves if requested
     let exe = bindir.join("udev-hid-bpf");
@@ -493,13 +490,13 @@ fn cmd_install(
         }
     }
 
-    let fwdir = std::path::PathBuf::from("/etc/udev-hid-bpf/");
+    let fwdir = PathBuf::from("/etc/udev-hid-bpf/");
 
     // We know it's .bpf.o suffixed
     let filename: String = path.file_name().unwrap().to_string_lossy().to_string();
     let stem = &filename.strip_suffix(".bpf.o").unwrap();
     let target = fwdir.join(&filename);
-    let udevtarget = std::path::PathBuf::from(format!("{udevdir}/99-hid-bpf-{stem}.rules"));
+    let udevtarget = PathBuf::from(format!("{udevdir}/99-hid-bpf-{stem}.rules"));
 
     if !force {
         for t in [&target, &udevtarget] {
@@ -616,8 +613,7 @@ fn udev_hid_bpf() -> Result<()> {
             property,
         } => {
             let (devices, objfiles) = split_paths(paths)?;
-            let devices: Vec<std::path::PathBuf> =
-                devices.iter().map(std::path::PathBuf::from).collect();
+            let devices: Vec<PathBuf> = devices.iter().map(PathBuf::from).collect();
             if replace {
                 cmd_remove(&devices)?;
                 std::thread::sleep(std::time::Duration::from_millis(500));
@@ -656,21 +652,21 @@ mod tests {
     #[test]
     fn test_sysname_resolution() {
         let syspath = "/sys/blah/1234";
-        let sysname = sysname_from_syspath(&std::path::PathBuf::from(syspath));
+        let sysname = sysname_from_syspath(&PathBuf::from(syspath));
         assert!(sysname.is_err());
 
         let syspath = "/sys/blah/0003:04F3:2D4A.0001";
-        let sysname = sysname_from_syspath(&std::path::PathBuf::from(syspath));
+        let sysname = sysname_from_syspath(&PathBuf::from(syspath));
         assert!(sysname.unwrap() == "0003:04F3:2D4A.0001");
 
         let syspath = "/sys/blah/0003:04F3:2D4A-0001";
-        let sysname = sysname_from_syspath(&std::path::PathBuf::from(syspath));
+        let sysname = sysname_from_syspath(&PathBuf::from(syspath));
         assert!(sysname.is_err());
 
         // Only run this test if there's a local hidraw0 device
         let syspath = "/sys/class/hidraw/hidraw0/device";
         if std::path::Path::new(syspath).exists() {
-            let sysname = sysname_from_syspath(&std::path::PathBuf::from(syspath));
+            let sysname = sysname_from_syspath(&PathBuf::from(syspath));
             assert!(sysname.is_ok());
         }
     }
