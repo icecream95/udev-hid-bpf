@@ -152,13 +152,13 @@ impl HidUdev {
     fn find_named_objfiles(filenames: &[String], bpf_dirs: &[PathBuf]) -> Option<Vec<PathBuf>> {
         let vec: Vec<PathBuf> = filenames
             .iter()
-            .filter(|s| s.ends_with(".bpf.o"))
-            .flat_map(|v| {
-                let p = PathBuf::from(v);
+            .filter(|filename| filename.ends_with(".bpf.o"))
+            .flat_map(|filename| {
+                let p = PathBuf::from(filename);
                 if p.exists() {
                     Some(p)
                 } else {
-                    Self::find_first_matching_file(bpf_dirs, v)
+                    Self::find_first_matching_file(bpf_dirs, filename)
                 }
             })
             .collect();
