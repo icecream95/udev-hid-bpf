@@ -155,7 +155,7 @@ impl HidUdev {
     }
 
     /// For each file find the first matching .bpf.o file within the set of directories.
-    fn find_named_objfiles(filenames: &[String], bpf_dirs: &[PathBuf]) -> Vec<PathBuf> {
+    pub fn find_named_objfiles(filenames: &[String], bpf_dirs: &[PathBuf]) -> Vec<PathBuf> {
         filenames
             .iter()
             .filter(|filename| filename.ends_with(".bpf.o"))
@@ -171,7 +171,7 @@ impl HidUdev {
     }
 
     /// Search for any file in the HID_BPF_ udev properties set on this device
-    fn search_for_matching_objfiles(&self, bpf_dirs: &[PathBuf]) -> Vec<PathBuf> {
+    pub fn search_for_matching_objfiles(&self, bpf_dirs: &[PathBuf]) -> Vec<PathBuf> {
         let paths: Vec<String> = self
             .hid_bpf_properties()
             .iter()
@@ -189,39 +189,25 @@ impl HidUdev {
         Self::find_named_objfiles(&paths, bpf_dirs)
     }
 
-    pub fn load_bpf_from_directories(
+    pub fn load_bpf_files(
         &self,
-        bpf_dirs: &[PathBuf],
-        objfile: Option<&String>,
+        paths: &[PathBuf],
         properties: &[HidUdevProperty],
     ) -> std::io::Result<()> {
-        let paths = match objfile {
-            Some(objfile) => {
-                let files = Self::find_named_objfiles(&[objfile.clone()], bpf_dirs);
-                if files.is_empty() {
-                    log::warn!("Unable to find BPF program: {objfile}");
-                }
-                files
-            }
-            None => self.search_for_matching_objfiles(bpf_dirs),
-        };
-        if !paths.is_empty() {
-            let sorted: Vec<Vec<PathBuf>> = Self::sort_by_stem(&paths);
-            // For each group in our vec of vecs, try to load them one-by-one.
-            // The first successful one terminates that group and we continue with the next.
-            for group in sorted {
-                for path in group {
-                    match bpf::HidBPF::load_programs(&path, self, properties) {
-                        Ok(_) => {
-                            log::info!("Successfully loaded {path:?}");
-                            break;
-                        }
-                        Err(e) => log::warn!("Failed to load {:?}: {:?}", path, e),
-                    };
-                }
+        let sorted: Vec<Vec<PathBuf>> = Self::sort_by_stem(&paths);
+        // For each group in our vec of vecs, try to load them one-by-one.
+        // The first successful one terminates that group and we continue with the next.
+        for group in sorted {
+            for path in group {
+                match bpf::HidBPF::load_programs(&path, self, properties) {
+                    Ok(_) => {
+                        log::info!("Successfully loaded {path:?}");
+                        break;
+                    }
+                    Err(e) => log::warn!("Failed to load {:?}: {:?}", path, e),
+                };
             }
         }
-
         Ok(())
     }
 

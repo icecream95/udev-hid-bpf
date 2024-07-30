@@ -175,10 +175,19 @@ fn cmd_add(
         let dev = hidudev::HidUdev::from_syspath(syspath)?;
         if !dev.is_ignored() {
             if objfiles.is_empty() {
-                dev.load_bpf_from_directories(&target_bpf_dirs, None, properties)?;
+                let objfiles = dev.search_for_matching_objfiles(&target_bpf_dirs);
+                dev.load_bpf_files(&objfiles, properties)?;
             } else {
                 for objfile in objfiles {
-                    dev.load_bpf_from_directories(&target_bpf_dirs, Some(objfile), properties)?;
+                    let bpf_files = hidudev::HidUdev::find_named_objfiles(
+                        &[objfile.to_string()],
+                        &target_bpf_dirs,
+                    );
+                    if bpf_files.is_empty() {
+                        log::warn!("Unable to find BPF program: {objfile}");
+                    } else {
+                        dev.load_bpf_files(&bpf_files, properties)?;
+                    }
                 }
             }
         } else {
