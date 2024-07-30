@@ -52,7 +52,8 @@
  *     Usage_GD_Keyboard
  *     CollectionApplication(     ← Open the collection
  *         ReportId(3)
- *         LogicalRange_i8(0, 1)
+ *         LogicalMinimum_i8(0)
+ *         LogicalMaximum_i8(1)
  *         // other fields
  *     )                          ← End EndCollection
  *
@@ -98,10 +99,6 @@
 #define LogicalMaximum_i16(max_)	0x26, LE16(max_),
 #define LogicalMaximum_i32(max_)	0x27, LE32(max_),
 
-#define LogicalRange_i8(min_, max_)	0x15, i8(min_), 0x25, i8(max_),
-#define LogicalRange_i16(min_, max_)	0x16, LE16(min_), 0x26, LE16(max_),
-#define LogicalRange_i32(min_, max_)	0x17, LE32(min_), 0x27, LE32(max_),
-
 #define PhysicalMinimum_i8(min_)	0x35, i8(min_),
 #define PhysicalMinimum_i16(min_)	0x36, LE16(min_),
 #define PhysicalMinimum_i32(min_)	0x37, LE32(min_),
@@ -110,18 +107,11 @@
 #define PhysicalMaximum_i16(max_)	0x46, LE16(max_),
 #define PhysicalMaximum_i32(max_)	0x47, LE32(max_),
 
-#define PhysicalRange_i8(min_, max_)	0x35, i8(min_), 0x45, i8(max_),
-#define PhysicalRange_i16(min_, max_)	0x36, LE16(min_), 0x46, LE16(max_),
-#define PhysicalRange_i32(min_, max_)	0x37, LE32(min_), 0x47, LE32(max_),
-
 #define UsageMinimum_i8(min_)		0x19, i8(min_),
 #define UsageMinimum_i16(min_)		0x1a, LE16(min_),
 
 #define UsageMaximum_i8(max_)		0x29, i8(max_),
 #define UsageMaximum_i16(max_)		0x2a, LE16(max_),
-
-#define UsageRange_i8(min_, max_)	0x19, i8(min_), 0x29, i8(max_),
-#define UsageRange_i16(min_, max_)	0x1a, LE16(min_), 0x2a, LE16(max_),
 
 #define UsagePage_i8(p_)		0x05, i8(p_),
 #define UsagePage_i16(p_)		0x06, LE16(p_),

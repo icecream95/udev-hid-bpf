@@ -317,7 +317,8 @@ static const __u8 fixed_rdesc[] = {
 		UsagePage_Digitizers
 		Usage_Dig_Puck
 		CollectionLogical(
-			LogicalRange_i8(0, 1)
+			LogicalMinimum_i8(0)
+			LogicalMaximum_i8(1)
 			ReportSize(1)
 			ReportCount(1)
 			CollectionPhysical(
@@ -332,7 +333,8 @@ static const __u8 fixed_rdesc[] = {
 				CollectionLogical(
 					UsagePage_GenericDesktop
 					Usage_GD_Wheel /* was Usage_GD_Dial */
-					LogicalRange_i16(-32767, 32767)
+					LogicalMinimum_i16(-32767)
+					LogicalMaximum_i16(32767)
 					ReportSize(16)
 					ReportCount(1)
 					Input(Var|Rel)
@@ -356,14 +358,17 @@ static const __u8 fixed_rdesc[] = {
 				Input(Var|Rel) /* was Input(Var|Abs|Null) */
 				UsagePage_Digitizers
 				Usage_Dig_Width
-				LogicalRange_i8(58,58)
+				LogicalMinimum_i8(58)
+				LogicalMaximum_i8(58)
 				ReportSize(8)
 				UnitExponent(-1)
-				PhysicalRange_i8(58, 58)
+				PhysicalMinimum_i8(58)
+				PhysicalMaximum_i8(58)
 				Input(Var|Const)
 				UnitExponent(0)
 				Unit(0)
-				PhysicalRange_i8(0, 0)
+				PhysicalMinimum_i8(0)
+				PhysicalMaximum_i8(0)
 				UsagePage_Haptics
 				Usage_Hap_SimpleHapticController
 				CollectionLogical(
@@ -373,7 +378,8 @@ static const __u8 fixed_rdesc[] = {
 					Feature(Var|Abs|Null)
 					Usage_Hap_RepeatCount
 					Output(Var|Abs|Null)
-					LogicalRange_i8(1, 7)
+					LogicalMinimum_i8(1)
+					LogicalMaximum_i8(7)
 					Usage_Hap_AutoTrigger
 					Feature(Var|Abs|Null)
 					Usage_Hap_ManualTrigger
@@ -389,7 +395,8 @@ static const __u8 fixed_rdesc[] = {
 					Output(Var|Abs|Null)
 					ReportId(2)
 					ReportSize(32)
-					LogicalRange_i32(65591, 65591)
+					LogicalMinimum_i32(65591)
+					LogicalMaximum_i32(65591)
 					Usage_Hap_AutoTriggerAssociatedControl
 					Feature(Var|Abs)
 					Usage_Hap_DurationList
@@ -400,7 +407,8 @@ static const __u8 fixed_rdesc[] = {
 						Usage_i8(4)
 						Usage_i8(5)
 						ReportSize(8)
-						LogicalRange_i8(0, 255)
+						LogicalMinimum_i8(0)
+						LogicalMaximum_i8(255)
 						Feature(Var|Abs)
 					)
 					UsagePage_Haptics
@@ -408,19 +416,26 @@ static const __u8 fixed_rdesc[] = {
 					CollectionLogical(
 						UsagePage_Ordinal
 						ReportCount(1)
-						LogicalRange_i8(3, 3)
-						PhysicalRange_i16(4099, 4099)
+						LogicalMinimum_i8(3)
+						LogicalMaximum_i8(3)
+						PhysicalMinimum_i16(4099)
+						PhysicalMaximum_i16(4099)
 						Usage_i8(3)
 						Feature(Var|Abs)
-						LogicalRange_i8(4, 4)
-						PhysicalRange_i16(4100, 4100)
+						LogicalMinimum_i8(4)
+						LogicalMaximum_i8(4)
+						PhysicalMinimum_i16(4100)
+						PhysicalMaximum_i16(4100)
 						Usage_i8(4)
 						Feature(Var|Abs)
-						LogicalRange_i8(5, 5)
-						PhysicalRange_i16(4100, 4100)
+						LogicalMinimum_i8(5)
+						LogicalMaximum_i8(5)
+						PhysicalMinimum_i16(4100)
+						PhysicalMaximum_i16(4100)
 						Usage_i8(5)
 						Feature(Var|Abs)
-						PhysicalRange_i8(0, 0)
+						PhysicalMinimum_i8(0)
+						PhysicalMaximum_i8(0)
 					)
 				)
 			)
@@ -430,7 +445,8 @@ static const __u8 fixed_rdesc[] = {
 	Usage_i8(0x70)
 	CollectionApplication(
 		ReportId(48)
-		LogicalRange_i8(0, 255)
+		LogicalMinimum_i8(0)
+		LogicalMaximum_i8(255)
 		ReportCount(1)
 		ReportSize(8)
 		Usage_i8(0x00)
@@ -438,7 +454,8 @@ static const __u8 fixed_rdesc[] = {
 	)
 	Usage_i8(0x71)
 	CollectionApplication(
-		LogicalRange_i8(0, 255)
+		LogicalMinimum_i8(0)
+		LogicalMaximum_i8(255)
 		ReportSize(8)
 		ReportCount(72)
 		ReportId(42)
@@ -456,36 +473,47 @@ static const __u8 fixed_rdesc[] = {
 		Output_i16(Var|Abs|Buff)
 		Usage_i8(0xcb)
 		Feature_i16(Var|Abs|Buff)
-		LogicalRange_i32(-2147483648, 2147483647)
+		LogicalMinimum_i32(-2147483648)
+		LogicalMaximum_i32(2147483647)
 		ReportSize(32)
 		ReportCount(4)
 		ReportId(44)
-		UsageRange_i8(204, 207)
+		UsageMinimum_i8(204)
+		UsageMaximum_i8(207)
 		Input(Var|Abs)
 		ReportCount(4)
 		ReportId(45)
-		UsageRange_i8(216, 219)
+		UsageMinimum_i8(216)
+		UsageMaximum_i8(219)
 		Input(Var|Abs)
 		ReportCount(4)
-		UsageRange_i8(220, 223)
+		UsageMinimum_i8(220)
+		UsageMaximum_i8(223)
 		Output(Var|Abs)
-		UsageRange_i8(224, 227)
+		UsageMinimum_i8(224)
+		UsageMaximum_i8(227)
 		Feature(Var|Abs)
 		ReportId(46)
-		UsageRange_i8(228, 231)
+		UsageMinimum_i8(228)
+		UsageMaximum_i8(231)
 		Input(Var|Abs)
-		UsageRange_i8(232, 235)
+		UsageMinimum_i8(232)
+		UsageMaximum_i8(235)
 		Output(Var|Abs)
 		ReportCount(11)
-		UsageRange_i8(236, 239)
+		UsageMinimum_i8(236)
+		UsageMaximum_i8(239)
 		Feature(Var|Abs)
 		ReportCount(4)
 		ReportId(47)
-		UsageRange_i8(240, 243)
+		UsageMinimum_i8(240)
+		UsageMaximum_i8(243)
 		Input(Var|Abs)
-		UsageRange_i8(244, 247)
+		UsageMinimum_i8(244)
+		UsageMaximum_i8(247)
 		Output(Var|Abs)
-		UsageRange_i8(248, 251)
+		UsageMinimum_i8(248)
+		UsageMaximum_i8(251)
 		Feature(Var|Abs)
 	)
 	UsagePage_GenericDesktop
@@ -494,7 +522,8 @@ static const __u8 fixed_rdesc[] = {
 		ReportId(50)
 		Usage_GD_SystemSleep
 		Usage_GD_SystemWakeUp
-		LogicalRange_i8(0, 1)
+		LogicalMinimum_i8(0)
+		LogicalMaximum_i8(1)
 		ReportCount(2)
 		ReportSize(1)
 		Input(Var|Abs)
@@ -506,7 +535,8 @@ static const __u8 fixed_rdesc[] = {
 		ReportId(49)
 		ReportCount(10)
 		ReportSize(8)
-		LogicalRange_i8(0, 255)
+		LogicalMinimum_i8(0)
+		LogicalMaximum_i8(255)
 		Usage_GD_WirelessRadioButton
 		Input(Var|Abs)
 		Usage_GD_WirelessRadioLED

@@ -364,7 +364,8 @@ static const __u8 fixed_rdesc_vendor[] = {
 		Usage_Dig_Stylus
 		CollectionPhysical(
 			// -- Byte 1 in report
-			LogicalRange_i8(0, 1)
+			LogicalMinimum_i8(0)
+			LogicalMaximum_i8(1)
 			ReportSize(1)
 			Usage_Dig_TipSwitch
 			Usage_Dig_BarrelSwitch
@@ -385,18 +386,23 @@ static const __u8 fixed_rdesc_vendor[] = {
 				UsagePage_GenericDesktop
 				Unit(in)
 				UnitExponent(-3)
-				LogicalRange_i16(0, 40000)
-				PhysicalRange_i16(0, 10000)
+				LogicalMinimum_i16(0)
+				LogicalMaximum_i16(40000)
+				PhysicalMinimum_i16(0)
+				PhysicalMaximum_i16(10000)
 				Usage_GD_X
 				Input(Var|Abs)
 				// -- Byte 4-5 in report
-				LogicalRange_i16(0, 25000)
-				PhysicalRange_i16(0, 6250)
+				LogicalMinimum_i16(0)
+				LogicalMaximum_i16(25000)
+				PhysicalMinimum_i16(0)
+				PhysicalMaximum_i16(6250)
 				Usage_GD_Y
 				Input(Var|Abs)
 			)
 			// -- Byte 6-7 in report
-			LogicalRange_i16(0, 2047)
+			LogicalMinimum_i16(0)
+			LogicalMaximum_i16(2047)
 			Usage_Dig_TipPressure
 			Input(Var|Abs)
 		)
@@ -406,7 +412,8 @@ static const __u8 fixed_rdesc_vendor[] = {
 	CollectionApplication(
 		// -- Byte 0 in report
 		ReportId(PAD_REPORT_ID)
-		LogicalRange_i8(0, 1)
+		LogicalMinimum_i8(0)
+		LogicalMaximum_i8(1)
 		UsagePage_Digitizers
 		Usage_Dig_TabletFunctionKeys
 		CollectionPhysical(
@@ -427,8 +434,10 @@ static const __u8 fixed_rdesc_vendor[] = {
 		)
 		// Byte 4 is the button state
 		UsagePage_Button
-		UsageRange_i8(0x01, 0x8)
-		LogicalRange_i8(0x0, 0x1)
+		UsageMinimum_i8(0x1)
+		UsageMaximum_i8(0x8)
+		LogicalMinimum_i8(0x0)
+		LogicalMaximum_i8(0x1)
 		ReportCount(8)
 		ReportSize(1)
 		Input(Var|Abs)
