@@ -49,7 +49,7 @@ It will then install
 - a hwdb entry to tag matching devices in ``/etc/udev/hwdb.d/81-hid-bpf.hwdb``
 - a udev rule to trigger the tool in ``/etc/udev/rules.d/81-hid-bpf.rules``
 
-Passing the `--prefix` option to `meson setup` will of course change the above paths.
+Passing the ``--prefix`` option to ``meson setup`` will of course change the above paths.
 
 .. _install_specific:
 
