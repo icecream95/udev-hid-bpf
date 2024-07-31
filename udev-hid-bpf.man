@@ -23,19 +23,46 @@ Enable verbose output for the given command
 Print version and exit
 .SH COMMANDS
 .TP
-.B add [\-\-bpfdir \fI/path/to/directory\fR] \fIdevice\fR [\fI/path/to/program.bpf.o\fR]
-Invoked by udev when a device is added. This command loads all matching
-HID eBPF programs for this device or if a program is given just that one
-program.  The list of matching eBPF programs is stored in the udev hwdb.
+.B add [\-\-bpfdir \fI/path/to/directory\fB]\fR \fIdevice\fR [\fI/path/to/program.bpf.o\fR]
+Load HID eBPF programs for a device. This command is typically invoked
+from a udev rule on the "add" action.
 .IP
-The set of directories to search for eBPF programs is built-in but can be
-adjusted with the \fI\-\-bpfdir\fR option.
+If no eBPF program is provided, matching eBPF programs are obtained
+from the udev properties set on that device.
+.IP
+If multiple devices and/or eBPF programs are provided, devices and eBPF
+programs must be separated by a literal '-'. For example:
+.B udev-hid-bpf add dev1 dev2 - 1.bpf.o 2.bpf.o
+.IP
+If eBPF programs are specified without a full path they are searched for
+in the directory given by the \fB\-\-bpfdir\fR option (if any) and
+the built-in directories \fI@BPF_LOOKUP_DIRS@\fR, in that order.
 .IP
 The device must be specified as a syspath.
+.RS 8
+.TP
+.B --bpfdir
+Prepend a directory to the list of directories to search
+for eBPF programs.
+.TP
+.B --property KEY=VALUE
+Provide an arbitrary NAME=VALUE pair to the BPF program.
+This NAME=VALUE pair is treated as if it was a
+property set on the device, taking precedence over
+any udev property of the same name.
+This option may be specified multiple times to
+supply multiple properties. Empty properties must be
+the empty string (NAME="")
+.TP
+.B --replace
+Remove current BPF programs for the device first.
+This is equivalent to running \fBudev\-hid\-bpf remove\fR with the
+same device argument first.
+.RE
 .TP
 .B remove \fIdevice\fR
-Invoked by udev when a device is remove. This command removes all
-HID eBPF programs for this device.
+Remove all HID eBPF programs for a given device. This command is typically
+invoked from a udev rule on the "remove" action.
 .IP
 The device must be specified as a syspath.
 .TP
@@ -50,8 +77,8 @@ List available HID devices.
 Inspect the given eBPF program.
 .TP
 .B install [options] \fIpath/to/program.bpf.o\fR
-Install the given eBPF program into /etc/udev-hid-bpf with
-a corresponding udev rule in /etc/udev/rules.d. This command
+Install the given eBPF program into \fI/etc/udev-hid-bpf\fR with
+a corresponding udev rule in \fI/etc/udev/rules.d\fR. This command
 should be used for testing a single eBPF program or where
 a full install of udev\-hid\-bpf is not suitable.
 .IP
@@ -72,9 +99,10 @@ this option does nothing.
 .B \-\-force
 Overwrite existing files with the same name
 .TP
-.B \-\-prefix \fI/usr/local\fR
-Install into the given prefix. Defaults to the built-in prefix.
+.B \-\-prefix \fI/path/to/prefix\fR
+Install into the given prefix. Defaults to the built-in prefix \fI@PREFIX@\fR.
 .RE
 .SH SEE ALSO
-udev\-hid\-bpf's online documentation
+udev\-hid\-bpf's online documentation:
+.LP
 .I https://libevdev.pages.freedesktop.org/udev-hid-bpf/

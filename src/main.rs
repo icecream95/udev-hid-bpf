@@ -74,16 +74,27 @@ fn tuple_parse(s: &str) -> std::result::Result<hidudev::HidUdevProperty, clap::e
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// A new device is created
+    /// Load BPF programs for a device. This command is typically invoked
+    /// from a udev rule on the "add" action.
     Add {
         /// The sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
         /// followed by an optional path to a BPF program.
         ///
-        /// Multiple devices and/or BPF programs may be specified, use - to separate
-        /// device paths from BPF programs.
+        /// If one path is provided, that path is the sysfs path to a device.
+        ///
+        /// If two paths are provided, the first path is the sysfs path to a device followed
+        /// by the path to or name of a BPF program.
+        ///
+        /// If three or more paths are provided, all paths before a literal '-' are
+        /// sysfs paths to devices, all paths after the literal '-' are paths to or names of BPF
+        /// programs.
+        ///
+        /// BPF programs specified by names only instead of complete paths are looked up
+        /// in --bpfdir followed by the built-in BPF directories.
         #[clap(num_args = 1..)]
         paths: Vec<String>,
-        /// Folder to look at for bpf objects
+        /// Additional folder to look at for BPF objects. This folder takes precedence over
+        /// the built-in lookup directories.
         #[arg(short, long)]
         bpfdir: Option<PathBuf>,
         /// Remove current BPF programs for the device first.
@@ -102,7 +113,8 @@ enum Commands {
         #[arg(short, long, value_parser=tuple_parse)]
         property: Vec<hidudev::HidUdevProperty>,
     },
-    /// A device is removed from the sysfs
+    /// Remove all BPF programs for a given device. This command is typically
+    /// invoked from a udev rule on the "remove" action.
     Remove {
         /// sysfs path to a device, e.g. /sys/bus/hid/devices/0003:045E:07A5.000B
         #[clap(num_args = 1..)]

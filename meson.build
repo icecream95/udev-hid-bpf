@@ -179,6 +179,8 @@ endforeach
 
 man_config = configuration_data()
 man_config.set('VERSION', meson.project_version())
+man_config.set('BPF_LOOKUP_DIRS', ', '.join(lookup_bpfdirs))
+man_config.set('PREFIX', prefix)
 configure_file(input: 'udev-hid-bpf.man',
                output : '@BASENAME@.1',
                configuration : man_config,
