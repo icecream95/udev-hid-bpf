@@ -121,12 +121,12 @@ instdir=$(realpath "$MESON_BUILDDIR/")/_inst
 fwdir="$instdir/lib/firmware/hid/bpf"
 udev_hid_bpf="$instdir/bin/udev-hid-bpf"
 
-BPF_ID="10"
+BPF_ID="0010"
 
 MESON_FEATURES=""
 if [ -n "$tracing" ]; then
     MESON_FEATURES="-Dbpf-tracing=true"
-    BPF_ID="09"
+    BPF_ID="0009"
 fi
 
 meson $meson_subcommand -Dbpfs=testing,stable -Dprefix="$instdir" -Dudevdir="$instdir/etc/udev" $MESON_FEATURES "$MESON_BUILDDIR"

@@ -109,11 +109,11 @@ impl HidUdev {
             .find(|path| path.is_file())
     }
 
-    /// Given a set of paths that have filenames prefixed like 10-foo.bpf.o, 20-bar.bpf.o,
+    /// Given a set of paths that have filenames prefixed like 0010-foo.bpf.o, 0020-bar.bpf.o,
     /// return a set of priority-ordered filenames, i.e.
     /// [
-    ///   ["20-bar.bpf.o", "10-bar.bpf.o"],
-    ///   ["10-foo.bpf.o"]
+    ///   ["0020-bar.bpf.o", "0010-bar.bpf.o"],
+    ///   ["0010-foo.bpf.o"]
     /// ]
     /// We can then iterate through and load whichever program is happy first.
     fn sort_by_stem(paths: &[PathBuf]) -> Vec<Vec<PathBuf>> {
@@ -245,13 +245,13 @@ mod tests {
         std::fs::create_dir_all(&usr_local).unwrap();
         std::fs::create_dir_all(&usr).unwrap();
 
-        let ignored1 = &usr_local.join("10-ignored.bpf.c"); // .c extension
-        let ignored2 = &usr_local.join("10-ignored.o"); // not bpf.o
-        let p1 = &usr_local.join("10-one.bpf.o");
-        let p2 = &usr.join("20-one.bpf.o");
-        let p3 = &usr_local.join("10-two.bpf.o");
-        let p4 = &usr_local.join("20-three.bpf.o");
-        let p5 = &usr.join("10-three.bpf.o");
+        let ignored1 = &usr_local.join("0010-ignored.bpf.c"); // .c extension
+        let ignored2 = &usr_local.join("0010-ignored.o"); // not bpf.o
+        let p1 = &usr_local.join("0010-one.bpf.o");
+        let p2 = &usr.join("0020-one.bpf.o");
+        let p3 = &usr_local.join("0010-two.bpf.o");
+        let p4 = &usr_local.join("0020-three.bpf.o");
+        let p5 = &usr.join("0010-three.bpf.o");
         let _ = &[ignored1, ignored2, p1, p2, p3, p4, p5]
             .iter()
             .for_each(|p| {
@@ -260,16 +260,16 @@ mod tests {
 
         let dirs = [usr_local.clone(), usr.clone()];
 
-        let props: Vec<String> = ["10-one.bpf.o", "20-one.bpf.o", "10-two.bpf.o"]
+        let props: Vec<String> = ["0010-one.bpf.o", "0020-one.bpf.o", "0010-two.bpf.o"]
             .iter()
             .map(|&s| s.into())
             .collect();
         let objfiles = HidUdev::find_named_objfiles(&props, &dirs);
         assert!(!objfiles.is_empty());
         let expected = [
-            &usr_local.join("10-one.bpf.o"),
-            &usr.join("20-one.bpf.o"),
-            &usr_local.join("10-two.bpf.o"),
+            &usr_local.join("0010-one.bpf.o"),
+            &usr.join("0020-one.bpf.o"),
+            &usr_local.join("0010-two.bpf.o"),
         ];
         objfiles
             .iter()
@@ -277,15 +277,15 @@ mod tests {
             .for_each(|(objfile, exp)| assert!(&objfile == &exp, "{objfile:?} == {exp:?}"));
 
         // test that ignored is ignored
-        let props: Vec<String> = ["10-one.bpf.o", "10-ignored.bpf.c", "10-two.bpf.o"]
+        let props: Vec<String> = ["0010-one.bpf.o", "0010-ignored.bpf.c", "0010-two.bpf.o"]
             .iter()
             .map(|&s| s.into())
             .collect();
         let objfiles = HidUdev::find_named_objfiles(&props, &dirs);
         assert!(!objfiles.is_empty());
         let expected = [
-            &usr_local.join("10-one.bpf.o"),
-            &usr_local.join("10-two.bpf.o"),
+            &usr_local.join("0010-one.bpf.o"),
+            &usr_local.join("0010-two.bpf.o"),
         ];
         objfiles
             .iter()
@@ -293,13 +293,20 @@ mod tests {
             .for_each(|(objfile, exp)| assert!(&objfile == &exp, "{objfile:?} == {exp:?}"));
 
         // and a non-existing one
-        let props: Vec<String> = ["10-one.bpf.o", "10-does-not-exist.bpf.o", "10-three.bpf.o"]
-            .iter()
-            .map(|&s| s.into())
-            .collect();
+        let props: Vec<String> = [
+            "0010-one.bpf.o",
+            "0010-does-not-exist.bpf.o",
+            "0010-three.bpf.o",
+        ]
+        .iter()
+        .map(|&s| s.into())
+        .collect();
         let objfiles = HidUdev::find_named_objfiles(&props, &dirs);
         assert!(!objfiles.is_empty());
-        let expected = [&usr_local.join("10-one.bpf.o"), &usr.join("10-three.bpf.o")];
+        let expected = [
+            &usr_local.join("0010-one.bpf.o"),
+            &usr.join("0010-three.bpf.o"),
+        ];
         objfiles
             .iter()
             .filter(|p| p.to_string_lossy().ends_with("bpf.o"))
@@ -317,12 +324,12 @@ mod tests {
         std::fs::create_dir_all(&usr).unwrap();
 
         let files = vec![
-            usr_local.join("10-one.bpf.o"),
-            usr.join("20-ONE.bpf.o"),
-            usr_local.join("10-two.bpf.o"),
-            usr.join("10-three.bpf.o"),
-            usr_local.join("20-three.bpf.o"),
-            usr_local.join("30-THREE.bpf.o"),
+            usr_local.join("0010-one.bpf.o"),
+            usr.join("0020-ONE.bpf.o"),
+            usr_local.join("0010-two.bpf.o"),
+            usr.join("0010-three.bpf.o"),
+            usr_local.join("0020-three.bpf.o"),
+            usr_local.join("0030-THREE.bpf.o"),
         ];
         let _ = files.iter().for_each(|p| {
             File::create(p).unwrap();
@@ -330,13 +337,13 @@ mod tests {
 
         // The returned list is dict sorted by stem
         let expected: Vec<Vec<PathBuf>> = vec![
-            vec![usr.join("20-ONE.bpf.o"), usr_local.join("10-one.bpf.o")],
+            vec![usr.join("0020-ONE.bpf.o"), usr_local.join("0010-one.bpf.o")],
             vec![
-                usr_local.join("30-THREE.bpf.o"),
-                usr_local.join("20-three.bpf.o"),
-                usr.join("10-three.bpf.o"),
+                usr_local.join("0030-THREE.bpf.o"),
+                usr_local.join("0020-three.bpf.o"),
+                usr.join("0010-three.bpf.o"),
             ],
-            vec![usr_local.join("10-two.bpf.o")],
+            vec![usr_local.join("0010-two.bpf.o")],
         ];
         let stem_sorted = HidUdev::sort_by_stem(&files);
 

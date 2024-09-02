@@ -7,10 +7,10 @@ Filename conventions
 ``udev-hid-bpf`` uses this filename convention for all ``.bpf.o`` files it
 provides::
 
-    10-vendor__product.bpf.o
+    0010-vendor__product.bpf.o
 
 Vendor and product represent the specific device's vendor and product and
-``10`` is the version number.
+``0010`` is the version number.
 
 .. note:: The versionless "stem" of the file, ``foo__bar.bpf`` is used as
           identifier by the kernel to spot duplicates.
@@ -25,14 +25,14 @@ etc. for subsequent versions.
 Future (higher) versions are for programs that use new kernel features.
 For example, we may have the same fix for a device:
 
-- ``10-foo__bar.bpf.o`` using features available since kernel v6.6
-- ``20-foo__bar.bpf.o`` using features available since kernel v6.8
-- ``30-foo__bar.bpf.o`` using features available since kernel v6.11
+- ``0010-foo__bar.bpf.o`` using features available since kernel v6.6
+- ``0020-foo__bar.bpf.o`` using features available since kernel v6.8
+- ``0030-foo__bar.bpf.o`` using features available since kernel v6.11
 
 The loader will attempt to load these in reverse order. On a system running a
-6.8 kernel, i.e. it loads ``30-foo__bar.bpf.o`` first, fails, then loads
-``20-foo__bar.bpf.o``. This one succeeds so the loader won't attempt to load
-``10-foo__bar.bpf.o``.
+6.8 kernel, i.e. it loads ``0030-foo__bar.bpf.o`` first, fails, then loads
+``0020-foo__bar.bpf.o``. This one succeeds so the loader won't attempt to load
+``0010-foo__bar.bpf.o``.
 
 This version scheme allows ``udev-hid-bpf`` to work against any kernel version
 it has worked against in the past, even as programs get updated to make use of
@@ -53,7 +53,7 @@ The vendor name should be the colloquial reference, e.g. ``HP``, ``Microsoft``,
 
 Where the product has a technical model name it's best to use the marketing
 name. Where the same name is used for multiple models, suffix the model name.
-And example would be ``10-Wacom__Intuos-Pro2-CTH660.bpf.o``. This makes the
+And example would be ``0010-Wacom__Intuos-Pro2-CTH660.bpf.o``. This makes the
 files easy to find by humans but stills specific enough that we can distinguish
 which device these apply to.
 

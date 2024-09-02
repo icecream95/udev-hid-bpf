@@ -267,12 +267,11 @@ foreach bpf_source : bpf_sources
         cmd = bpf_tracing_o_unstripped_cmd
     endif
 
-    if id < 10
-        file_id = f'0@id@'
-    else
-        file_id = f'@id@'
-    endif
-
+    a = id / 1000
+    b = id / 100
+    c = id / 10
+    d = id % 10
+    file_id = f'@a@@b@@c@@d@'
 
     filter_matches = not have_filters
     if have_filters

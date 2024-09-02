@@ -16,7 +16,7 @@ def bpf(source: str):
     """
     A fixture that allows parametrizing over a number of sources. Use with e.g.::
 
-        @pytest.mark.parametrize("source", ["10-FR-TEC__Raptor-Mach-2"])
+        @pytest.mark.parametrize("source", ["0010-FR-TEC__Raptor-Mach-2"])
         def test_something(bpf):
             pass
     """
@@ -27,7 +27,7 @@ def bpf(source: str):
 
 
 def test_probe_raptor_mach_2():
-    bpf = Bpf.load("10-FR-TEC__Raptor-Mach-2")
+    bpf = Bpf.load("0010-FR-TEC__Raptor-Mach-2")
     probe_args = HidProbeArgs(rdesc_size=232)
     probe_args.rdesc[177] = 0xEF
     pa = bpf.probe(probe_args)
@@ -39,7 +39,7 @@ def test_probe_raptor_mach_2():
 
 
 def test_rdesc_fixup_raptor_mach_2():
-    bpf = Bpf.load("10-FR-TEC__Raptor-Mach-2")
+    bpf = Bpf.load("0010-FR-TEC__Raptor-Mach-2")
     rdesc = bytes(4096)
 
     data = bpf.hid_bpf_rdesc_fixup(rdesc=rdesc)
@@ -47,7 +47,7 @@ def test_rdesc_fixup_raptor_mach_2():
 
 
 def test_probe_userhacks_invert():
-    bpf = Bpf.load("10-mouse_invert_y")
+    bpf = Bpf.load("0010-mouse_invert_y")
     probe_args = HidProbeArgs()
     probe_args.rdesc_size = 123
     pa = bpf.probe(probe_args)
@@ -60,7 +60,7 @@ def test_probe_userhacks_invert():
 
 @pytest.mark.parametrize("y", [1, -1, 10, -256])
 def test_event_userhacks_invert(y):
-    bpf = Bpf.load("10-mouse_invert_y")
+    bpf = Bpf.load("0010-mouse_invert_y")
 
     # this device has reports of size 9
     values = (0, 0, 0, y, 0, 0, 0, 0, 0)
@@ -73,7 +73,7 @@ def test_event_userhacks_invert(y):
 
 
 def test_rdesc_fixup_rapoo_m50():
-    bpf = Bpf.load("10-Rapoo__M50-Plus-Silent")
+    bpf = Bpf.load("0010-Rapoo__M50-Plus-Silent")
     rdesc = bytearray(4096)
     rdesc[17] = 0x03
 
@@ -107,6 +107,6 @@ class TestXPPenDecoMini4:
         ],
     )
     def test_button_events(self, report, expected):
-        bpf = Bpf.load("10-XPPen__DecoMini4")
+        bpf = Bpf.load("0010-XPPen__DecoMini4")
         event = bpf.hid_bpf_device_event(report=report)
         assert event == expected

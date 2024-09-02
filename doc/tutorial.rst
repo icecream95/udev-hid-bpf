@@ -64,7 +64,7 @@ Scaffolding
 
 Let's create the file and fill it with enough information to compile::
 
-  $ touch ./src/bpf/testing/10-vendor__mymouse.bpf.c
+  $ touch ./src/bpf/testing/0010-vendor__mymouse.bpf.c
 
 See the :ref:`filename_conventions` for details about this particular file name.
 
@@ -121,7 +121,7 @@ Then we need to add the file name to the list of files meson tracks in
 .. code-block:: python
 
   sources = [
-    '10-vendor__mymouse.bpf.c',
+    '0010-vendor__mymouse.bpf.c',
   ]
 
 This doesn't do anything but it should be buildable, can be installed and
@@ -129,10 +129,10 @@ we can attempt to load it manually::
 
   $ meson setup builddir
   $ meson compile -C builddir
-  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 builddir/src/bpf/10-vendor__mymouse.bpf.o
-  DEBUG - loading BPF object at "builddir/src/bpf/10-vendor__mymouse.bpf.o"
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 builddir/src/bpf/0010-vendor__mymouse.bpf.o
+  DEBUG - loading BPF object at "builddir/src/bpf/0010-vendor__mymouse.bpf.o"
   DEBUG - libbpf: elf: skipping unrecognized data section(8) .hid_bpf_config
-  DEBUG - Successfully loaded "builddir/src/bpf/10-vendor__mymouse.bpf.o"
+  DEBUG - Successfully loaded "builddir/src/bpf/0010-vendor__mymouse.bpf.o"
 
 
 Because the BPF program is "pinned" it will remain even after the loading process terminates.
@@ -141,7 +141,7 @@ And indeed, the BPF program shows up in the bpffs::
   $ sudo tree /sys/fs/bpf/hid/
     /sys/fs/bpf/hid/
     └── 0003_045E_07A5_0001
-        └── 10-vendor__mymouse_bpf
+        └── 0010-vendor__mymouse_bpf
             └── ignore_button
 
 And we can remove it again (so we can re-add it later)::
@@ -207,18 +207,18 @@ Now, as it turns out we actually stop loading the program now. Why? Because the 
 path we provided to the ``udev-hid-bpf`` tool is the Keyboard device, not the Mouse.
 Passing in the other interface (with the ``0002`` suffix) works::
 
-  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 builddir/src/bpf/10-vendor__mymouse.bpf.o
-  DEBUG - loading BPF object at "builddir/src/bpf/10-vendor__mymouse.bpf.o"
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0001 builddir/src/bpf/0010-vendor__mymouse.bpf.o
+  DEBUG - loading BPF object at "builddir/src/bpf/0010-vendor__mymouse.bpf.o"
   DEBUG - libbpf: elf: skipping unrecognized data section(8) .hid_bpf_config
-  WARN - Failed to load "builddir/src/bpf/10-vendor__mymouse.bpf.o": probe() of 10-vendor__mymouse.bpf failed
+  WARN - Failed to load "builddir/src/bpf/0010-vendor__mymouse.bpf.o": probe() of 0010-vendor__mymouse.bpf failed
 
   Caused by:
       Invalid argument (os error 22)
 
-  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0002 builddir/src/bpf/10-vendor__mymouse.bpf.o
-  DEBUG - loading BPF object at "builddir/src/bpf/10-vendor__mymouse.bpf.o"
+  $ sudo udev-hid-bpf --verbose add /sys/bus/hid/devices/0003:045E:07A5.0002 builddir/src/bpf/0010-vendor__mymouse.bpf.o
+  DEBUG - loading BPF object at "builddir/src/bpf/0010-vendor__mymouse.bpf.o"
   DEBUG - libbpf: elf: skipping unrecognized data section(8) .hid_bpf_config
-  DEBUG - Successfully loaded "builddir/src/bpf/10-vendor__mymouse.bpf.o"
+  DEBUG - Successfully loaded "builddir/src/bpf/0010-vendor__mymouse.bpf.o"
 
 This indicates our probe is working correctly.
 
@@ -327,7 +327,7 @@ the device is plugged in. This can be verified by checking wether the
   E: HID_UNIQ=
   E: MODALIAS=hid:b0003g0001v0000045Ep000007A5
   E: USEC_INITIALIZED=4768059665
-  E: HID_BPF_27=10-vendor__mymouse.bpf.o
+  E: HID_BPF_27=0010-vendor__mymouse.bpf.o
 
   ...
 
