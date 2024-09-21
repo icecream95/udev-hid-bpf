@@ -6,6 +6,7 @@
 tracing_sources = [
     '0010-Huion__H610-Pro.bpf.c',
     '0010-Logitech-MX-Master-3B-middle-button.bpf.c',
+    '0010-Logitech-MX-Master-3S-horiz-scroll.bpf.c',
     '0010-QuinHeng__PCsensor-FootSwitch.bpf.c',
     '0010-mouse_invert_y.bpf.c',
     '0010-trace_hid_events.bpf.c',
