@@ -200,7 +200,7 @@ we need to ignore those. So our ``probe()`` changes to check exactly that:
       return 0;
   }
 
-.. note:: Use the ``hid-recorder`` tool from `hid-tools <https://gitlab.freedesktop.org/libevdev/hid-tools/>`_
+.. note:: Use the ``hid-recorder`` tool from `hidutils <https://github.com/hidutils/hid-recorder/>`_
           to analyze HID report descriptors.
 
 Now, as it turns out we actually stop loading the program now. Why? Because the device
