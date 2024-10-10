@@ -36,3 +36,4 @@ License
    device-matches
    metadata
    udev-properties
+   report-descriptor-macros

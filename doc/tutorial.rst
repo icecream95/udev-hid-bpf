@@ -261,6 +261,7 @@ for the HID report, we have to fetch it with ``hid_bpf_get_data(ctx, offset, len
 The returned buffer is the kernel buffer, not a copy, so modifications have
 near-zero costs.
 
+.. _tutorial_rdesc_fixup:
 
 Modifying the HID Report Descriptor
 -----------------------------------
@@ -307,6 +308,9 @@ Because we're modifying the HID report descriptor, injecting the BPF program cau
 a disconnect of our real HID device and a reconnect of the modified device (see
 ``dmesg`` or ``udevadm monitor``). Likewise, removing our BPF program causes a
 disconnect of the modified device and a reconnect of the real HID device.
+
+.. note:: Often it is easier to replace the whole HID report descriptor, see
+   :ref:`report_descriptor_macros`.
 
 Bringing it all together
 ------------------------
