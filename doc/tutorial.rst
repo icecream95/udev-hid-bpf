@@ -222,6 +222,10 @@ Passing in the other interface (with the ``0002`` suffix) works::
 
 This indicates our probe is working correctly.
 
+.. note:: It is even possible to check udev properties during ``probe()``, see
+          :ref:`udev_properties_reading`.
+
+
 Modifying the HID Reports
 -------------------------
 

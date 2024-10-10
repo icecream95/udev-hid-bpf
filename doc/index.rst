@@ -35,3 +35,4 @@ License
    stable-testing-userhacks
    device-matches
    metadata
+   udev-properties
