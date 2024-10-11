@@ -22,6 +22,7 @@ stages:
   - build            # for actually building and testing things in a container
   - test
   - deploy
+  - pages
 
 variables:
   FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
@@ -443,7 +444,7 @@ make release:
     - fedora-release@container-prep
 
 
-pages:
+doc-build:
   extends:
     - .fdo.ci-fairy
   stage: deploy
@@ -452,6 +453,20 @@ pages:
     - . _venv/bin/activate
     - pip3 install sphinx sphinx-rtd-theme myst-parser
     - sphinx-build -b html doc public
+  artifacts:
+    paths:
+      - public
+
+pages:
+  extends:
+    - .fdo.ci-fairy
+  stage: pages
+  script:
+    - echo "Nothing to do"
+  dependencies:
+    - "doc-build"
+  needs:
+    - "doc-build"
   artifacts:
     paths:
       - public
