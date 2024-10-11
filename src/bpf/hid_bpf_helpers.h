@@ -185,4 +185,9 @@ extern int bpf_wq_set_callback_impl(struct bpf_wq *wq,
 	_EXPAND(_ARG, __VA_ARGS__) \
 } _device_ids SEC(".hid_bpf_config")
 
+#ifdef UDEV_HID_BPF_TEST_SUITE
+#include "uhid-bpf-test-wrappers.h"
+#endif
+
+
 #endif /* __HID_BPF_HELPERS_H */
