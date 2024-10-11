@@ -257,7 +257,7 @@ meson build and test:
   extends:
     - .fedora-meson@template
   script:
-    - .gitlab-ci/meson-build.sh --run-install
+    - .gitlab-ci/meson-build.sh --run-install --run-test
     - tree $PREFIX
   variables:
     MESON_ARGS: --prefix=$PREFIX -Dbpfs=stable,testing -Dudevdir=$PREFIX/lib/udev
@@ -278,7 +278,7 @@ meson filter build:
       - FILTER: trace,Xbox
   script:
     - export MESON_EXTRA_ARGS="-Dbpf-filter=$FILTER"
-    - .gitlab-ci/meson-build.sh --run-install
+    - .gitlab-ci/meson-build.sh --run-install --run-test
     - tree $PREFIX
     - |
       if [ "$FILTER" = "trace" ]; then
@@ -320,7 +320,7 @@ meson features build:
       if [ -n $FEATURE ]; then
         export MESON_EXTRA_ARGS="-Dbpfs=$FEATURE"
       fi
-    - .gitlab-ci/meson-build.sh --run-install
+    - .gitlab-ci/meson-build.sh --run-install --run-test
     - tree $PREFIX
     - |
       if [ "$FEATURE" = "testing" ]; then
