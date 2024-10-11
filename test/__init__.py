@@ -202,8 +202,8 @@ class Bpf:
             data = None
 
         rc = self.lib._hid_bpf_device_event(ctypes.byref(ctx))
-        if rc != 0:
-            raise OSError(rc)
+        if rc < 0:
+            raise OSError(-rc)
 
         if report is None:
             return None
