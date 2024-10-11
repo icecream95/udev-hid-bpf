@@ -49,15 +49,23 @@ endforeach
 env = environment()
 env.set('LD_LIBRARY_PATH', meson.current_build_dir())
 pymod.find_installation(modules: ['pytest'])
+pytest_args = [
+    '--verbose',
+    '-rfES',
+    '--log-level=DEBUG',
+    '--log-file', meson.project_build_root() / 'meson-logs' / 'pytest.log',
+    '--log-file-level=DEBUG',
+]
+
+# pytest xdist is nice because it significantly speeds up our
+# test process, but it's not required
+if pymod.find_installation('python3', modules: ['xdist'], required: false).found()
+    pytest_args += ['-n', 'auto']
+endif
+
 test('pytest',
     pytest,
-    args: [
-        '--verbose',
-        '-rfES',
-        '--log-level=DEBUG',
-        '--log-file', meson.project_build_root() / 'meson-logs' / 'pytest.log',
-        '--log-file-level=DEBUG',
-    ],
+    args: pytest_args,
     env: env,
     workdir: meson.project_source_root()
 )
