@@ -5,6 +5,8 @@ An automatic HID-BPF loader based on udev events. This repository aims to
 provide a simple way for users to write a HID-BPF program that fixes their
 device.
 
+See :ref:`how_it_works` for details on how everything fits together.
+
 This project is written in Rust but knowledge of Rust should not be required,
 it is only used for scaffolding. Users intending to write a HID-BPF program do
 not need to edit the Rust code and the resulting BPF programs have no Rust
@@ -29,6 +31,7 @@ License
    :maxdepth: 2
    :caption: Contents:
 
+   how-it-works
    getting-started
    tutorial
    filename-conventions
