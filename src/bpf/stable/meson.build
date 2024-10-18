@@ -11,6 +11,7 @@ tracing_sources = [
     '0010-Huion__Kamvas-Pro-19.bpf.c',
     '0010-IOGEAR__Kaliber-MMOmentum.bpf.c',
     '0010-Microsoft__Xbox-Elite-2.bpf.c',
+    '0010-Mistel__MD770.bpf.c',
     '0010-Thrustmaster__TCA-Yoke-Boeing.bpf.c',
     '0010-Wacom__ArtPen.bpf.c',
     '0010-XPPen__Artist24.bpf.c',
