@@ -88,6 +88,13 @@ def to_kernel_tree(repos):
     blobs = [
         b for b in (tree / "src/bpf/testing").traverse() if b.name != "meson.build"
     ]
+    blobs.extend(
+        [
+            b
+            for b in (tree / "src/bpf").traverse()
+            if b.name.endswith(".h") and b.name not in ["attach.h", "vmlinux.h"]
+        ]
+    )
 
     history = {
         blob: repos.udev_hid_bpf.git.log("--pretty=%H", "--follow", blob.path).split(
@@ -105,6 +112,39 @@ def to_kernel_tree(repos):
     for blob, hist in history.items():
         source = Path(blob.abspath)
         dest = repos.kernel_bpf_dir / blob.name.lstrip("-0.123456789")
+
+        # ignore if the file changed
+        if Path(dest).exists() and filecmp.cmp(blob.abspath, dest, shallow=False):
+            continue
+
+        changes = []
+        if Path(dest).exists():
+            with open(dest) as f:
+                k = f.readlines()
+
+            for sha in hist:
+                commit = repos.udev_hid_bpf.commit(sha)
+                obj = commit.tree / blob.path
+
+                u = obj.data_stream.read().decode("utf-8").splitlines(keepends=True)
+
+                diff = list(difflib.unified_diff(u, k))
+                if not diff:
+                    break
+
+                changes.append(sha)
+
+            hist = changes
+
+            # not a 00XX- file, ask for confirmation
+            if dest.name == blob.name:
+                if not confirm_filediff(
+                    blob.abspath,
+                    str(dest),
+                    f"changes detected in {blob.path}, do you want to backport them?",
+                ):
+                    continue
+
         message = "\n".join([repos.udev_hid_bpf.commit(hash).message for hash in hist])
         message += f"Signed-off-by: {user} <{email}>"
 
