@@ -7,11 +7,15 @@
 
 from pathlib import Path
 from dataclasses import dataclass
+from rich.console import Console
+from rich.highlighter import RegexHighlighter
+from rich.theme import Theme
 import click
 import difflib
 import filecmp
 import git
 import os
+import rich
 import shutil
 import sys
 
@@ -104,10 +108,20 @@ def to_kernel_tree(repos):
         message = "\n".join([repos.udev_hid_bpf.commit(hash).message for hash in hist])
         message += f"Signed-off-by: {user} <{email}>"
 
-        print(f"copy {source} to {dest}")
+        rich.print(f"[green]copy[/green] {source} [green]to[/green] {dest}")
         shutil.copy(source, dest)
         repos.kernel.index.add([dest])
         repos.kernel.index.commit(message)
+
+
+class DiffHighlighter(RegexHighlighter):
+    """Apply style to anything that looks like a diff."""
+
+    base_style = "diff."
+    highlights = [
+        r"(?P<deletion>^\-.*)",
+        r"(?P<addition>^\+.*)",
+    ]
 
 
 def confirm_filediff(src: str, dst: str, message: str) -> bool:
@@ -115,8 +129,16 @@ def confirm_filediff(src: str, dst: str, message: str) -> bool:
         s = src_f.readlines()
         d = dst_f.readlines()
 
-    sys.stdout.writelines(difflib.unified_diff(s, d, fromfile=src, tofile=dst))
-    print("---")
+    theme = Theme(
+        {
+            "diff.addition": "green",
+            "diff.deletion": "red",
+        }
+    )
+    console = Console(highlighter=DiffHighlighter(), theme=theme)
+    for line in difflib.unified_diff(s, d, fromfile=src, tofile=dst):
+        console.print(line.rstrip("\n"))
+    rich.print("---")
     return click.confirm(
         message,
         default=RUN_IN_PYTEST,
@@ -203,11 +225,11 @@ def from_kernel_tree(repos):
         message = None
         idx = 10
 
-        print(f"gathering history of {blob.path}")
+        rich.print(f"[blue]gathering history of[/blue] {blob.path}")
         history = repos.kernel.git.log("--pretty=%H", blob.path).split("\n")
 
         if not stable_matches:
-            print(f"new file: {blob.name}")
+            rich.print(f"[red]new file:[/red] {blob.name}")
         else:
             if confirm:
                 if not confirm_filediff(
@@ -258,7 +280,7 @@ def from_kernel_tree(repos):
                         tofile="uncommitted content",
                     )
                 )
-                print("---")
+                rich.print("---")
 
                 if not click.confirm(
                     f"Uncommitted changes in {blob.path}, do you want to backport them?",
@@ -289,7 +311,7 @@ def from_kernel_tree(repos):
             )
         message += f"Signed-off-by: {user} <{email}>"
 
-        print(f"copy {blob.path} into {dest}")
+        rich.print(f"[green]copy[/green] {blob.path} [green]into[/green] {dest}")
         shutil.copy(blob.abspath, dest)
         repos.udev_hid_bpf.index.add([dest])
 
