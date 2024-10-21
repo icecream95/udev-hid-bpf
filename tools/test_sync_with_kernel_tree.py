@@ -145,7 +145,7 @@ def run_cli(virtual_git, command, args):
     )
 
 
-@pytest.mark.parametrize("command", ["to-kernel-tree"])
+@pytest.mark.parametrize("command", ["to-kernel-tree", "from-kernel-tree"])
 def test_setup(virtual_git, command):
     """calling the script on already sync-ed trees is a no-op"""
     virtual_git.reset()
@@ -223,3 +223,62 @@ def test_to_kernel_update_file(virtual_git):
     kernel_file = virtual_git.kernel_hid_bpf_dir / "first.bpf.c"
     assert kernel_file.exists()
     assert kernel_file.read_text() == text
+
+
+def test_from_kernel_new_file(virtual_git):
+    """backport a file already in testing and now upstream into stable"""
+    virtual_git.reset()
+
+    # Add a pre-existing testfile
+    testing_bpf_file = (
+        virtual_git.udev_hid_bpf_bpf_dir / "testing" / "0010-Test__pytest.bpf.c"
+    )
+    text = str(uuid.uuid4())
+    testing_bpf_file.write_text(text)
+    virtual_git.udev_hid_bpf.index.add(testing_bpf_file)
+    meson_build = virtual_git.udev_hid_bpf_bpf_dir / "testing" / "meson.build"
+    meson_build.write_text(meson_build_template(["0010-Test__pytest.bpf.c"]))
+    virtual_git.udev_hid_bpf.index.add([meson_build])
+    uhb_commit_message = (
+        "initial import of 0010-Test__pytest.bpf.c\n\nSob: pytest marker\n"
+    )
+    virtual_git.udev_hid_bpf.index.commit(uhb_commit_message)
+    udev_hid_bpf_commit = virtual_git.udev_hid_bpf.head.commit
+
+    # same file in the kernel
+    new_bpf_file = virtual_git.kernel_hid_bpf_dir / "Test__pytest.bpf.c"
+    new_bpf_file.write_text(text)
+    virtual_git.kernel.index.add(new_bpf_file)
+    uhb_commit_message += "Signed-off-by: pytest marker\n"
+    virtual_git.kernel.index.commit(uhb_commit_message)
+    kernel_commit = virtual_git.kernel.head.commit
+
+    result = run_cli(virtual_git, "from-kernel-tree", [])
+
+    print(result.stdout)
+    print(result.stderr, file=sys.stderr)
+    assert result.exit_code == 0
+
+    # kernel should be untouched
+    assert kernel_commit == virtual_git.kernel.head.commit
+
+    # udev-hid-bpf has seen changes
+    assert udev_hid_bpf_commit != virtual_git.udev_hid_bpf.head.commit
+    assert uhb_commit_message in virtual_git.udev_hid_bpf.head.commit.message
+    new_file = virtual_git.udev_hid_bpf_bpf_dir / "stable" / "0010-Test__pytest.bpf.c"
+    assert new_file.exists()
+    assert new_file.read_text() == text
+    assert not testing_bpf_file.exists()
+
+    # meson.build in testing is stripped from the old file
+    assert meson_build_template() == meson_build.read_text()
+
+    # meson.build in stable is enhanced with the new file
+    meson_stable_build = virtual_git.udev_hid_bpf_bpf_dir / "stable" / "meson.build"
+    assert (
+        meson_build_template(
+            ["0010-Test__pytest.bpf.c", "0010-first.bpf.c", "0010-second.bpf.c"],
+            ["0010-third.bpf.c"],
+        )
+        == meson_stable_build.read_text()
+    )
