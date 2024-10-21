@@ -14,6 +14,7 @@ import shutil
 
 
 DEFAULT_KERNEL_PATH = "../hid"
+RUN_IN_PYTEST = False
 
 
 @dataclass
@@ -27,6 +28,7 @@ class Repos:
 
 
 pass_repo = click.make_pass_decorator(Repos)
+script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
 
 
 @click.group()
@@ -36,10 +38,15 @@ pass_repo = click.make_pass_decorator(Repos)
     default=Path(DEFAULT_KERNEL_PATH),
     help="Path to the hid.git kernel tree",
 )
+@click.option(
+    "--udev-hid-bpf",
+    type=click.Path(exists=True),
+    default=script_dir.parent,
+    help="Path to the udev-hid-bpf tree",
+)
 @click.pass_context
-def cli(ctx, kernel):
-    script_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-    git_udev_hid_bpf = git.Repo(script_dir.parent)
+def cli(ctx, kernel, udev_hid_bpf):
+    git_udev_hid_bpf = git.Repo(udev_hid_bpf)
     assert not git_udev_hid_bpf.bare
     git_kernel = git.Repo(kernel)
     assert not git_kernel.bare
@@ -59,10 +66,15 @@ def to_kernel_tree(repos):
     if repos.udev_hid_bpf.head.ref.name not in ["main"]:
         click.confirm(
             f"current head ({repos.udev_hid_bpf.head.ref}) is not on 'main', are you sure?",
+            default=RUN_IN_PYTEST,
             abort=True,
         )
 
-    click.confirm(f"currently on {repos.kernel.head.ref}, is that OK?", abort=True)
+    click.confirm(
+        f"currently on {repos.kernel.head.ref}, is that OK?",
+        default=RUN_IN_PYTEST,
+        abort=True,
+    )
 
     # gather commits creating/touching new files that need to be upstreamed
     tree = repos.udev_hid_bpf.head.commit.tree
