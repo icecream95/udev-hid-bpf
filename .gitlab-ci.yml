@@ -26,7 +26,7 @@ stages:
 
 variables:
   FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
-  FEDORA_VERSION: 39
+  FEDORA_VERSION: 41
   FEDORA_RELEASE_VERSION: 37
   FEDORA_PACKAGES: >
     bpftool
@@ -47,9 +47,10 @@ variables:
     python3-rich
     python3-pyudev
     python3-pytest
+    python3-GitPython
     libevdev
     systemd-udev
-  FEDORA_TAG:  '2024-06-14.0'
+  FEDORA_TAG:  '2024-10-21.0'
   FDO_DISTRIBUTION_EXEC: 'pip3 install --break-system-packages git+https://gitlab.freedesktop.org/libevdev/hid-tools/'
   RUST_BACKTRACE: '1'
   PREFIX: /_inst
