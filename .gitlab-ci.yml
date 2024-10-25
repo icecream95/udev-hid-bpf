@@ -265,6 +265,8 @@ meson build and test:
   artifacts:
     paths:
       - $MESON_BUILDDIR
+    exclude:
+      - $MESON_BUILDDIR/debug/**
     when: on_success
     expire_in: 1 day
 
