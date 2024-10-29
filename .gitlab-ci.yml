@@ -263,6 +263,7 @@ meson build and test:
   variables:
     MESON_ARGS: --prefix=$PREFIX -Dbpfs=stable,testing -Dudevdir=$PREFIX/lib/udev
   artifacts:
+    name: "meson-logs-$CI_JOB_NAME_SLUG"
     paths:
       - $MESON_BUILDDIR/src/bpf/*.bpf.o
       - $MESON_BUILDDIR/meson-logs
@@ -394,7 +395,7 @@ b2c uhid-test:
     - export B2C_COMMAND=".gitlab-ci/start-in-systemd.sh $PARAMS $TEST"
     - /app/boot2container
   artifacts:
-    name: "meson-logs-$CI_JOB_NAME"
+    name: "meson-logs-$CI_JOB_NAME_SLUG"
     when: always
     expire_in: 1 week
     paths:
@@ -443,6 +444,7 @@ make release:
     PREFIX: /usr
     GIT_DEPTH: 0
   artifacts:
+    name: "udev-hid-bpf-$CI_JOB_NAME_SLUG"
     paths:
       - udev-hid-bpf*.tar*
   dependencies:
