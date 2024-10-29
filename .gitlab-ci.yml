@@ -264,9 +264,11 @@ meson build and test:
     MESON_ARGS: --prefix=$PREFIX -Dbpfs=stable,testing -Dudevdir=$PREFIX/lib/udev
   artifacts:
     paths:
-      - $MESON_BUILDDIR
-    exclude:
-      - $MESON_BUILDDIR/debug/**
+      - $MESON_BUILDDIR/src/bpf/*.bpf.o
+      - $MESON_BUILDDIR/meson-logs
+      - $MESON_BUILDDIR/udev-hid-bpf*
+      - $MESON_BUILDDIR/*.rules
+      - $MESON_BUILDDIR/*.hwdb
     when: on_success
     expire_in: 1 day
 
