@@ -424,9 +424,11 @@ make release:
     - pip install yq
     - ln -s /usr/bin/true /usr/local/bin/udevadm
     - ln -s /usr/bin/true /usr/local/bin/systemd-hwdb
-    - ./make_release.sh --verbose --features testing,stable --yes-I-really-do-not-want-dirty-suffix
+    - VERSION=$(git describe --tags $DIRTY)
+    - TARBALL="udev-hid-bpf_${VERSION}.tar.xz"
+    - ./make_release.sh --verbose --features testing,stable --output "$TARBALL"
     - mkdir -p tarball_dir
-    - tar xf udev-hid-bpf*.tar.xz -C tarball_dir --strip-components=1
+    - tar xf "$TARBALL" -C tarball_dir --strip-components=1
     - pushd tarball_dir
     - ./install.sh --verbose $PREFIX
     - test -e $PREFIX/bin/udev-hid-bpf
@@ -439,14 +441,16 @@ make release:
     - test ! -e $PREFIX/lib/udev/hwdb.d/81-hid-bpf-testing.hwdb
     - test ! -e /lib/firmware/hid/bpf/0010-HP__Elite-Presenter.bpf.o
     - popd
+    # We can't have variables/wildcards in artifacts:paths if we use expose_as
+    - cp $TARBALL udev-hid-bpf.tar.xz
   variables:
     FDO_DISTRIBUTION_VERSION: $FEDORA_RELEASE_VERSION
     PREFIX: /usr
     GIT_DEPTH: 0
   artifacts:
-    name: "udev-hid-bpf-$CI_JOB_NAME_SLUG"
+    expose_as: "udev-hid-bpf release build for testing"
     paths:
-      - udev-hid-bpf*.tar*
+      - udev-hid-bpf.tar.xz
   dependencies:
     - fedora-release@container-prep
 

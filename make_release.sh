@@ -26,6 +26,10 @@ while [[ $# -gt 0 ]]; do
       features=$2
       shift 2
       ;;
+    --output)
+      TARNAME=$2
+      shift 2
+      ;;
     --*)
       usage
       exit 1
@@ -41,6 +45,15 @@ if [ $# -gt 1 ]; then
   usage
   exit 1
 fi
+
+if [[ -n "$TARNAME" ]]; then
+  if ! [[  "$TARNAME" = *".tar.xz" ]]; then
+    echo "--output must have suffix .tar.xz"
+    exit 1
+  fi
+  TARNAME=${TARNAME/.tar.xz}
+fi
+
 
 set -e
 
@@ -59,8 +72,10 @@ meson setup \
 meson compile -C "$BUILDDIR"
 meson install -C "$BUILDDIR"
 
-VERSION=$(git describe --tags $DIRTY)
-NAME=udev-hid-bpf_${VERSION}
+if [[ -z "$TARNAME" ]]; then
+  VERSION=$(git describe --tags $DIRTY)
+  TARNAME=udev-hid-bpf_${VERSION}
+fi
 
 # Now get the list of installed files and generate install.sh and uninstall.sh with it
 
@@ -78,4 +93,4 @@ sed -e "s|@@INSTALL_COMMANDS@@|$INSTALL_COMMANDS|" release_install.sh.in > "$TMP
 sed -e "s|@@UNINSTALL_COMMANDS@@|$UNINSTALL_COMMANDS|" release_uninstall.sh.in > "$TMP_INSTALL_DIR"/uninstall.sh
 chmod +x "$TMP_INSTALL_DIR"/install.sh "$TMP_INSTALL_DIR"/uninstall.sh
 
-tar cvaf ${NAME}.tar.xz -C "$TMP_INSTALL_DIR" --transform "s/^\./$NAME/" .
+tar cvaf ${TARNAME}.tar.xz -C "$TMP_INSTALL_DIR" --transform "s/^\./$TARNAME/" .
