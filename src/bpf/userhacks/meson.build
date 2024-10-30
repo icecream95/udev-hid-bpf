@@ -24,6 +24,7 @@ foreach bpf: tracing_sources
     bpf_sources += [
         {
             'name': bpf,
+            'section': 'userhacks',
             'file': files(bpf)[0],
             'install': have_filters,
             'build_by_default': build_userhacks,
@@ -34,6 +35,7 @@ foreach bpf: tracing_sources
         bpf_sources += [
             {
                 'name': bpf,
+                'section': 'userhacks',
                 'file': files(bpf)[0],
                 'install': have_filters,
                 'build_by_default': build_userhacks,
@@ -47,6 +49,7 @@ foreach bpf: sources
     bpf_sources += [
         {
             'name': bpf,
+            'section': 'userhacks',
             'file': files(bpf)[0],
             'install': have_filters,
             'build_by_default': build_userhacks,

@@ -29,6 +29,7 @@ foreach bpf: tracing_sources
     bpf_sources += [
         {
             'name': bpf,
+            'section': 'stable',
             'file': files(bpf)[0],
             'install': install_stable,
             'build_by_default': install_stable,
@@ -39,6 +40,7 @@ foreach bpf: tracing_sources
         bpf_sources += [
             {
                 'name': bpf,
+                'section': 'stable',
                 'file': files(bpf)[0],
                 'install': install_stable,
                 'build_by_default': install_stable,
@@ -52,6 +54,7 @@ foreach bpf: sources
     bpf_sources += [
         {
             'name': bpf,
+            'section': 'stable',
             'file': files(bpf)[0],
             'install': install_stable,
             'build_by_default': install_stable,

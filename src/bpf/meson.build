@@ -245,6 +245,14 @@ subdir('userhacks')
 
 bpf_objects = []
 
+built_objects = {
+    'stable': []
+}
+
+stable_objects =  []
+testing_objects = []
+userhacks_objects = []
+
 foreach bpf_source : bpf_sources
     bpf = bpf_source['name']
     file = bpf_source['file']
@@ -256,6 +264,20 @@ foreach bpf_source : bpf_sources
 
     if not build_by_default
         continue
+    endif
+
+    if bpf_source['section'] == 'stable'
+        if not stable_objects.contains(bpf)
+            stable_objects += [bpf]
+        endif
+    elif bpf_source['section'] == 'testing'
+        if not testing_objects.contains(bpf)
+            testing_objects += [bpf]
+        endif
+    elif bpf_source['section'] == 'userhacks'
+        if not userhacks_objects.contains(bpf)
+            userhacks_objects += [bpf]
+        endif
     endif
 
     bpf_splitted = bpf.split('-')
@@ -316,4 +338,13 @@ foreach bpf_source : bpf_sources
     endif
 
     bpf_objects += [{ 'file': file, 'bpf_o': bpf_o, 'output_file': bpf_o_file },]
+
 endforeach
+
+summary({
+        'stable': stable_objects,
+        'testing': testing_objects,
+        'userhacks': userhacks_objects,
+    },
+    section: 'BPF objects built',
+)

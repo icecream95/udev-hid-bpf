@@ -16,6 +16,7 @@ foreach bpf: tracing_sources
     bpf_sources += [
         {
             'name': bpf,
+            'section': 'testing',
             'file': files(bpf)[0],
             'install': install_testing,
             'build_by_default': install_testing,
@@ -26,6 +27,7 @@ foreach bpf: tracing_sources
         bpf_sources += [
             {
                 'name': bpf,
+                'section': 'testing',
                 'file': files(bpf)[0],
                 'install': install_testing,
                 'build_by_default': install_testing,
@@ -39,6 +41,7 @@ foreach bpf: sources
     bpf_sources += [
         {
             'name': bpf,
+            'section': 'testing',
             'file': files(bpf)[0],
             'install': install_testing,
             'build_by_default': install_testing,
