@@ -261,7 +261,7 @@ meson build and test:
     - .gitlab-ci/meson-build.sh --run-install --run-test
     - tree $PREFIX
   variables:
-    MESON_ARGS: --prefix=$PREFIX -Dbpfs=stable,testing -Dudevdir=$PREFIX/lib/udev
+    MESON_ARGS: --prefix=$PREFIX -Dbpfs=userhacks,stable,testing -Dudevdir=$PREFIX/lib/udev
   artifacts:
     name: "meson-logs-$CI_JOB_NAME_SLUG"
     paths:
@@ -318,9 +318,9 @@ meson features build:
   parallel:
     matrix:
       - NO_FEATURE: no_feature
-      - FEATURE: testing
-      - FEATURE: stable
-      - FEATURE: testing,stable
+      - FEATURE: testing,userhacks
+      - FEATURE: stable,userhacks
+      - FEATURE: testing,stable,userhacks
   script:
     - |
       if [ -n $FEATURE ]; then

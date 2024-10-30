@@ -129,7 +129,7 @@ if [ -n "$tracing" ]; then
     BPF_ID="0009"
 fi
 
-meson $meson_subcommand -Dbpfs=testing,stable -Dprefix="$instdir" -Dudevdir="$instdir/etc/udev" $MESON_FEATURES "$MESON_BUILDDIR"
+meson $meson_subcommand -Dbpfs=testing,stable,userhacks -Dprefix="$instdir" -Dudevdir="$instdir/etc/udev" $MESON_FEATURES "$MESON_BUILDDIR"
 meson compile -C "$MESON_BUILDDIR" -j "$jobs"
 meson install -C "$MESON_BUILDDIR"
 exists_or_fail "$instdir/lib/firmware/hid/bpf"

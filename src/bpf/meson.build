@@ -226,6 +226,7 @@ filters = get_option('bpf-filter')
 have_filters = filters != []
 
 subset = get_option('bpfs')
+build_userhacks = 'userhacks' in subset or have_filters
 install_testing = 'testing' in subset or have_filters
 install_stable = 'stable' in subset or have_filters
 

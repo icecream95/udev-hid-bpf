@@ -26,7 +26,7 @@ foreach bpf: tracing_sources
             'name': bpf,
             'file': files(bpf)[0],
             'install': have_filters,
-            'build_by_default': true,
+            'build_by_default': build_userhacks,
             'compile_with_tracing': false,
         },
     ]
@@ -36,7 +36,7 @@ foreach bpf: tracing_sources
                 'name': bpf,
                 'file': files(bpf)[0],
                 'install': have_filters,
-                'build_by_default': true,
+                'build_by_default': build_userhacks,
                 'compile_with_tracing': true,
             },
         ]
@@ -49,7 +49,7 @@ foreach bpf: sources
             'name': bpf,
             'file': files(bpf)[0],
             'install': have_filters,
-            'build_by_default': true,
+            'build_by_default': build_userhacks,
             'compile_with_tracing': false,
         },
     ]
