@@ -31,6 +31,7 @@ foreach bpf: tracing_sources
             'name': bpf,
             'file': files(bpf)[0],
             'install': install_stable,
+            'build_by_default': install_stable,
             'compile_with_tracing': false,
         },
     ]
@@ -40,6 +41,7 @@ foreach bpf: tracing_sources
                 'name': bpf,
                 'file': files(bpf)[0],
                 'install': install_stable,
+                'build_by_default': install_stable,
                 'compile_with_tracing': true,
             },
         ]
@@ -52,6 +54,7 @@ foreach bpf: sources
             'name': bpf,
             'file': files(bpf)[0],
             'install': install_stable,
+            'build_by_default': install_stable,
             'compile_with_tracing': false,
         },
     ]
