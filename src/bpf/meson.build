@@ -254,6 +254,10 @@ foreach bpf_source : bpf_sources
     build_by_default = bpf_source.get('build_by_default', false)
     compile_with_tracing = bpf_source['compile_with_tracing']
 
+    if not build_by_default
+        continue
+    endif
+
     bpf_splitted = bpf.split('-')
     id = bpf_splitted[0].to_int()
     # we remove the first numbers, the first '-' and the last 2 chars for '.c'
