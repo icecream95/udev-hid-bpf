@@ -53,7 +53,8 @@ variables:
   FEDORA_TAG:  '2024-10-21.0'
   FDO_DISTRIBUTION_EXEC: 'pip3 install --break-system-packages git+https://gitlab.freedesktop.org/libevdev/hid-tools/'
   RUST_BACKTRACE: '1'
-  PREFIX: /_inst
+  INSTDIR: _inst
+  PREFIX: /$INSTDIR
   # Below is for our building of the kernel used in the b2c jobs. A separate tag
   # so we can rebuild that container kernel independently of the rest of the CI pipeline.
   KERNEL_BUILD_CONTAINER_TAG: '2024-04-10.3'
@@ -260,6 +261,7 @@ meson build and test:
   script:
     - .gitlab-ci/meson-build.sh --run-install --run-test
     - tree $PREFIX
+    - mv $PREFIX $INSTDIR
   variables:
     MESON_ARGS: --prefix=$PREFIX -Dbpfs=userhacks,stable,testing -Dudevdir=$PREFIX/lib/udev
   artifacts:
@@ -270,6 +272,7 @@ meson build and test:
       - $MESON_BUILDDIR/udev-hid-bpf*
       - $MESON_BUILDDIR/*.rules
       - $MESON_BUILDDIR/*.hwdb
+      - $INSTDIR
     when: on_success
     expire_in: 1 day
 
@@ -419,16 +422,11 @@ make release:
   script:
     # Fedora 37 can't properly use _Pragma under GCC
     - git apply .gitlab-ci/fedora-37.patch
-    - python3 -m venv _venv
-    - . _venv/bin/activate
-    - pip install yq
     - ln -s /usr/bin/true /usr/local/bin/udevadm
     - ln -s /usr/bin/true /usr/local/bin/systemd-hwdb
-    - VERSION=$(git describe --tags $DIRTY)
-    - TARBALL="udev-hid-bpf_${VERSION}.tar.xz"
-    - ./make_release.sh --verbose --features testing,stable --output "$TARBALL"
+    - .gitlab-ci/make-combined-release.sh $PWD/$INSTDIR
     - mkdir -p tarball_dir
-    - tar xf "$TARBALL" -C tarball_dir --strip-components=1
+    - tar xf udev-hid-bpf*.tar.xz -C tarball_dir --strip-components=1
     - pushd tarball_dir
     - ./install.sh --verbose $PREFIX
     - test -e $PREFIX/bin/udev-hid-bpf
@@ -442,8 +440,9 @@ make release:
     - test ! -e /lib/firmware/hid/bpf/0010-HP__Elite-Presenter.bpf.o
     - popd
     # We can't have variables/wildcards in artifacts:paths if we use expose_as
-    - cp $TARBALL udev-hid-bpf.tar.xz
+    - cp udev-hid-bpf*.tar.xz udev-hid-bpf.tar.xz
   variables:
+    MESON_BUILDDIR: build_dir
     FDO_DISTRIBUTION_VERSION: $FEDORA_RELEASE_VERSION
     PREFIX: /usr
     GIT_DEPTH: 0
@@ -453,6 +452,7 @@ make release:
       - udev-hid-bpf.tar.xz
   dependencies:
     - fedora-release@container-prep
+    - meson build and test
 
 
 doc-build:

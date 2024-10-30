@@ -55,9 +55,15 @@ fi
 
 echo "Using sudo to remove files from $PREFIX. You may be asked for your password now"
 dryrun_sudo="$DRY_RUN sudo"
-@@UNINSTALL_COMMANDS@@
+{% for bpf in bpfs %}
+$dryrun_sudo rm -f "$PREFIX/{{bpf.path}}"
+{% endfor %}
+{% for udev in udev_rules %}
+$dryrun_sudo rm -f "$UDEVDIR"/udev/rules.d/{{udev.filename}}
+{% endfor %}
+{% for hwdb in hwdb_files %}
+$dryrun_sudo rm -f "$UDEVDIR"/udev/hwdb.d/{{hwdb.filename}}
+{% endfor %}
 $dryrun_sudo rm -f "$PREFIX"/bin/udev-hid-bpf
-$dryrun_sudo rm -f "$UDEVDIR"/udev/rules.d/81-hid-bpf.rules
-$dryrun_sudo rm -f "$UDEVDIR"/udev/hwdb.d/81-hid-bpf-*.hwdb
 $DRY_RUN sudo udevadm control --reload
 $DRY_RUN sudo systemd-hwdb update
