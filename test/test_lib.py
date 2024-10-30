@@ -26,60 +26,61 @@ def bpf(source: str):
     yield bpf
 
 
-def test_probe_raptor_mach_2():
-    bpf = Bpf.load("0010-FR-TEC__Raptor-Mach-2")
-    probe_args = HidProbeArgs(rdesc_size=232)
-    probe_args.rdesc[177] = 0xEF
-    pa = bpf.probe(probe_args)
-    assert pa.retval == 0
+class TestFrTecRaptorMach2:
+    def test_probe(self):
+        bpf = Bpf.load("0010-FR-TEC__Raptor-Mach-2")
+        probe_args = HidProbeArgs(rdesc_size=232)
+        probe_args.rdesc[177] = 0xEF
+        pa = bpf.probe(probe_args)
+        assert pa.retval == 0
 
-    probe_args.rdesc[177] = 0x12  # random value
-    pa = bpf.probe(probe_args)
-    assert pa.retval == -22
+        probe_args.rdesc[177] = 0x12  # random value
+        pa = bpf.probe(probe_args)
+        assert pa.retval == -22
 
+    def test_rdesc(self):
+        bpf = Bpf.load("0010-FR-TEC__Raptor-Mach-2")
+        rdesc = bytes(4096)
 
-def test_rdesc_fixup_raptor_mach_2():
-    bpf = Bpf.load("0010-FR-TEC__Raptor-Mach-2")
-    rdesc = bytes(4096)
-
-    data = bpf.hid_bpf_rdesc_fixup(rdesc=rdesc)
-    assert data[177] == 0x07
-
-
-def test_probe_userhacks_invert():
-    bpf = Bpf.load("0010-mouse_invert_y")
-    probe_args = HidProbeArgs()
-    probe_args.rdesc_size = 123
-    pa = bpf.probe(probe_args)
-    assert pa.retval == -22
-
-    probe_args.rdesc_size = 71
-    pa = bpf.probe(probe_args)
-    assert pa.retval == 0
+        data = bpf.hid_bpf_rdesc_fixup(rdesc=rdesc)
+        assert data[177] == 0x07
 
 
-@pytest.mark.parametrize("y", [1, -1, 10, -256])
-def test_event_userhacks_invert(y):
-    bpf = Bpf.load("0010-mouse_invert_y")
+class TestUserhacksInvertY:
+    def test_probe(self):
+        bpf = Bpf.load("0010-mouse_invert_y")
+        probe_args = HidProbeArgs()
+        probe_args.rdesc_size = 123
+        pa = bpf.probe(probe_args)
+        assert pa.retval == -22
 
-    # this device has reports of size 9
-    values = (0, 0, 0, y, 0, 0, 0, 0, 0)
-    report = struct.pack("<3bh5b", *values)
+        probe_args.rdesc_size = 71
+        pa = bpf.probe(probe_args)
+        assert pa.retval == 0
 
-    values = bpf.hid_bpf_device_event(report=report)
-    values = struct.unpack("<3bh5b", values)
-    y_out = values[3]
-    assert y_out == -y
+    @pytest.mark.parametrize("y", [1, -1, 10, -256])
+    def test_event(self, y):
+        bpf = Bpf.load("0010-mouse_invert_y")
+
+        # this device has reports of size 9
+        values = (0, 0, 0, y, 0, 0, 0, 0, 0)
+        report = struct.pack("<3bh5b", *values)
+
+        values = bpf.hid_bpf_device_event(report=report)
+        values = struct.unpack("<3bh5b", values)
+        y_out = values[3]
+        assert y_out == -y
 
 
-def test_rdesc_fixup_rapoo_m50():
-    bpf = Bpf.load("0010-Rapoo__M50-Plus-Silent")
-    rdesc = bytearray(4096)
-    rdesc[17] = 0x03
+class TestRapooM50Plus:
+    def test_rdesc_fixup(self):
+        bpf = Bpf.load("0010-Rapoo__M50-Plus-Silent")
+        rdesc = bytearray(4096)
+        rdesc[17] = 0x03
 
-    data = bpf.hid_bpf_rdesc_fixup(rdesc=rdesc)
-    rdesc[17] = 0x05
-    assert data == rdesc
+        data = bpf.hid_bpf_rdesc_fixup(rdesc=rdesc)
+        rdesc[17] = 0x05
+        assert data == rdesc
 
 
 class TestXPPenDecoMini4:
