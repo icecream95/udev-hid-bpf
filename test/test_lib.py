@@ -26,9 +26,9 @@ def bpf(source: str):
     yield bpf
 
 
+@pytest.mark.parametrize("source", ["0010-FR-TEC__Raptor-Mach-2"])
 class TestFrTecRaptorMach2:
-    def test_probe(self):
-        bpf = Bpf.load("0010-FR-TEC__Raptor-Mach-2")
+    def test_probe(self, bpf):
         probe_args = HidProbeArgs(rdesc_size=232)
         probe_args.rdesc[177] = 0xEF
         pa = bpf.probe(probe_args)
@@ -38,17 +38,16 @@ class TestFrTecRaptorMach2:
         pa = bpf.probe(probe_args)
         assert pa.retval == -22
 
-    def test_rdesc(self):
-        bpf = Bpf.load("0010-FR-TEC__Raptor-Mach-2")
+    def test_rdesc(self, bpf):
         rdesc = bytes(4096)
 
         data = bpf.hid_bpf_rdesc_fixup(rdesc=rdesc)
         assert data[177] == 0x07
 
 
+@pytest.mark.parametrize("source", ["0010-mouse_invert_y"])
 class TestUserhacksInvertY:
-    def test_probe(self):
-        bpf = Bpf.load("0010-mouse_invert_y")
+    def test_probe(self, bpf):
         probe_args = HidProbeArgs()
         probe_args.rdesc_size = 123
         pa = bpf.probe(probe_args)
@@ -59,9 +58,7 @@ class TestUserhacksInvertY:
         assert pa.retval == 0
 
     @pytest.mark.parametrize("y", [1, -1, 10, -256])
-    def test_event(self, y):
-        bpf = Bpf.load("0010-mouse_invert_y")
-
+    def test_event(self, bpf, y):
         # this device has reports of size 9
         values = (0, 0, 0, y, 0, 0, 0, 0, 0)
         report = struct.pack("<3bh5b", *values)
@@ -72,9 +69,9 @@ class TestUserhacksInvertY:
         assert y_out == -y
 
 
+@pytest.mark.parametrize("source", ["0010-Rapoo__M50-Plus-Silent"])
 class TestRapooM50Plus:
-    def test_rdesc_fixup(self):
-        bpf = Bpf.load("0010-Rapoo__M50-Plus-Silent")
+    def test_rdesc_fixup(self, bpf):
         rdesc = bytearray(4096)
         rdesc[17] = 0x03
 
@@ -83,6 +80,7 @@ class TestRapooM50Plus:
         assert data == rdesc
 
 
+@pytest.mark.parametrize("source", ["0010-XPPen__DecoMini4"])
 class TestXPPenDecoMini4:
     @pytest.mark.parametrize(
         "report,expected",
@@ -107,7 +105,6 @@ class TestXPPenDecoMini4:
             (b"\x06\x05\x05\x08\x2c\x16\x1d\x00", b"\x06\x3f\x00\x00\x00\x00\x00\x00"),
         ],
     )
-    def test_button_events(self, report, expected):
-        bpf = Bpf.load("0010-XPPen__DecoMini4")
+    def test_button_events(self, bpf, report, expected):
         event = bpf.hid_bpf_device_event(report=report)
         assert event == expected
