@@ -88,12 +88,20 @@ And this file contains:
   SEC(HID_BPF_RDESC_FIXUP)
   int BPF_PROG(ignore_button_fix_rdesc, struct hid_bpf_ctx *hctx)
   {
+      // bpf_printk works like printf but shows up in
+      // sudo cat /sys/kernel/debug/tracing/trace_pipe
+      bpf_printk("%s: fixing an rdesc", __func__);
+
       return 0;
   }
 
   SEC(HID_BPF_DEVICE_EVENT)
   int BPF_PROG(ignore_button_fix_event, struct hid_bpf_ctx *hid_ctx)
   {
+      // bpf_printk works like printf but shows up in
+      // sudo cat /sys/kernel/debug/tracing/trace_pipe
+      bpf_printk("%s: handling an input report", __func__);
+
       return 0;
   }
 
