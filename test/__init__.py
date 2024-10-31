@@ -90,6 +90,19 @@ class Bpf:
 
     @classmethod
     def _load(cls, name: str) -> Self:
+        # Our test setup guarantees this works, running things manually is
+        # a bit more complicated.
+        ld_path = os.environ.get("LD_LIBRARY_PATH")
+        assert ld_path is not None
+
+        sofile = Path(ld_path) / f"{name}.so"
+        if not sofile.exists():
+            pytest.skip(f"Unable to locate {sofile}, assuming this BPF wasn't built")
+
+        jsonfile = Path(ld_path) / f"{name}.json"
+        if not jsonfile.exists():
+            pytest.skip(f"Unable to locate {jsonfile}, assuming this BPF wasn't built")
+
         # Load the libtest-$BPF.so file first.o, map probe and set_callbacks which
         # have a fixed name.
         #
@@ -100,7 +113,7 @@ class Bpf:
         # SEC(HID_BPF_RDESC_FIXUP) becomes self._hid_bpf_rdesc_fixup() which points
         # to the right ctypes function.
         try:
-            lib = ctypes.CDLL(f"{name}.so", use_errno=True)
+            lib = ctypes.CDLL(sofile.name, use_errno=True)
             assert lib is not None
         except OSError as e:
             pytest.exit(
@@ -113,13 +126,8 @@ class Bpf:
             setattr(lib, api.basename, func)
 
         try:
-            # Our test setup guarantees this works, running things manually is
-            # a bit more complicated.
-            ld_path = os.environ.get("LD_LIBRARY_PATH")
-            assert ld_path is not None
-
             # Only one entry per json file so we're good
-            js = json.load(open(Path(ld_path) / f"{name}.json"))[0]
+            js = json.load(open(jsonfile))[0]
             for program in js["programs"]:
                 if program["section"].endswith("/hid_bpf_rdesc_fixup") or program[
                     "section"
