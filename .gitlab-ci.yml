@@ -78,7 +78,7 @@ variables:
     perl-Term-ANSIColor
     perl-Encode
     jq
-  MESON_OPTIONS: -Dtests=enabled
+  MESON_ARGS: -Dtests=enabled
 
 .policy:
   retry:
