@@ -5,6 +5,7 @@
 # for both approaches.
 tracing_sources = [
     '0020-XPPen__ArtistPro16Gen2.bpf.c',
+    '0010-Huion__KeydialK20.bpf.c',
 ]
 
 # 'sources' are BPF programs only compatible with
