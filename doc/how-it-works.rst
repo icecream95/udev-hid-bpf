@@ -13,7 +13,7 @@ Note that the udev-hid-bpf repository contains there distinct components:
 - Scaffolding to automate loading of HID-BPF programs via udev.
 
 How HID-BPF works
-=================
+-----------------
 
 HID-BPF is a feature available in kernels 6.3 and newer.
 
@@ -52,7 +52,7 @@ or it can change how the data is interpreted (e.g. change "bits 1/2/3 are button
 left/middle/right" to "bits 1/2/3 are buttons right/middle/left").
 
 How udev-hid-bpf works
-======================
+----------------------
 
 ``udev-hid-bpf`` - the binary - works similar to ``modprobe`` or ``insmod``. It opens
 a given ``.bpf.o`` compiled BPF object file and loads it for the given device.
