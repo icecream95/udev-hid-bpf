@@ -29,6 +29,7 @@ HID Reports are the actual events. Reports can be input reports (device to
 host, i.e. an event), output reports (host to device, e.g. setting an LED) and
 feature report (bidirectional, for on-device-configuration). The following only
 focuses on input reports but the same applies to output and feature reports.
+See :ref:`hid_primer` for more details.
 
 HID-BPF is a kernel feature that allows inserting an eBPF program that can change
 the data that is exchanged between the host and the device.

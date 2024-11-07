@@ -40,3 +40,4 @@ License
    metadata
    udev-properties
    report-descriptor-macros
+   other-resources
