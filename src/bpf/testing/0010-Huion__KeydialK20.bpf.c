@@ -33,7 +33,7 @@ char EXPECTED_FIRMWARE_ID[] = "HUION_T21h_";
  * To switch the tablet use e.g.  https://github.com/whot/huion-switcher
  * or one of the tools from the digimend project
  *
- * This BPF currently works for tablet mode only. The huion-switcher tool sets the
+ * This BPF currently works for both modes only. The huion-switcher tool sets the
  * HUION_FIRMWARE_ID udev property - if that is set then we disable the firmware
  * pad and pen reports (by making them vendor collections that are ignored).
  * If that property is not set we fix all hidraw nodes so the tablet works in
@@ -279,6 +279,68 @@ static const __u8 fixed_rdesc_vendor[] = {
 	)
 };
 
+/* Identical to fixed_rdesc_pad but with different FixedSizeVendorReport */
+static const __u8 fixed_rdesc_pad[] = {
+	UsagePage_GenericDesktop
+	Usage_GD_Keypad
+	CollectionApplication(
+		// Byte 0
+		// We send our pad events on the vendor report id because why not
+		ReportId(VENDOR_REPORT_ID)
+		UsagePage_Digitizers
+		Usage_Dig_TabletFunctionKeys
+		CollectionPhysical(
+			// Byte 1 is a button so we look like a tablet
+			Usage_Dig_BarrelSwitch	 // BTN_STYLUS, needed so we get to be a tablet pad
+			ReportCount(1)
+			ReportSize(1)
+			Input(Var|Abs)
+			ReportCount(7) // Padding
+			Input(Const)
+			// Bytes 2/3 - x/y just exist so we get to be a tablet pad
+			UsagePage_GenericDesktop
+			Usage_GD_X
+			Usage_GD_Y
+			LogicalMinimum_i8(0x0)
+			LogicalMaximum_i8(0x1)
+			ReportCount(2)
+			ReportSize(8)
+			Input(Var|Abs)
+			// Bytes 4-7 are the button state for 19 buttons + pad out to u32
+			// We send the first 10 buttons as buttons 1-10 which is BTN_0 -> BTN_9
+			UsagePage_Button
+			UsageMinimum_i8(1)
+			UsageMaximum_i8(10)
+			LogicalMinimum_i8(0x0)
+			LogicalMaximum_i8(0x1)
+			ReportCount(10)
+			ReportSize(1)
+			Input(Var|Abs)
+			// We send the other 9 buttons as buttons 0x31 and above -> BTN_A - BTN_TL2
+			UsageMinimum_i8(0x31)
+			UsageMaximum_i8(0x3a)
+			ReportCount(9)
+			ReportSize(1)
+			Input(Var|Abs)
+			ReportCount(13)
+			ReportSize(1)
+			Input(Const) // padding
+			// Byte 6 is the wheel
+			UsagePage_GenericDesktop
+			Usage_GD_Wheel
+			LogicalMinimum_i8(-1)
+			LogicalMaximum_i8(1)
+			ReportCount(1)
+			ReportSize(8)
+			Input(Var|Rel)
+		)
+		// Make sure we match our original report lengths
+		FixedSizeVendorReport(PAD_KBD_REPORT_LENGTH)
+		FixedSizeVendorReport(PAD_CC_REPORT_LENGTH)
+		FixedSizeVendorReport(PAD_MOUSE_REPORT_LENGTH)
+	)
+};
+
 SEC(HID_BPF_RDESC_FIXUP)
 int BPF_PROG(k20_fix_rdesc, struct hid_bpf_ctx *hctx)
 {
@@ -300,6 +362,10 @@ int BPF_PROG(k20_fix_rdesc, struct hid_bpf_ctx *hctx)
 		if (have_fw_id) {
 			__builtin_memcpy(data, disabled_rdesc_pad, sizeof(disabled_rdesc_pad));
 			return sizeof(disabled_rdesc_pad);
+		} else {
+			__builtin_memcpy(data, fixed_rdesc_pad, sizeof(fixed_rdesc_pad));
+			return sizeof(fixed_rdesc_pad);
+
 		}
 	}
 	if (rdesc_size == PUCK_REPORT_DESCRIPTOR_LENGTH) {
@@ -361,6 +427,79 @@ int BPF_PROG(k20_fix_events, struct hid_bpf_ctx *hctx)
 		pad_report->y = 0;
 		pad_report->buttons = last_button_state;
 		pad_report->wheel = wheel;
+
+		return sizeof(struct pad_report);
+	}
+
+	if (data[0] == PAD_KBD_REPORT_ID) {
+		const __u8 button_mapping[] = {
+			0x0e, /* Button 1:  K */
+			0x0a, /* Button 2:  G */
+			0x0f, /* Button 3:  L */
+			0x4c, /* Button 4:  Delete */
+			0x0c, /* Button 5:  I */
+			0x07, /* Button 6:  D */
+			0x05, /* Button 7:  B */
+			0x08, /* Button 8:  E */
+			0x16, /* Button 9:  S */
+			0x1d, /* Button 10: Z */
+			0x06, /* Button 11: C */
+			0x19, /* Button 12: V */
+			0xff, /* Button 13: LeftControl */
+			0xff, /* Button 14: LeftAlt */
+			0xff, /* Button 15: LeftShift */
+			0x28, /* Button 16: Return Enter */
+			0x2c, /* Button 17: Spacebar */
+			0x11, /* Button 18: N */
+		};
+		/* See fixed_rdesc_pad */
+		struct pad_report {
+			__u8 report_id;
+			__u8 btn_stylus:1;
+			__u8 pad:7;
+			__u8 x;
+			__u8 y;
+			__u32 buttons;
+			__u8 wheel;
+		} __attribute__((packed)) *pad_report;
+		int i, b;
+		__u8 modifiers = data[1];
+		__u32 buttons = 0;
+
+		if (modifiers & 0x01) { /* Control */
+			buttons |= BIT(12);
+		}
+		if (modifiers & 0x02) { /* Shift */
+			buttons |= BIT(14);
+		}
+		if (modifiers & 0x04) { /* Alt */
+			buttons |= BIT(13);
+		}
+
+		for (i = 2; i < PAD_KBD_REPORT_LENGTH; i++) {
+			if (!data[i])
+				break;
+
+			for (b = 0; b < ARRAY_SIZE(button_mapping); b++) {
+				if (data[i] == button_mapping[b]) {
+					buttons |= BIT(b);
+					break;
+				}
+			}
+			data[i] = 0;
+		}
+
+		pad_report = (struct pad_report *)data;
+		pad_report->report_id = VENDOR_REPORT_ID;
+		pad_report->btn_stylus = 0;
+		pad_report->x = 0;
+		pad_report->y = 0;
+		pad_report->buttons = buttons;
+		// The wheel happens on a different hidraw node but its
+		// values are unreliable (as is the button inside the wheel).
+		// So the wheel is simply always zero, if you want the wheel
+		// to work reliably, use the tablet mode.
+		pad_report->wheel = 0;
 
 		return sizeof(struct pad_report);
 	}
