@@ -342,6 +342,8 @@ Let's summarise what we have found so far:
 - a HID device with reports that look like a tablet puck
 
 
+.. _huion_k20_reports_firmware_mode:
+
 Analyzing the HID Reports in firmware mode
 ------------------------------------------
 
@@ -532,6 +534,8 @@ in the vendor report.
 
 The wheel occupies the same index as the button mask, something that HID does
 not support. This is something we will have to work around.
+
+.. _huion_k20_overwriting_vendor_rdesc:
 
 Overwriting the vendor HID Report Descriptor
 --------------------------------------------
@@ -1258,3 +1262,164 @@ bugs nonwithstanding.
 .. note:: The ``.tablet`` and ``.svg`` files can be placed into
           ``/etc/libwacom/`` and ``/etc/libwacom/layouts/`` until
           the local system updates to the required libwacom release.
+
+
+Fixing the firmware mode
+------------------------
+
+Our tablet works now. But what if we wanted to **also** fix the
+device when it's working in the firmware mode, i.e. without
+huion-switcher taking effect. As we've seen in
+:ref:`huion_k20_reports_firmware_mode` our pad sends events
+as keyboard events. To change those to pad buttons we
+need to change the report descriptors and then the events so they
+correspond to the report descriptor.
+
+We already have a fixed report descriptor that does what we
+want in :ref:`huion_k20_overwriting_vendor_rdesc` - that one
+can be copy/pasted with few changes - we merely need to
+ensure our report lengths match up so we change the
+``FixedSizeVendorReport()`` additions:
+
+.. code:: c
+
+  static const __u8 fixed_rdesc_pad[] = {
+      UsagePage_GenericDesktop
+      Usage_GD_Keypad
+      CollectionApplication(
+          // ... same as fixed_rdesc_vendor
+      )
+      FixedSizeVendorReport(PAD_KBD_REPORT_LENGTH)
+      FixedSizeVendorReport(PAD_CC_REPORT_LENGTH)
+      FixedSizeVendorReport(PAD_MOUSE_REPORT_LENGTH)
+  };
+
+  SEC(HID_BPF_RDESC_FIXUP)
+  int BPF_PROG(k20_fix_rdesc, struct hid_bpf_ctx *hctx)
+  {
+      __u8 *data = hid_bpf_get_data(hctx, 0 /* offset */, HID_MAX_DESCRIPTOR_SIZE /* size */);
+      __s32 rdesc_size = hctx->size;
+      __u8 have_fw_id;
+
+      if (!data)
+          return 0; /* EPERM check */
+
+      if (rdesc_size == PAD_REPORT_DESCRIPTOR_LENGTH) {
+          __builtin_memcpy(data, fixed_rdesc_pad, sizeof(fixed_rdesc_pad));
+          return sizeof(fixed_rdesc_pad);
+      }
+
+      // Note: in the real code we deal with have_fw_id, this
+      // is omitted here for brevity.
+      ...
+  }
+
+And of course we need to copy that fixed report descriptor
+over the existing one. This converts our pad that is currently
+a keyboard emulation over to a proper tablet pad that sends
+button events.
+
+So now we need to parse the actual keyboard shortcuts and
+map them to the corresponding button bit.
+
+.. code:: c
+
+  SEC(HID_BPF_DEVICE_EVENT)
+  int BPF_PROG(k20_fix_events, struct hid_bpf_ctx *hctx)
+  {
+
+    __u8 *data = hid_bpf_get_data(hctx, 0 /* offset */, 10 /* size */);
+
+    if (!data)
+        return 0; /* EPERM check */
+
+    if (data[0] == PAD_KBD_REPORT_ID) {
+        const __u8 button_mapping[] = {
+            0x0e, /* Button 1:  K */
+            0x0a, /* Button 2:  G */
+            0x0f, /* Button 3:  L */
+            0x4c, /* Button 4:  Delete */
+            0x0c, /* Button 5:  I */
+            0x07, /* Button 6:  D */
+            0x05, /* Button 7:  B */
+            0x08, /* Button 8:  E */
+            0x16, /* Button 9:  S */
+            0x1d, /* Button 10: Z */
+            0x06, /* Button 11: C */
+            0x19, /* Button 12: V */
+            0xff, /* Button 13: LeftControl */
+            0xff, /* Button 14: LeftAlt */
+            0xff, /* Button 15: LeftShift */
+            0x28, /* Button 16: Return Enter */
+            0x2c, /* Button 17: Spacebar */
+            0x11, /* Button 18: N */
+        };
+        // This is the same struct we used before.j
+        // Our report descriptor is identical so this
+        // works without any effort.
+        struct pad_report {
+            __u8 report_id;
+            __u8 btn_stylus:1;
+            __u8 pad:7;
+            __u8 x;
+            __u8 y;
+            __u32 buttons;
+            __u8 wheel;
+        } __attribute__((packed)) *pad_report;
+        int i, b;
+        __u8 modifiers = data[1];
+        __u32 buttons = 0;
+
+        // byte 1 are the three modifier bits
+        // that are buttons 12, 13 and 14
+        if (modifiers & 0x01) { /* Control */
+            buttons |= BIT(12);
+        }
+        if (modifiers & 0x02) { /* Shift */
+            buttons |= BIT(14);
+        }
+        if (modifiers & 0x04) { /* Alt */
+            buttons |= BIT(13);
+        }
+
+        for (i = 2; i < PAD_KBD_REPORT_LENGTH; i++) {
+            if (!data[i])
+                break;
+
+            for (b = 0; b < ARRAY_SIZE(button_mapping); b++) {
+                if (data[i] == button_mapping[b]) {
+                    buttons |= BIT(b);
+                    break;
+                }
+            }
+            data[i] = 0;
+        }
+
+        pad_report = (struct pad_report *)data;
+        // Note that we're re-using the vendor report ID -
+        // we can do that because we declared our
+        // fixed_rdesc_pad with ReportId(VENDOR_REPORT_ID).
+        // This doesn't have anything to do with the
+        // actual vendor node, it's just re-using a number
+        // for convenience.
+        pad_report->report_id = VENDOR_REPORT_ID;
+        pad_report->btn_stylus = 0;
+        pad_report->x = 0;
+        pad_report->y = 0;
+        pad_report->buttons = buttons;
+        // The wheel happens on a different hidraw node but its
+        // values are unreliable (as is the button inside the wheel).
+        // So the wheel is simply always zero, if you want the wheel
+        // to work reliably, use the tablet mode.
+        pad_report->wheel = 0;
+
+        return sizeof(struct pad_report);
+    }
+
+    ...
+  }
+
+Because the dial and dial buttons are unreliable in firmware
+mode we don't bother with those, they're always zero. It's
+simple enough to switch the tablet to vendor mode where they
+are reliable.
