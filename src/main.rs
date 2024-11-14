@@ -415,12 +415,10 @@ fn inspect(path: &PathBuf) -> Result<InspectionData> {
 }
 
 fn cmd_inspect(paths: &[PathBuf]) -> Result<()> {
-    let mut objects: Vec<InspectionData> = Vec::new();
-    for path in paths {
-        let idata = inspect(path)?;
-        objects.push(idata);
-    }
-
+    let objects = paths
+        .iter()
+        .map(|path| inspect(path))
+        .collect::<Result<Vec<InspectionData>>>()?;
     let json = serde_json::to_string_pretty(&objects).context("Failed to parse json")?;
     println!("{}", json);
     Ok(())
