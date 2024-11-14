@@ -379,37 +379,47 @@ fn inspect(path: &PathBuf) -> Result<InspectionData> {
 
     let btf = libbpf_rs::btf::Btf::from_path(path)
         .context(format!("Failed to read BPF from {:?}", path))?;
-    let mut data = InspectionData {
-        filename: String::from(path.file_name().unwrap().to_string_lossy()),
-        devices: Vec::new(),
-        programs: Vec::new(),
-        maps: Vec::new(),
-    };
-    if let Some(metadata) = modalias::Metadata::from_btf(&btf) {
-        for modalias in metadata.modaliases() {
-            data.devices.push(InspectionDevice {
-                bus: format!("0x{:04X}", modalias.bus),
-                group: format!("0x{:04X}", modalias.group),
-                vid: format!("0x{:04X}", modalias.vid),
-                pid: format!("0x{:04X}", modalias.pid),
-            });
-        }
-    }
+    let metadata = modalias::Metadata::from_btf(&btf);
+    let devices: Vec<InspectionDevice> = metadata
+        .and_then(|metadata| {
+            Some(
+                metadata
+                    .modaliases()
+                    .map(|modalias| InspectionDevice {
+                        bus: format!("0x{:04X}", modalias.bus),
+                        group: format!("0x{:04X}", modalias.group),
+                        vid: format!("0x{:04X}", modalias.vid),
+                        pid: format!("0x{:04X}", modalias.pid),
+                    })
+                    .collect::<Vec<InspectionDevice>>(),
+            )
+        })
+        .or(Some(Vec::new()))
+        .unwrap();
+
     let mut obj_builder = libbpf_rs::ObjectBuilder::default();
     let object = obj_builder.open_file(path.clone()).unwrap();
-
-    for prog in object.progs_iter() {
-        data.programs.push(InspectionProgram {
+    let programs: Vec<InspectionProgram> = object
+        .progs_iter()
+        .map(|prog| InspectionProgram {
             name: prog.name().unwrap().to_string(),
             section: prog.section().to_string(),
         })
-    }
+        .collect();
 
-    for map in object.maps_iter() {
-        data.maps.push(InspectionMap {
+    let maps: Vec<InspectionMap> = object
+        .maps_iter()
+        .map(|map| InspectionMap {
             name: map.name().unwrap().to_string(),
         })
-    }
+        .collect();
+
+    let data = InspectionData {
+        filename: String::from(path.file_name().unwrap().to_string_lossy()),
+        devices,
+        programs,
+        maps,
+    };
 
     Ok(data)
 }
