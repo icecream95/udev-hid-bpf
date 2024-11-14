@@ -13,8 +13,18 @@ Users can manually attach a HID-BPF program to a device::
    $ sudo udev-hid-bpf add /sys/bus/hid/devices/0003:05F3:0405 trace_hid_events.bpf.o
    $ sudo udev-hid-bpf add /sys/bus/hid/devices/0003:05F3:0405 /path/to/my-hack.bpf.o
 
+Multiple devices and object files can be provided by separating devices and BPF
+object files with a literal ``-``. This gives us a convenient shortcut, useful
+especially during development::
+
+   $ sudo udev-hid-bpf add - builddir/src/bpf/0010-Foo__Bar.bpf.o
+
+By leaving the device list empty (``-`` is the first argument to ``add``),
+``udev-hid-bpf`` will look up local devices based on the :ref:`metadata
+<matching_programs_metadata>` compiled into the given BPF programs.
+
 Note that the filename does not need to be a full path. The list of available
-programs can be shown with::
+BPF programs can be shown with::
 
    $ udev-hid-bpf list-bpf-programs
 
@@ -23,6 +33,7 @@ programs can be shown with::
           ``udev-hid-bpf list-bpf-programs --bpfdir builddir`` to list the
           programs in the builddir.
 
+.. _matching_programs_metadata:
 
 Metadata in the HID-BPF sources (modalias matches)
 --------------------------------------------------

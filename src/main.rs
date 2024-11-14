@@ -4,6 +4,7 @@ use anyhow::{bail, ensure, Context, Result};
 use clap::{Parser, Subcommand};
 use regex::Regex;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -87,7 +88,9 @@ enum Commands {
         ///
         /// If three or more paths are provided, all paths before a literal '-' are
         /// sysfs paths to devices, all paths after the literal '-' are paths to or names of BPF
-        /// programs.
+        /// programs. If the first path is a literal '-' the given BPF programs are
+        /// loaded against all devices that match any of the bus:vid:pid combination
+        /// as specified in the BPF program.
         ///
         /// BPF programs specified by names only instead of complete paths are looked up
         /// in --bpfdir followed by the built-in BPF directories.
@@ -588,10 +591,15 @@ fn split_paths(mut paths: Vec<String>) -> Result<(Vec<String>, Vec<String>)> {
     let (devices, objects) = match &mut paths[..] {
         [] => bail!("At least one device path is required"),
         [d] => (vec![d.clone()], vec![]),
-        [d, o] => (vec![d.clone()], vec![o.clone()]),
+        [d, o] if d != "-" => (vec![d.clone()], vec![o.clone()]),
         _ => {
             let split = paths.iter().position(|p| p == &divider);
             match split {
+                // Special case of "-" as first entry
+                Some(0) => {
+                    paths.remove(0);
+                    (Vec::new(), paths)
+                }
                 Some(idx) => {
                     let mut objfiles = paths.split_off(idx);
                     objfiles.remove(0);
@@ -607,11 +615,61 @@ fn split_paths(mut paths: Vec<String>) -> Result<(Vec<String>, Vec<String>)> {
     {
         bail!("Invalid device or object path");
     }
-    if devices.is_empty() {
-        bail!("Missing device path");
-    }
 
     Ok((devices, objects))
+}
+
+// Remove the "0x" prefix from a string, if it exists
+fn hex_without_prefix<'a>(s: &'a str) -> &'a str {
+    s.strip_prefix("0x").or(Some(&s)).unwrap()
+}
+
+fn device_vid_pid_name(device: &InspectionDevice) -> String {
+    let bus = hex_without_prefix(&device.bus.as_str());
+    let vid = hex_without_prefix(&device.vid.as_str());
+    let pid = hex_without_prefix(&device.pid.as_str());
+    format!("{bus}:{vid}:{pid}.")
+}
+
+/// Find sysfs devices that match the various HID_DEVICE
+/// entries the given BPF object files register.
+///
+/// The returned map is { objfile: [device, device, device ...] }
+fn find_sysfs_devices(objfiles: &Vec<String>) -> Result<HashMap<String, Vec<PathBuf>>> {
+    let devices = std::fs::read_dir(PathBuf::from("/sys/bus/hid/devices/"))?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .collect::<Vec<PathBuf>>();
+
+    let inspection_data = objfiles
+        .iter()
+        .map(|objfile| inspect(&PathBuf::from(objfile)))
+        .collect::<Result<Vec<InspectionData>>>()?;
+
+    let mut map: HashMap<String, Vec<PathBuf>> = HashMap::new();
+    for (objfile, idata) in std::iter::zip(objfiles, inspection_data) {
+        // filename is something like 0003:045E:07A5.0002 but we only care
+        // about the BUS:VID:PID part of that name
+        let prefixes = idata
+            .devices
+            .iter()
+            .map(device_vid_pid_name)
+            .collect::<Vec<String>>();
+
+        for d in &devices {
+            for prefix in &prefixes {
+                let fname = d.file_name().unwrap().to_string_lossy();
+                if fname.starts_with(prefix) {
+                    log::debug!("{}: found compatible device {d:?}", idata.filename);
+                    map.entry(objfile.clone())
+                        .or_insert(Vec::new())
+                        .push(d.clone());
+                }
+            }
+        }
+    }
+
+    Ok(map)
 }
 
 fn udev_hid_bpf() -> Result<()> {
@@ -650,12 +708,44 @@ fn udev_hid_bpf() -> Result<()> {
             property,
         } => {
             let (devices, objfiles) = split_paths(paths)?;
-            let devices: Vec<PathBuf> = devices.iter().map(PathBuf::from).collect();
-            if replace {
-                cmd_remove(&devices)?;
-                std::thread::sleep(std::time::Duration::from_millis(500));
+
+            if devices.is_empty() {
+                let object_device_map: HashMap<String, Vec<PathBuf>> =
+                    find_sysfs_devices(&objfiles)?;
+
+                if object_device_map.is_empty() {
+                    bail!("Unable to find any devices that match the given BPF program(s)");
+                }
+
+                if replace {
+                    let devices: Vec<PathBuf> = object_device_map
+                        .iter()
+                        .flat_map(|(_, devices)| devices)
+                        .map(PathBuf::from)
+                        .collect();
+                    cmd_remove(&devices)?;
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                }
+
+                // HashMap doesn't have a defined order, for better UX
+                // better UX we load objects in the order given on the cmdline.
+                objfiles
+                    .into_iter()
+                    .filter(|objfile| object_device_map.contains_key(objfile))
+                    .map(|objfile| object_device_map.get_key_value(&objfile).unwrap())
+                    .map(|(objfile, devices)| {
+                        let objfiles = vec![String::from(objfile)];
+                        cmd_add(&devices, objfiles.as_slice(), bpfdir.clone(), &property)
+                    })
+                    .collect::<Result<(), anyhow::Error>>()
+            } else {
+                let devices = devices.iter().map(PathBuf::from).collect();
+                if replace {
+                    cmd_remove(&devices)?;
+                    std::thread::sleep(std::time::Duration::from_millis(500));
+                }
+                cmd_add(&devices, &objfiles, bpfdir, &property)
             }
-            cmd_add(&devices, &objfiles, bpfdir, &property)
         }
         Commands::Remove { devpaths } => cmd_remove(&devpaths),
         Commands::ListBpfPrograms { bpfdir } => cmd_list_bpf_programs(bpfdir),
@@ -745,11 +835,18 @@ mod tests {
         assert_eq!(b, vec![] as Vec<&str>);
 
         let paths: Vec<String> = vec_of_strings!["-", "b", "c", "d"];
-        assert!(split_paths(paths).is_err());
+        let (a, b) = split_paths(paths).unwrap();
+        assert_eq!(a, vec![] as Vec<&str>);
+        assert_eq!(b, vec!["b", "c", "d"]);
+
+        let paths: Vec<String> = vec_of_strings!["-", "a"];
+        let (a, b) = split_paths(paths).unwrap();
+        assert_eq!(a, vec![] as Vec<&str>);
+        assert_eq!(b, vec!["a"]);
+
         let paths: Vec<String> = vec_of_strings!["a", "-"];
         assert!(split_paths(paths).is_err());
-        let paths: Vec<String> = vec_of_strings!["-", "a"];
-        assert!(split_paths(paths).is_err());
+
         let paths: Vec<String> = vec_of_strings!["-"];
         assert!(split_paths(paths).is_err());
         let paths: Vec<String> = vec_of_strings![""];
@@ -776,5 +873,13 @@ mod tests {
         assert!(tuple_parse("foo\tbar=baz").is_err());
         assert!(tuple_parse("foobar =baz").is_err());
         assert!(tuple_parse("foobar").is_err());
+    }
+
+    #[test]
+    fn test_hex_without_prefix() {
+        assert_eq!(hex_without_prefix("0x0"), "0");
+        assert_eq!(hex_without_prefix("0"), "0");
+        assert_eq!(hex_without_prefix("0x12"), "12");
+        assert_eq!(hex_without_prefix("12"), "12");
     }
 }

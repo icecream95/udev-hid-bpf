@@ -228,7 +228,17 @@ Passing in the other interface (with the ``0002`` suffix) works::
   DEBUG - libbpf: elf: skipping unrecognized data section(8) .hid_bpf_config
   DEBUG - Successfully loaded "builddir/src/bpf/0010-vendor__mymouse.bpf.o"
 
-This indicates our probe is working correctly.
+This indicates our probe is working correctly. To avoid this issue in the
+future we can skip the device path altogether and rely on ``udev-hid-bpf`` to
+find all matching devices::
+
+  $ sudo udev-hid-bpf --verbose add - builddir/src/bpf/0010-vendor__mymouse.bpf.o
+
+The ``add`` command can take multiple device paths and/or object files,
+separated by a literal ``-``. By leaving the device list empty (``-`` is the
+first argument to ``add``), ``udev-hid-bpf`` will look up local devices based
+on the :ref:`metadata <matching_programs_metadata>` compiled into the given BPF
+programs.
 
 .. note:: It is even possible to check udev properties during ``probe()``, see
           :ref:`udev_properties_reading`.
