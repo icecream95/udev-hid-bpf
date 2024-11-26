@@ -6,6 +6,7 @@ include:
   - project: 'freedesktop/ci-templates'
     ref: *template_sha
     file:
+      - '/templates/debian.yml'
       - '/templates/fedora.yml'
       - '/templates/ci-fairy.yml'
   - template: Security/SAST.gitlab-ci.yml
@@ -27,7 +28,7 @@ stages:
 variables:
   FDO_UPSTREAM_REPO: libevdev/udev-hid-bpf
   FEDORA_VERSION: 41
-  FEDORA_RELEASE_VERSION: 37
+  DEBIAN_VERSION: stable
   FEDORA_PACKAGES: >
     bpftool
     cargo
@@ -50,7 +51,25 @@ variables:
     python3-GitPython
     libevdev
     systemd-udev
+  DEBIAN_PACKAGES: >
+    bpftool
+    clang
+    curl
+    gcc
+    git
+    jq
+    libbpf-dev
+    libudev-dev
+    make
+    ninja-build
+    pkg-config
+    python3-pip
+    python3-venv
+    sudo
+    xz-utils
+  DEBIAN_DISTRIBUTION_EXEC: 'bash ./.gitlab-ci/rustup.sh'
   FEDORA_TAG:  '2024-10-21.0'
+  DEBIAN_TAG:  '2024-11.29.0'
   FDO_DISTRIBUTION_EXEC: 'pip3 install --break-system-packages git+https://gitlab.freedesktop.org/libevdev/hid-tools/'
   RUST_BACKTRACE: '1'
   INSTDIR: _inst
@@ -95,6 +114,13 @@ variables:
     FDO_DISTRIBUTION_VERSION: $FEDORA_VERSION
     FDO_DISTRIBUTION_PACKAGES: $FEDORA_PACKAGES
     FDO_DISTRIBUTION_TAG: $FEDORA_TAG
+
+.debian:
+  variables:
+    FDO_DISTRIBUTION_VERSION: $DEBIAN_VERSION
+    FDO_DISTRIBUTION_PACKAGES: $DEBIAN_PACKAGES
+    FDO_DISTRIBUTION_TAG: $DEBIAN_TAG
+    FDO_DISTRIBUTION_EXEC: $DEBIAN_DISTRIBUTION_EXEC
 
 #################################################################
 #                                                               #
@@ -158,12 +184,12 @@ fedora@container-prep:
     GIT_STRATEGY: none
 
 
-fedora-release@container-prep:
+debian@container-prep:
   extends:
-    - fedora@container-prep
-  variables:
-    FDO_DISTRIBUTION_VERSION: $FEDORA_RELEASE_VERSION
-    FDO_DISTRIBUTION_EXEC: ''  # we don't need hid-tools here
+    - .debian
+    - .fdo.container-build@debian
+    - .policy
+  stage: prep
 
 
 .kernel_build_variables:
@@ -232,6 +258,15 @@ rebuild kernel:
     - .cargo-build@template
   dependencies:
     - fedora@container-prep
+
+
+.debian-cargo@template:
+  extends:
+    - .debian
+    - .fdo.distribution-image@debian
+    - .cargo-build@template
+  dependencies:
+    - debian@container-prep
 
 
 .fedora-meson@template:
@@ -417,13 +452,12 @@ b2c uhid-test:
 
 make release:
   extends:
-    - .fedora-cargo@template
+    - .debian-cargo@template
   stage: deploy
   script:
-    # Fedora 37 can't properly use _Pragma under GCC
-    - git apply .gitlab-ci/fedora-37.patch
     - ln -s /usr/bin/true /usr/local/bin/udevadm
     - ln -s /usr/bin/true /usr/local/bin/systemd-hwdb
+    - source $HOME/.cargo/env
     - .gitlab-ci/make-combined-release.sh $PWD/$INSTDIR
     - mkdir -p tarball_dir
     - tar xf udev-hid-bpf*.tar.xz -C tarball_dir --strip-components=1
@@ -443,7 +477,6 @@ make release:
     - cp udev-hid-bpf*.tar.xz udev-hid-bpf.tar.xz
   variables:
     MESON_BUILDDIR: build_dir
-    FDO_DISTRIBUTION_VERSION: $FEDORA_RELEASE_VERSION
     PREFIX: /usr
     GIT_DEPTH: 0
   artifacts:
@@ -451,7 +484,7 @@ make release:
     paths:
       - udev-hid-bpf.tar.xz
   dependencies:
-    - fedora-release@container-prep
+    - debian@container-prep
     - meson build and test
 
 
