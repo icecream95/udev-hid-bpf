@@ -625,6 +625,7 @@ fn udev_hid_bpf() -> Result<()> {
 
     stderrlog::new()
         .modules(modules)
+        .show_module_names(true)
         .verbosity(if cli.verbose {
             log::LevelFilter::Debug
         } else {
