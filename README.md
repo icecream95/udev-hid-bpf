@@ -33,9 +33,10 @@ $ meson setup builddir/
 $ meson compile -C builddir/
 $ meson install -C builddir
 # this will ask for your sudo password to install udev rules and hwdb files
+$ sudo systemd-hwdb update
 ```
 
-Once installed, unplug/replug any supported device, and the bpf program will automatically be attached to the HID kernel device.
+Once installed, ~~unplug/replug any supported device~~ reboot, and the bpf program will automatically be attached to the HID kernel device.
 
 For details on required dependencies etc. please see [our documentation](https://libevdev.pages.freedesktop.org/udev-hid-bpf/).
 
