@@ -11,6 +11,7 @@ tracing_sources = [
 # 'sources' are BPF programs only compatible with
 # struct_ops (kernel v6.11+)
 sources = [
+     '0010-ASUS__Vivobook_S15_S5507_kbd.bpf.c',
 ]
 
 foreach bpf: tracing_sources
