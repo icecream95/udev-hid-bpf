@@ -1,3 +1,21 @@
+## HID-BPF program for Vivobook S15 S5507 (Snapdragon X Elite) keyboard
+
+Source is at `src/bpf/testing/0010-ASUS__Vivobook_S15_S5507_kbd.bpf.c`.
+
+Working:
+
+- Fn-lock
+- Volume keys
+- Keyboard backlight brightness
+- Display brightness
+- Calculator key
+
+I'm a bit unsure of the correct Consumer Control codes to send for
+some of the other function keys.
+
+There is currently no way to change the keyboard backlight RGB
+settings from Linux, but the EC remembers it from MyASUS.
+
 # udev-hid-bpf
 
 An automatic HID-BPF loader based on udev events written in Rust. This repository aims to
