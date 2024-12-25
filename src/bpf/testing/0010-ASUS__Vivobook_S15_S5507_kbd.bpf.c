@@ -157,6 +157,7 @@ SEC(HID_BPF_DEVICE_EVENT)
 	 *   F9  (Microphone mute): 0x7C
 	 *   F10 (Microphone mode): 0xCB
 	 *   F12 (MyASUS)         : 0x86
+	 *   Fn+F (Fan profile)   : 0x9D
 	 *
 	 * (F7 (Display mode) sends LGUI + P,
 	 * and Copilot is LGUI + LSHIFT + F23.)
