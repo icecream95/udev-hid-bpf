@@ -16,6 +16,14 @@ some of the other function keys.
 There is currently no way to change the keyboard backlight RGB
 settings from Linux, but the EC remembers it from MyASUS.
 
+Perhaps a full kernel driver would be better for this? That would
+allow the backlight to be exposed as a LED for desktop environment
+integration, the backlight could be automatically disabled on suspend.
+
+As an alternative to the physical key on the keyboard, the script
+`kb-bl.py` in this repository uses `python3-hidapi` (or `hidapi-cffi`
+on PyPI) to set the brightness.
+
 # udev-hid-bpf
 
 An automatic HID-BPF loader based on udev events written in Rust. This repository aims to
