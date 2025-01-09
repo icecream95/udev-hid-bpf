@@ -94,12 +94,9 @@ static int work_callback(void *map, int *key, void *value)
 		}
 
 		set_brightness(ctx, brightness);
-
-		current_backlight_brightness = brightness;
 	} else if (*key == WORK_TYPE_FNLOCK) {
-		__u8 fn_lock = current_fn_lock ^ 1;
+		__u8 fn_lock = !current_fn_lock;
 		set_fn_lock(ctx, fn_lock);
-		current_fn_lock = fn_lock;
 	} else if (*key == WORK_TYPE_INIT) {
 		set_init_unk_1(ctx);
 		set_init_unk_2(ctx);
@@ -135,7 +132,7 @@ static int send_consumer_control(__u8 *data, __u8 code)
 }
 
 SEC(HID_BPF_DEVICE_EVENT)
-     int BPF_PROG(handle_fkeys_fix_event, struct hid_bpf_ctx *hid_ctx)
+int BPF_PROG(handle_fkeys_fix_event, struct hid_bpf_ctx *hid_ctx)
 {
 	__u8 *data;
 
@@ -193,8 +190,37 @@ SEC(HID_BPF_DEVICE_EVENT)
 	return 0;
 }
 
+SEC(HID_BPF_HW_REQUEST)
+int BPF_PROG(handle_hw_request, struct hid_bpf_ctx *hid_ctx, unsigned char reportnum,
+	     enum hid_report_type rtype, enum hid_class_request reqtype, __u64 source)
+{
+	__u8 *data;
+
+	if (reportnum != 0x5A || rtype != HID_FEATURE_REPORT || reqtype != HID_REQ_SET_REPORT) {
+		return 0;
+	}
+
+	if (hid_ctx->size < 64) {
+		return 0;
+	}
+
+	data = hid_bpf_get_data(hid_ctx, 0, 5);
+	if (!data || data[0] != 0x5A) {
+		return 0;
+	}
+
+	if (data[1] == 0xBA && data[2] == 0xC5 && data[3] == 0xC4) {
+		current_backlight_brightness = data[4];
+	} else if (data[1] == 0xD0 && data[2] == 0x4E) {
+		current_fn_lock = data[3];
+	}
+
+	return 0;
+}
+
 HID_BPF_OPS(vivobook_s15) = {
 	.hid_device_event = (void *)handle_fkeys_fix_event,
+	.hid_hw_request = (void *)handle_hw_request,
 };
 
 /* If your device only has a single HID interface you can skip
