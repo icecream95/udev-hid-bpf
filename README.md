@@ -1,6 +1,6 @@
 ## HID-BPF program for Vivobook S15 S5507 (Snapdragon X Elite) keyboard
 
-Source is at `src/bpf/testing/0010-ASUS__Vivobook_S15_S5507_kbd.bpf.c`.
+Source is at [src/bpf/testing/0010-ASUS__Vivobook_S15_S5507_kbd.bpf.c](src/bpf/testing/0010-ASUS__Vivobook_S15_S5507_kbd.bpf.c).
 
 Working:
 
@@ -9,6 +9,9 @@ Working:
 - Keyboard backlight brightness
 - Display brightness
 - Calculator key
+- Fn+K (Scroll Lock)
+- Fn+B (Break)
+- Fn+P (Pause)
 
 I'm a bit unsure of the correct Consumer Control codes to send for
 some of the other function keys.
@@ -35,7 +38,7 @@ should not be required.
 Our build system uses [meson](https://mesonbuild.com/) which in turn wraps Rust's `cargo`.
 
 ```
-$ git clone https://gitlab.freedesktop.org/libevdev/udev-hid-bpf.git
+$ git clone https://github.com/icecream95/udev-hid-bpf.git
 $ cd udev-hid-bpf/
 $ meson setup builddir/
 $ meson compile -C builddir/
