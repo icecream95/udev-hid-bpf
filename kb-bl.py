@@ -1,7 +1,65 @@
 #!/usr/bin/env python3
 
-import hidapi
+class BindingHid:
+    def __init__(self, vendor, product):
+        import hid
+        try:
+            self.dev = hid.Device(vendor, product)
+        except hid.HIDException:
+            print(f"Could not open device {vendor:04X}:{product:04X}. Check that /dev/hidraw* is accessible\n")
+            raise
+    def send_feature_report(self, buffer):
+        self.dev.send_feature_report(buffer)
+    def close(self):
+        self.dev.close()
+
+class BindingHidapi:
+    def __init__(self, vendor, product):
+        import hid
+        self.dev = hid.device()
+        try:
+            self.dev.open(vendor, product)
+        except OSError:
+            print(f"Could not open device {vendor:04X}:{product:04X}. Check that /dev/hidraw* is accessible\n")
+            raise
+    def send_feature_report(self, buffer):
+        self.dev.send_feature_report(buffer)
+    def close(self):
+        self.dev.close()
+
+class BindingHidapiCffi:
+    def __init__(self, vendor, product):
+        import hidapi
+        try:
+            self.dev = hidapi.Device(vendor_id=vendor, product_id=product)
+        except OSError:
+            print(f"Could not open device {vendor:04X}:{product:04X}. Check that /dev/hidraw* is accessible")
+            print("If libusb support for libhidapi is installed (e.g. the libhidapi-libusb0 package)")
+            print("the hidapi-cffi binding may be broken; try installing another hidapi binding.\n")
+            raise
+    def send_feature_report(self, buffer):
+        self.dev.send_feature_report(buffer[1:], buffer[:1])
+    def close(self):
+        self.dev.close()
+
+def get_binding():
+    try:
+        import hid
+        if "Device" in hid.__dict__:
+            return BindingHid
+        else:
+            return BindingHidapi
+    except ModuleNotFoundError:
+        try:
+            import hidapi
+            return BindingHidapiCffi
+        except ModuleNotFoundError:
+            print("Needs hidapi bindings (hid or hidapi or hidapi-cffi on pip)\n")
+            raise
+
 import sys
+
+Hid = get_binding()
 
 if len(sys.argv) < 2:
     print("Usage: kb-bl.py BRIGHTNESS [FNLOCK]")
@@ -12,7 +70,7 @@ if len(sys.argv) < 2:
 cmds = []
 
 # Setup commands; not required if using the BPF program
-if False:
+if True:
     cmds.append(f"5a0520310008")
     cmds.append(f"5ad08f01")
 
@@ -29,11 +87,11 @@ if len(sys.argv) > 2:
 
     cmds.append(f"5ad04e{fn_lock:02x}")
 
-d = hidapi.Device(next(hidapi.enumerate(0x0b05, 0x4543)))
+device = Hid(0x0B05, 0x4543)
 
 for cmd in cmds:
     c = bytes.fromhex(cmd)
     c = c + b'\0' * (64 - len(c))
-    d.send_feature_report(c[1:], c[:1])
+    device.send_feature_report(c)
 
-d.close()
+device.close()
