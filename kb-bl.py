@@ -13,6 +13,20 @@ class BindingHid:
     def close(self):
         self.dev.close()
 
+class BindingHidraw:
+    def __init__(self, vendor, product):
+        import hidraw
+        self.dev = hidraw.device()
+        try:
+            self.dev.open(vendor, product)
+        except OSError:
+            print(f"Could not open device {vendor:04X}:{product:04X}. Check that /dev/hidraw* is accessible\n")
+            raise
+    def send_feature_report(self, buffer):
+        self.dev.send_feature_report(buffer)
+    def close(self):
+        self.dev.close()
+
 class BindingHidapi:
     def __init__(self, vendor, product):
         import hid
@@ -44,18 +58,22 @@ class BindingHidapiCffi:
 
 def get_binding():
     try:
-        import hid
-        if "Device" in hid.__dict__:
-            return BindingHid
-        else:
-            return BindingHidapi
+        import hidraw
+        return BindingHidraw
     except ModuleNotFoundError:
         try:
-            import hidapi
-            return BindingHidapiCffi
+            import hid
+            if "Device" in hid.__dict__:
+                return BindingHid
+            else:
+                return BindingHidapi
         except ModuleNotFoundError:
-            print("Needs hidapi bindings (hid or hidapi or hidapi-cffi on pip)\n")
-            raise
+            try:
+                import hidapi
+                return BindingHidapiCffi
+            except ModuleNotFoundError:
+                print("Needs hidapi bindings (hid or hidapi or hidapi-cffi on pip)\n")
+                raise
 
 import sys
 
